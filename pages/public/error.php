@@ -1,20 +1,20 @@
 <?php
 http_response_code(404);
-$page_title = 'Not Found | TitanXHoldings';
+$page_title = 'Not Found | Aldernorth Capital';
 $page_description = 'The page you requested could not be found.';
 $page_path = '/404';
 include __DIR__ . '/_partials/head.php';
 ?>
-<body class="txh-redesign">
+<body class="anc-redesign">
 
 <?php include __DIR__ . '/_partials/navbar.php'; ?>
 
 <section class="hero">
   <div class="hero__bg" aria-hidden="true">
     <picture>
-      <source type="image/avif" srcset="/assets/images/txh-home.avif">
-      <source type="image/webp" srcset="/assets/images/txh-home.webp">
-      <img src="/assets/images/txh-home.webp" alt="" width="1800" height="1080" loading="eager">
+      <source type="image/avif" srcset="/assets/images/anc-home.avif">
+      <source type="image/webp" srcset="/assets/images/anc-home.webp">
+      <img src="/assets/images/anc-home.webp" alt="" width="1800" height="1080" loading="eager">
     </picture>
   </div>
   <div class="container hero__inner">

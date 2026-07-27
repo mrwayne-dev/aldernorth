@@ -1,6 +1,6 @@
 /**
  * ============================================================
- * TitanXHoldings Admin Users.js
+ * Aldernorth Capital Admin Users.js
  * Purpose: Frontend logic for the Admin Users management page.
  * Handles: Data fetching, table rendering, pagination, search/filter, and user actions (Edit/Delete/Email).
  * ============================================================
@@ -394,7 +394,7 @@ $(document).on('click', '.dropdown-menu .dropdown-item', function (e) {
             e.preventDefault();
             const filterVal = $(this).data('filter');
             // Update the button text to show current filter
-            $(this).closest('.dropdown').find('button').html(`<span class="iconify" data-icon="mdi:filter"></span> ${$(this).text()}`);
+            $(this).closest('.dropdown').find('button').html(`<i class="ph ph-funnel"></i> ${$(this).text()}`);
             loadUsers(1, filterVal, currentSearch);
         });
     }

@@ -1,0 +1,799 @@
+/* =================================================================
+ * Aldernorth Capital Dashboard Re-skin (token bridge)
+ * Adapts the Crestmark design system onto the existing dashboard
+ * component framework WITHOUT changing any DOM the JS depends on.
+ *
+ * Activation: add `anc-dash` to the dashboard <body> class, e.g.
+ *   <body class="counter-scroll anc-dash">
+ *
+ * Strategy:
+ *   1. Override dashboard.css :root variables (re-skins ~65% that
+ *      reads from var()).
+ *   2. Explicit overrides for hardcoded components (wallet variants,
+ *      buttons, sidebar, cards, tables).
+ *   3. General Sans font + no-shadow + 8px radii per spec.
+ * ================================================================= */
+
+/* Fonts are self-hosted in assets/fonts/font.css (Switzer + Host Grotesk).
+   No @import here: the CSP allows no font CDN. */
+
+
+/* =================================================================
+ * 1. VARIABLE OVERRIDES — re-skins everything driven by var()
+ *
+ * dashboard.css reads ~65% of its colours from these names, so
+ * redefining them here re-skins the bulk of the dashboard without
+ * touching any DOM the JS depends on.
+ *
+ * DARK is the default; the light block below flips the same names.
+ * ================================================================= */
+body.anc-dash {
+  --White:        #ffffff;
+  --Primary:      #FF6D29;   /* brand orange — buttons, sidebar active, text-Primary */
+  --Primary-Hover:#FF8A52;
+  --Accent:       #1E1A1B;   /* elevated surface */
+  --Bg:           #161316;   /* page background */
+  --Surface:      #1E1A1B;
+  --Surface-Alt:  #241E1F;
+  --Black:        #FFFFFF;   /* inverted: "Black" is the high-contrast ink */
+  --GrayDark:     #BABABA;   /* muted text */
+  --Gray:         #8F8781;
+  --Gainsboro:    #241E1F;
+  --LightGray:    rgba(255, 255, 255, 0.10);
+  --Green:        #4ADE80;   /* status-success only (active badges) */
+
+  /* Design-system aliases so dashboard markup can opt into them */
+  --anc-orange:      #FF6D29;
+  --anc-brown:       #453027;
+  --anc-ink:         #161316;
+  --anc-on-accent:   #161316;   /* text sitting ON an orange fill */
+  --anc-border:      rgba(255, 255, 255, 0.10);
+  --anc-accent-red:  #FF6D29;   /* legacy alias */
+  --anc-radius-card: 8px;
+  --anc-radius-pill: 30px;
+
+  /* Font */
+  font-family: 'Switzer', 'Host Grotesk', system-ui, -apple-system, sans-serif;
+  background: var(--Bg);
+  color: var(--Black);
+}
+
+/* --- LIGHT THEME -------------------------------------------------
+   Same variable names, light values. Note --Primary stays orange but
+   --anc-on-accent flips to white, because in light mode orange fills
+   sit against a white page and need light text on them. */
+:root[data-theme="light"] body.anc-dash {
+  --White:        #ffffff;
+  --Primary:      #FF6D29;
+  --Primary-Hover:#E85D18;
+  --Accent:       #FAF8F7;
+  --Bg:           #FAF8F7;
+  --Surface:      #FFFFFF;
+  --Surface-Alt:  #F5F1EF;
+  --Black:        #161316;
+  --GrayDark:     #6B615C;
+  --Gray:         #8F8781;
+  --Gainsboro:    #F2ECE9;
+  --LightGray:    rgba(22, 19, 22, 0.08);
+  --Green:        #15803D;
+
+  --anc-on-accent: #FFFFFF;
+  --anc-border:    rgba(22, 19, 22, 0.10);
+  --anc-accent-red:#C24608;
+}
+
+body.anc-dash h1,
+body.anc-dash h2,
+body.anc-dash h3,
+body.anc-dash h4,
+body.anc-dash h5,
+body.anc-dash h6 {
+  font-family: 'Switzer', 'Host Grotesk', system-ui, sans-serif;
+  letter-spacing: -0.3px;
+  color: var(--Black);
+}
+
+
+/* =================================================================
+ * 2. KILL SHADOWS — depth via contrast (spec A.4)
+ * ================================================================= */
+body.anc-dash .wg-box,
+body.anc-dash .wallet-card,
+body.anc-dash .impact-card,
+body.anc-dash .plan-card,
+body.anc-dash .card-details,
+body.anc-dash .tf-button,
+body.anc-dash .box-icon,
+body.anc-dash .modal-content,
+body.anc-dash .dropdown-menu {
+  box-shadow: none !important;
+}
+
+body.anc-dash .wallet-card:hover {
+  transform: none;
+  box-shadow: none !important;
+}
+
+
+/* =================================================================
+ * 3. CARDS — 8px radius, contrast-based depth
+ * ================================================================= */
+body.anc-dash .wg-box {
+  border-radius: var(--anc-radius-card);
+  border: 1px solid var(--LightGray);
+  background: var(--Surface);
+}
+
+body.anc-dash .wallet-card {
+  border-radius: var(--anc-radius-card);
+  /* !important defeats the legacy short-stat-card rules in dashboard.css
+     (.wallet-card { height:140px!important } + a 130px!important mobile clamp)
+     which otherwise crush the hero on mobile and push its metrics outside. */
+  height: auto !important;
+  min-height: 170px;
+}
+
+/* Main wallet card stays dark/ink (Crestmark's single dark surface) */
+body.anc-dash .wallet-main {
+  background: var(--Primary) !important;
+  color: var(--anc-on-accent);
+}
+
+/* Secondary wallet cards → white with warm border + ink text */
+body.anc-dash .wallet-donations,
+body.anc-dash .wallet-investments,
+body.anc-dash .wallet-holdlock,
+body.anc-dash .wallet-aum,
+body.anc-dash .wallet-xlock,
+body.anc-dash .wallet-green,
+body.anc-dash .wallet-accent,
+body.anc-dash .wallet-purple {
+  background: var(--Surface) !important;
+  color: var(--Black) !important;
+  border: 1px solid var(--LightGray);
+}
+
+/* Card icons: muted on light cards, white on the dark main card */
+body.anc-dash .wallet-donations .ph,
+body.anc-dash .wallet-investments .ph,
+body.anc-dash .wallet-holdlock .ph,
+body.anc-dash .wallet-aum .ph,
+body.anc-dash .wallet-xlock .ph,
+body.anc-dash .wallet-green .ph,
+body.anc-dash .wallet-accent .ph,
+body.anc-dash .wallet-purple .ph {
+  color: var(--anc-accent-red);
+}
+body.anc-dash .wallet-main .ph {
+  color: var(--anc-on-accent);
+}
+
+body.anc-dash .impact-card,
+body.anc-dash .plan-card {
+  border-radius: var(--anc-radius-card);
+  border: 1px solid var(--LightGray);
+  background: var(--Surface);
+}
+
+
+/* =================================================================
+ * 4. BUTTONS — dark pill primary, clean secondary
+ * ================================================================= */
+body.anc-dash .tf-button {
+  border-radius: var(--anc-radius-pill);
+  font-weight: 500;
+  letter-spacing: 0;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+body.anc-dash .tf-button.bg-Primary,
+body.anc-dash .tf-button.bg-Green {
+  background: var(--Primary) !important;
+  color: var(--anc-on-accent) !important;
+}
+body.anc-dash .tf-button.bg-Primary:hover,
+body.anc-dash .tf-button.bg-Green:hover {
+  background: var(--Primary-Hover) !important;
+}
+
+/* Destructive keeps red */
+body.anc-dash .tf-button.bg-Red {
+  background: var(--anc-accent-red) !important;
+  color: var(--anc-on-accent) !important;
+}
+
+/* Subtle / accent action buttons → light pill */
+body.anc-dash .tf-button.bg-Accent,
+body.anc-dash .tf-button.bg-GrayLight {
+  background: var(--Surface-Alt) !important;
+  color: var(--Black) !important;
+}
+
+/* Quick-action buttons on the dashboard overview */
+body.anc-dash .quick-action-btn.bg-Primary {
+  background: var(--Primary) !important;
+  color: var(--anc-on-accent) !important;
+  border-radius: var(--anc-radius-card);
+}
+
+
+/* =================================================================
+ * 5. STATUS BADGES — success stays green, others mapped
+ * ================================================================= */
+body.anc-dash .box-status {
+  border-radius: 999px;
+  font-weight: 500;
+}
+body.anc-dash .box-status.bg-Green  { background-color: var(--Green) !important; }
+body.anc-dash .box-status.bg-Yellow { background-color: var(--anc-warning) !important; }
+body.anc-dash .box-status.bg-Red    { background-color: var(--anc-accent-red) !important; }
+body.anc-dash .box-status.bg-Primary{ background-color: var(--Primary) !important; }
+body.anc-dash .box-status.bg-Gray   { background-color: var(--Gray) !important; }
+
+
+/* =================================================================
+ * 6. SIDEBAR — white surface, ink active state, red accent
+ * ================================================================= */
+body.anc-dash .section-menu-left {
+  background: var(--White);
+  border-right: 1px solid var(--LightGray);
+}
+
+body.anc-dash .section-menu-left .box-logo {
+  border-bottom: 1px solid var(--LightGray);
+}
+
+/* Active top-level item — ink text + red accent bar */
+body.anc-dash .section-menu-left .menu-item.active > a .text,
+body.anc-dash .section-menu-left .menu-item.active .menu-item-button .text,
+body.anc-dash .section-menu-left .menu-item .menu-item-button.active .text {
+  color: var(--Primary);
+  font-weight: 600;
+}
+
+body.anc-dash .section-menu-left .menu-item.active > a .ph,
+body.anc-dash .section-menu-left .menu-item .menu-item-button.active .ph {
+  color: var(--anc-accent-red);
+}
+
+body.anc-dash .section-menu-left .sub-menu-item.active a .text {
+  color: var(--Primary);
+  font-weight: 600;
+}
+
+/* Active accent bar (::before / ::after vary by build — paint red) */
+body.anc-dash .section-menu-left .menu-item .menu-item-button.active::before,
+body.anc-dash .section-menu-left .menu-item.has-children.active::after {
+  background: var(--anc-accent-red) !important;
+}
+
+
+/* =================================================================
+ * 7. HEADER / TOPBAR
+ * ================================================================= */
+body.anc-dash .header-dashboard {
+  background: var(--White);
+  border-bottom: 1px solid var(--LightGray);
+}
+
+body.anc-dash .header-dashboard h6 {
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+
+/* Topbar account chip — truncate long usernames instead of overflowing.
+   Width shrinks to fit short names, caps on long ones (and narrow screens). */
+body.anc-dash .header-dashboard .wg-user {
+  width: auto;
+  max-width: min(200px, 42vw);
+}
+body.anc-dash .header-dashboard .wg-user .content {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+body.anc-dash .header-dashboard .wg-user .content > span {
+  display: block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* =================================================================
+ * 8. TABLES — clean rows, ink headers
+ * ================================================================= */
+body.anc-dash .list-transaction-head.bg-Primary {
+  background: var(--Primary) !important;
+  border-radius: var(--anc-radius-card) var(--anc-radius-card) 0 0;
+}
+
+body.anc-dash .tf-table-item {
+  border-bottom: 1px solid var(--LightGray);
+}
+
+body.anc-dash .table-list-transaction {
+  border-radius: var(--anc-radius-card);
+}
+
+
+/* =================================================================
+ * 9. FORM CONTROLS — warm-cream inputs
+ * ================================================================= */
+body.anc-dash .form-control,
+body.anc-dash .form-select,
+body.anc-dash .custom-select,
+body.anc-dash .wallet-input {
+  border-radius: var(--anc-radius-card);
+  border: 1px solid var(--LightGray);
+  background: var(--Surface-Alt);
+}
+
+body.anc-dash .form-control:focus,
+body.anc-dash .form-select:focus,
+body.anc-dash .wallet-input:focus {
+  border-color: var(--Primary);
+  background: var(--White);
+  box-shadow: none;
+}
+
+body.anc-dash .readonly-input {
+  background: var(--Surface-Alt);
+}
+
+
+/* =================================================================
+ * 10. MODALS — 8px radius, clean header
+ * ================================================================= */
+/* Overlay — deeper dim + blur for a focused, premium modal */
+body.anc-dash .modal-overlay {
+  background: rgba(13, 13, 13, 0.55);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+/* Card — clean, rounded, softly elevated (re-adds the shadow killed in §2) */
+body.anc-dash .modal-content {
+  border-radius: 14px;
+  border: 1px solid var(--LightGray);
+  box-shadow: 0 24px 60px -20px rgba(26, 26, 26, 0.35) !important;
+  padding: 24px 26px;
+}
+
+/* Header — title + divider + ghost close button */
+body.anc-dash .modal-header {
+  align-items: flex-start;
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--LightGray);
+}
+body.anc-dash .modal-header h2 {
+  font-family: 'General Sans', 'Host Grotesk', system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+  color: var(--Primary);
+}
+
+/* The × close icon in the header — circular ghost, ink hover (not HRC green).
+   Scoped to the header so footer "Cancel" buttons (.button-close-modal.tf-button)
+   keep their own styling. */
+body.anc-dash .modal-header .modal-close,
+body.anc-dash .modal-header .button-close-modal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--Gray);
+  background: transparent;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+body.anc-dash .modal-header .modal-close:hover,
+body.anc-dash .modal-header .button-close-modal:hover {
+  background: var(--LightGray);
+  color: var(--Primary);
+}
+body.anc-dash .modal-header .modal-close:focus {
+  outline: 2px solid rgba(204, 0, 0, 0.35);
+}
+
+/* Inputs — warm-cream field + red focus ring (matches the dashboard form skin) */
+body.anc-dash .modal-body label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--Primary);
+}
+body.anc-dash .modal-body input,
+body.anc-dash .modal-body select,
+body.anc-dash .modal-body textarea {
+  border-radius: 10px;
+  background: var(--Surface-Alt);
+  border: 1px solid var(--LightGray);
+  color: var(--Primary);
+  font-family: inherit;
+  font-size: 14px;
+}
+body.anc-dash .modal-body input:focus,
+body.anc-dash .modal-body select:focus,
+body.anc-dash .modal-body textarea:focus {
+  border-color: var(--anc-accent-red);
+  box-shadow: 0 0 0 3px rgba(204, 0, 0, 0.12);
+}
+
+/* Primary action — pill, ink → red on hover (site CTA pattern) */
+body.anc-dash .modal-confirm-btn {
+  border-radius: var(--anc-radius-pill);
+  background: var(--Primary);
+  color: var(--White);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px 16px;
+  transition: background 0.2s ease;
+}
+body.anc-dash .modal-confirm-btn:hover {
+  background: var(--anc-accent-red);
+}
+
+
+/* =================================================================
+ * 11. TEXT UTILITY REMAPS
+ * ================================================================= */
+body.anc-dash .text-Primary { color: var(--Primary) !important; }
+body.anc-dash .text-Green   { color: var(--Green) !important; }
+body.anc-dash .text-Gray    { color: var(--GrayDark) !important; }
+
+
+/* =================================================================
+ * 12. WALLET PAGE — portfolio hero, allocations, activity
+ *     (reuses wallet-card/wg-box/tf-button; tokens only)
+ * ================================================================= */
+
+/* --- Portfolio hero (dark wallet-main) --- */
+body.anc-dash .wallet-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 28px;
+  min-height: 240px;
+}
+body.anc-dash .wallet-hero-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+body.anc-dash .wallet-hero-top .box-status {
+  border-radius: var(--anc-radius-pill);
+  padding: 4px 12px;
+  color: var(--White);
+  flex-shrink: 0;
+}
+body.anc-dash .wallet-hero-balance { min-width: 0; max-width: 100%; }
+body.anc-dash .wallet-hero-balance h2 {
+  font-size: clamp(26px, 7vw, 44px);
+  line-height: 1.05;
+  margin: 0;
+  color: var(--White);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-width: 100%;
+}
+body.anc-dash .wallet-hero-change {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  color: var(--Green);
+}
+body.anc-dash .wallet-hero-substats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 40px;
+  padding-top: 18px;
+  margin-top: auto;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+body.anc-dash .wallet-substat { min-width: 0; }
+body.anc-dash .wallet-substat .f12-regular { color: rgba(255, 255, 255, 0.6); }
+body.anc-dash .wallet-substat .f14-bold { margin-top: 4px; font-size: 18px; }
+body.anc-dash .wallet-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+body.anc-dash .wallet-hero-actions .tf-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+}
+/* Ghost pills on the dark card */
+body.anc-dash .wallet-hero-actions .tf-button.bg-Accent {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: var(--White) !important;
+}
+body.anc-dash .wallet-hero-actions .tf-button.bg-Accent:hover {
+  background: rgba(255, 255, 255, 0.18) !important;
+}
+
+/* --- Lifetime activity stat list --- */
+body.anc-dash .wallet-lifetime { padding: 24px; }
+body.anc-dash .h-full { height: 100%; }
+body.anc-dash .wallet-stat-list { list-style: none; margin: 0; padding: 0; }
+body.anc-dash .wallet-stat-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--LightGray);
+}
+body.anc-dash .wallet-stat-list li:last-child { border-bottom: 0; }
+body.anc-dash .wallet-stat-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+body.anc-dash .wallet-stat-label .ph { color: var(--Gray); }
+
+/* --- Portfolio allocation list --- */
+body.anc-dash .wallet-alloc-list { list-style: none; margin: 0; padding: 0; }
+body.anc-dash .wallet-alloc-item + .wallet-alloc-item { border-top: 1px solid var(--LightGray); }
+body.anc-dash .wallet-alloc-item > a {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 8px;
+  border-radius: var(--anc-radius-card);
+  transition: background-color 0.2s ease;
+}
+body.anc-dash .wallet-alloc-item > a:hover { background: var(--Surface-Alt); }
+body.anc-dash .wallet-alloc-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: var(--anc-radius-card);
+  background: var(--Surface-Alt);
+  color: var(--Primary);
+  font-size: 22px;
+}
+body.anc-dash .wallet-alloc-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+body.anc-dash .wallet-alloc-value { white-space: nowrap; }
+body.anc-dash .wallet-alloc-arrow { color: var(--Gray); flex-shrink: 0; }
+
+/* --- Activity empty state --- */
+body.anc-dash .wallet-activity-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  padding: 40px 20px;
+  color: var(--Gray);
+}
+body.anc-dash .wallet-activity-empty .ph { color: var(--Gray); margin-bottom: 4px; }
+
+/* --- Responsive --- */
+@media (max-width: 1200px) {
+  body.anc-dash .wallet-hero-balance h2 { font-size: 38px; }
+}
+@media (max-width: 768px) {
+  body.anc-dash .wallet-hero { padding: 22px; min-height: 0; }
+  body.anc-dash .wallet-hero-balance h2 { font-size: 32px; }
+  body.anc-dash .wallet-hero-substats { gap: 24px; flex-wrap: wrap; }
+  body.anc-dash .wallet-hero-actions .tf-button { flex: 1 1 auto; justify-content: center; }
+  body.anc-dash .wallet-alloc-item > a { gap: 12px; padding: 14px 4px; }
+  body.anc-dash .wallet-alloc-icon { width: 38px; height: 38px; font-size: 19px; }
+}
+@media (max-width: 480px) {
+  body.anc-dash .wallet-hero-substats > .wallet-substat { flex: 1 1 100%; }
+}
+
+
+/* =================================================================
+ * 13. PLAN DETAIL PANEL — dashboard product pages (dropdown UX)
+ * ================================================================= */
+body.anc-dash .plan-detail-panel { padding: 24px; height: 100%; }
+body.anc-dash .plan-detail-panel .pdp-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+body.anc-dash .plan-detail-panel .pdp-name { font-size: 18px; font-weight: 600; color: var(--Primary); }
+body.anc-dash .plan-detail-panel .pdp-roi {
+  font-family: 'General Sans', sans-serif;
+  font-size: 40px;
+  line-height: 1;
+  color: var(--Primary);
+  margin-bottom: 4px;
+}
+body.anc-dash .plan-detail-panel .pdp-roi small { font-size: 16px; color: var(--Gray); }
+body.anc-dash .plan-detail-panel .pdp-roi-label { font-size: 12px; color: var(--Gray); margin-bottom: 18px; }
+body.anc-dash .plan-detail-panel .pdp-meta { list-style: none; margin: 0 0 16px; padding: 0; }
+body.anc-dash .plan-detail-panel .pdp-meta li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--LightGray);
+  font-size: 14px;
+}
+body.anc-dash .plan-detail-panel .pdp-meta li:last-child { border-bottom: 0; }
+body.anc-dash .plan-detail-panel .pdp-meta .k { color: var(--Gray); }
+body.anc-dash .plan-detail-panel .pdp-meta .v { color: var(--Primary); font-weight: 600; text-align: right; }
+body.anc-dash .plan-detail-panel .pdp-summary { font-size: 13px; line-height: 1.55; color: var(--GrayDark); }
+body.anc-dash .plan-detail-panel .pdp-badge {
+  display: inline-block;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: var(--anc-radius-pill);
+  background: var(--Surface-Alt);
+  color: var(--Primary);
+  white-space: nowrap;
+}
+/* Empty / placeholder state */
+body.anc-dash .plan-detail-panel .pdp-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
+  min-height: 220px;
+  color: var(--Gray);
+}
+body.anc-dash .plan-detail-panel .pdp-empty .ph { color: var(--Gray); }
+
+
+/* =================================================================
+ * 14. PROFILE PAGE — avatar card
+ * ================================================================= */
+body.anc-dash .profile-avatar-card { padding: 24px; text-align: center; }
+body.anc-dash .profile-avatar-wrap {
+  width: 140px;
+  height: 140px;
+  margin: 0 auto 20px;
+  border-radius: var(--anc-radius-circle, 50%);
+  overflow: hidden;
+  background: var(--Surface-Alt);
+  border: 1px solid var(--LightGray);
+}
+body.anc-dash .profile-avatar-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+body.anc-dash .profile-avatar-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+body.anc-dash .profile-avatar-actions .tf-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+body.anc-dash .profile-avatar-actions .tf-button[disabled] { opacity: 0.5; cursor: not-allowed; }
+body.anc-dash .profile-avatar-hint { margin-top: 12px; }
+
+
+/* =================================================================
+ * 15. SCROLLABLE TABLE — real <table>, horizontal scroll on mobile
+ *     (used by the transactions page; JS appends <tr><td> rows)
+ * ================================================================= */
+/* Containment: the dashboard content chain uses flex (and the layout-wrap clips
+   overflow), so flex items default to min-width:auto and let a wide table push
+   the column past the viewport — clipping the right-hand columns. Forcing
+   min-width:0 / max-width:100% lets the scroll container below actually scroll. */
+body.anc-dash .section-content-right,
+body.anc-dash .main-content,
+body.anc-dash .main-content-inner,
+body.anc-dash .main-content-wrap,
+body.anc-dash .tf-container {
+  min-width: 0;
+  max-width: 100%;
+}
+
+body.anc-dash .anc-scroll-table {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--LightGray);
+  border-radius: var(--anc-radius-card);
+}
+body.anc-dash .anc-table {
+  /* size to content (no column compression → no nowrap overlap on mobile),
+     but never narrower than the scroll wrapper. The wrapper's overflow-x:auto
+     then provides horizontal scroll when content is wider than the screen.
+     !important defeats bootstrap's .w-100{width:100%!important}. */
+  width: max-content !important;
+  min-width: 100%;
+  border-collapse: collapse;
+}
+body.anc-dash .anc-table thead th {
+  text-align: left;
+  background: var(--Primary);
+  color: var(--White);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 12px 16px;
+  white-space: nowrap;
+}
+/* Centered empty/placeholder rows span the full table cleanly */
+body.anc-dash .anc-table td.anc-empty { text-align: center; color: var(--Gray); padding: 28px 16px; }
+body.anc-dash .anc-table tbody tr { background: transparent; }
+body.anc-dash .anc-table tbody td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--LightGray);
+  font-size: 13px;
+  color: var(--Primary);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+body.anc-dash .anc-table tbody tr:last-child td { border-bottom: 0; }
+body.anc-dash .anc-table .box-status { display: inline-block; }
+/* Safety net: neutralise the template div-grid row styling (.tf-table-item) if it
+   ever lands on a real <table> row — its position:relative/::before bar shifts the
+   whole row one column to the right in a real table. */
+body.anc-dash .anc-table tbody tr.tf-table-item {
+  position: static;
+  background: transparent;
+  border-radius: 0;
+}
+body.anc-dash .anc-table tbody tr.tf-table-item::before { content: none; display: none; }
+
+
+
+
+/* =================================================================
+ * 16. THEME TOGGLE — dashboard topbar
+ * ================================================================= */
+body.anc-dash .theme-toggle {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--anc-border);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--Black);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+body.anc-dash .theme-toggle:hover {
+  background: rgba(255, 109, 41, 0.12);
+  border-color: var(--Primary);
+  color: var(--Primary);
+}
+
+body.anc-dash .theme-toggle:focus-visible {
+  outline: 2px solid var(--Primary);
+  outline-offset: 2px;
+}

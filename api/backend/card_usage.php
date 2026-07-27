@@ -1,6 +1,6 @@
 <?php
 // ========================================
-// CARD USAGE API — TitanXHoldings
+// CARD USAGE API — Aldernorth Capital
 // Returns user-level distribution of activities
 // ========================================
 
@@ -21,7 +21,7 @@ $user_id = $_SESSION['user_id'];
 try {
     $pdo = getPDO(); // ✅ your actual function name
 
-    // Queries for each TitanXHoldings product — keys must match the dashboard chart consumer
+    // Queries for each Aldernorth Capital product — keys must match the dashboard chart consumer
     $queries = [
         'investment' => "SELECT COALESCE(SUM(amount),0)         FROM investments WHERE user_id = ?",
         'xlock'      => "SELECT COALESCE(SUM(amount),0)         FROM holdlock WHERE user_id = ?",

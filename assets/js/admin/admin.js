@@ -1,6 +1,6 @@
 /**
  * ============================================================
- * TitanXHoldings Admin.js (Consolidated and Updated for Deposit and Withdrawal Actions)
+ * Aldernorth Capital Admin.js (Consolidated and Updated for Deposit and Withdrawal Actions)
  * Purpose: Provides Admin Dashboard data loading, UI binding, and quick action logic.
  * ============================================================
  */
@@ -191,11 +191,11 @@ $(document).on('click', '.cancel-withdrawal-btn', function () {
             container.children().first().remove();
         }
 
-        let icon = (type === 'success') ? 'mdi:check-circle-outline' : (type === 'error' ? 'mdi:alert-circle-outline' : 'mdi:information-outline');
+        let icon = (type === 'success') ? 'ph-check-circle' : (type === 'error' ? 'ph-warning-circle' : 'ph-info');
 
         const toastEl = $(`
             <div class="toast toast-${type}">
-                <span class="iconify" data-icon="${icon}" data-width="22" data-height="22"></span>
+                <i class="ph ${icon}" style="font-size:22px"></i>
                 <div class="toast-message">${message}</div>
             </div>
         `);
@@ -270,12 +270,12 @@ $(document).on('click', '.cancel-withdrawal-btn', function () {
             // 2. Update Quick Action Alerts/Counts
             const depositBtn = $('a[href="/admin/transactions/pending"]');
             depositBtn.html(`
-                <span class="iconify" data-icon="mdi:cash-plus"></span>
+                <i class="ph ph-plus-circle"></i>
                 Pending Deposits (${a.deposits ?? 0})
             `);
             const withdrawalBtn = $('a[href="/admin/withdrawals/pending"]');
             withdrawalBtn.html(`
-                <span class="iconify" data-icon="mdi:bank-transfer-out"></span>
+                <i class="ph ph-arrow-square-out"></i>
                 Pending Withdrawals (${a.withdrawals ?? 0})
             `);
             

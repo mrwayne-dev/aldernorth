@@ -1,6 +1,6 @@
 /**
  * ============================================================
- * TitanXHoldings Admin Wallet.js
+ * Aldernorth Capital Admin Wallet.js
  * Purpose: Frontend logic for the Admin Wallet Management page.
  * Handles: Data fetching, metric rendering, table rendering, pagination, search/filter, and balance updates.
  * ============================================================
@@ -191,7 +191,7 @@ $(document).on('click', '.dropdown-menu .dropdown-item', function (e) {
             const filterVal = $(this).data('filter');
             
             // Update the button text to show current filter
-            $(this).closest('.dropdown').find('button').html(`<span class="iconify" data-icon="mdi:filter"></span> ${$(this).text()}`);
+            $(this).closest('.dropdown').find('button').html(`<i class="ph ph-funnel"></i> ${$(this).text()}`);
             
             loadWallets(1, filterVal, currentSearch);
         });

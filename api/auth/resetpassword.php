@@ -1,6 +1,6 @@
 <?php
 // ========================================
-// RESET PASSWORD HANDLER — TitanXHoldings
+// RESET PASSWORD HANDLER — Aldernorth Capital
 // ========================================
 
 ini_set('display_errors', 0);

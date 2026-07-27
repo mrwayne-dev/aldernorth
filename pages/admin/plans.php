@@ -12,10 +12,10 @@ if (!isset($_SESSION['admin_id'])) {
 $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
 ?>
 <?php
-  $page_title = "X-Yield | TitanXHoldings Admin";
+  $page_title = "X-Yield | Aldernorth Capital Admin";
   include __DIR__ . "/_partials/head.php";
 ?>
-<body class="counter-scroll txh-dash">
+<body class="counter-scroll anc-dash">
 <div id="wrapper">
     <div id="page" class="">
         <div class="layout-wrap loader-off">
@@ -25,7 +25,7 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
             </div>
 
             <!-- Sidebar -->
-            <?php $active = "funds"; $active_fund = "yield"; include __DIR__ . "/_partials/sidebar.php"; ?>
+            <?php $active = "plans"; include __DIR__ . "/_partials/sidebar.php"; ?>
             <!-- /Sidebar -->
 
             <!-- Main Content -->
@@ -48,25 +48,25 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
                                             <div class="wallet-card wallet-main">
                                                 <div class="wallet-card-header">Total Active X-Yields</div>
                                                 <div class="wallet-card-balance">$<span id="total-active-invest">0.00</span></div>
-                                                <div class="wallet-card-footer"><span class="iconify" data-icon="mdi:trending-up"></span> Locked</div>
+                                                <div class="wallet-card-footer"><i class="ph ph-trend-up"></i> Locked</div>
                                             </div>
                                             <!-- Total ROI Paid Out -->
                                             <div class="wallet-card wallet-green">
                                                 <div class="wallet-card-header">Total ROI Paid</div>
                                                 <div class="wallet-card-balance">$<span id="total-roi-paid">0.00</span></div>
-                                                <div class="wallet-card-footer"><span class="iconify" data-icon="mdi:cash-check"></span> Distributed</div>
+                                                <div class="wallet-card-footer"><i class="ph ph-check-circle"></i> Distributed</div>
                                             </div>
                                             <!-- Ongoing Plans -->
                                             <div class="wallet-card wallet-accent">
                                                 <div class="wallet-card-header">Ongoing Plans</div>
                                                 <div class="wallet-card-balance"><span id="ongoing-plans">0</span></div>
-                                                <div class="wallet-card-footer"><span class="iconify" data-icon="mdi:account-clock"></span> Users</div>
+                                                <div class="wallet-card-footer"><i class="ph ph-hourglass"></i> Users</div>
                                             </div>
                                             <!-- Next Maturity -->
                                             <div class="wallet-card wallet-purple">
                                                 <div class="wallet-card-header">Next Maturity</div>
                                                 <div class="wallet-card-balance"><span id="next-maturity">—</span></div>
-                                                <div class="wallet-card-footer"><span class="iconify" data-icon="mdi:calendar-alert"></span> Upcoming</div>
+                                                <div class="wallet-card-footer"><i class="ph ph-calendar-x"></i> Upcoming</div>
                                             </div>
                                         </div>
                                     </div>
@@ -77,7 +77,7 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
                                     <div class="d-flex justify-between items-center mb-16">
                                         <h5 class="label-01">X-Yield Plans</h5>
                                         <button id="add-plan-btn" class="tf-button bg-Primary text-White f12-bold">
-                                            <span class="iconify" data-icon="mdi:plus"></span> Add New Plan
+                                            <i class="ph ph-plus"></i> Add New Plan
                                         </button>
                                     </div>
 
@@ -262,13 +262,12 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
 <div id="toast-container"></div>
 
 <!-- Scripts -->
-<script src="<?= txh_asset('../../assets/js/api.js') ?>" defer></script>
-<script src="<?= txh_asset('../../assets/js/jquery.min.js') ?>"></script>
-<script src="<?= txh_asset('../../assets/js/bootstrap.min.js') ?>"></script>
-<script src="<?= txh_asset('../../assets/js/bootstrap-select.min.js') ?>" defer></script>
-<script src="<?= txh_asset('../../assets/js/admin/admin.js') ?>" defer></script>
-<script src="<?= txh_asset('../../assets/js/admin/funds.js') ?>" defer></script>
+<script src="<?= anc_asset('../../assets/js/api.js') ?>" defer></script>
+<script src="<?= anc_asset('../../assets/js/jquery.min.js') ?>"></script>
+<script src="<?= anc_asset('../../assets/js/bootstrap.min.js') ?>"></script>
+<script src="<?= anc_asset('../../assets/js/bootstrap-select.min.js') ?>" defer></script>
+<script src="<?= anc_asset('../../assets/js/admin/admin.js') ?>" defer></script>
+<script src="<?= anc_asset('../../assets/js/admin/funds.js') ?>" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
 </body>
 </html>

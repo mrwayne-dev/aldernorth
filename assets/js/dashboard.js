@@ -1,6 +1,6 @@
 /**
  * ============================================================
- *  TitanXHoldings Dashboard.js (updated: fixes pending modal, toast, data loading, bank suggestions, polish items, icons)
+ *  Aldernorth Capital Dashboard.js (updated: fixes pending modal, toast, data loading, bank suggestions, polish items, icons)
  * ============================================================
  */
 ;(function ($) {
@@ -256,14 +256,14 @@
   /* ===================== Icon Helper for Activity ===================== */
   function getIconForType(type) {
     const t = (type || '').toLowerCase();
-    if (t.includes('deposit')) return 'mdi:arrow-down-bold-circle-outline';
-    if (t.includes('withdraw')) return 'mdi:arrow-up-bold-circle-outline';
-    if (t.includes('donation')) return 'mdi:hand-heart-outline';
-    if (t.includes('investment')) return 'mdi:chart-line';
-    if (t.includes('holdlock')) return 'mdi:lock-outline';
-    if (t.includes('infrastructure')) return 'mdi:home-city-outline';
-    if (t.includes('maintenance')) return 'mdi:tools';
-    return 'mdi:wallet-outline';
+    if (t.includes('deposit')) return 'ph-arrow-circle-down';
+    if (t.includes('withdraw')) return 'ph-arrow-circle-up';
+    if (t.includes('donation')) return 'ph-hand-heart';
+    if (t.includes('investment')) return 'ph-chart-line';
+    if (t.includes('holdlock')) return 'ph-lock';
+    if (t.includes('infrastructure')) return 'ph-buildings';
+    if (t.includes('maintenance')) return 'ph-wrench';
+    return 'ph-wallet';
   }
   // Determine color class for transaction amounts
 function getAmountClass(type) {
@@ -287,15 +287,15 @@ function getAmountClass(type) {
     }
 
     // Determine the icon based on the type
-    let icon = 'mdi:information-outline'; // Default icon
-    if (type === 'success') icon = 'mdi:check-circle-outline';
-    if (type === 'error') icon = 'mdi:alert-circle-outline';
-    if (type === 'warning') icon = 'mdi:alert-outline';
+    let icon = 'ph-info'; // Default icon
+    if (type === 'success') icon = 'ph-check-circle';
+    if (type === 'error') icon = 'ph-warning-circle';
+    if (type === 'warning') icon = 'ph-warning';
 
     // Create the toast element with the correct classes and structure
     const toastEl = $(`
       <div class="toast toast-${type}">
-        <span class="iconify" data-icon="${icon}" data-width="22" data-height="22"></span>
+        <i class="ph ${icon}" style="font-size:22px"></i>
         <div class="toast-message">${message}</div>
       </div>
     `);
@@ -394,7 +394,7 @@ var loadDashboardData = async function () {
       if (activity.length === 0) {
         list.append(`
           <li class="wallet-activity-empty">
-            <span class="iconify" data-icon="mdi:swap-horizontal" data-width="28" data-height="28"></span>
+            <i class="ph ph-arrows-left-right" style="font-size:28px"></i>
             <div class="f14-bold text-Primary">No activity yet</div>
             <div class="f12-regular text-Gray">Your deposits, withdrawals and payouts will appear here.</div>
           </li>`);
@@ -416,7 +416,7 @@ var loadDashboardData = async function () {
           <li class="wallet-item ${colorClass}">
             <div class="wallet-item-left">
               <div class="wallet-item-icon">
-                <span class="iconify" data-icon="${iconName}" data-width="20" data-height="20"></span>
+                <i class="ph ${iconName}" style="font-size:20px"></i>
               </div>
               <div>
                 <div class="wallet-item-title f14-regular">${tx.type}</div>
@@ -1092,7 +1092,7 @@ function bindPendingConfirmPaid() {
    Pass null to show the empty/placeholder state.
    data = { name, roi, roiLabel, risk, meta:[[k,v],...], summary }
    ========================================================= */
-window.txhRenderPlanPanel = function (data) {
+window.ancRenderPlanPanel = function (data) {
   const empty = document.getElementById('pdp-empty');
   const content = document.getElementById('pdp-content');
   if (!content) return; // panel not on this page

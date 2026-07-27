@@ -1,6 +1,6 @@
 /**
  * ============================================================
- *  TitanXHoldings — Transaction.js
+ *  Aldernorth Capital — Transaction.js
  *  Handles loading, searching, filtering, pagination & export
  * ============================================================
  */

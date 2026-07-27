@@ -21,11 +21,11 @@ $user_role = $_SESSION['role'] ?? 'user';
 
 ?>
 <?php
-  $page_title = "Wallet | TitanXHoldings";
+  $page_title = "Wallet | Aldernorth Capital";
   include __DIR__ . "/_partials/head.php";
 ?>
 
-<body class="counter-scroll txh-dash">
+<body class="counter-scroll anc-dash">
 
     <!-- #wrapper -->
     <div id="wrapper">
@@ -62,18 +62,18 @@ $user_role = $_SESSION['role'] ?? 'user';
                                             <div class="wallet-card wallet-main wallet-hero">
                                                 <div class="wallet-hero-top">
                                                     <div class="title-box flex items-center gap-2">
-                                                        <span class="iconify" data-icon="mdi:wallet"></span>
+                                                        <i class="ph ph-wallet"></i>
                                                         <span class="f12-medium text-White">Total Balance (USD)</span>
                                                     </div>
                                                     <span class="box-status bg-Green f12-medium flex items-center gap-2">
-                                                        <span class="iconify" data-icon="mdi:shield-check"></span> Active
+                                                        <i class="ph ph-shield-check"></i> Active
                                                     </span>
                                                 </div>
 
                                                 <div class="wallet-hero-balance">
                                                     <h2 class="counter text-White">$<span id="total-balance">0.00</span></h2>
                                                     <div class="wallet-hero-change f14-regular">
-                                                        <span class="iconify" data-icon="mdi:trending-up"></span>
+                                                        <i class="ph ph-trend-up"></i>
                                                         +$<span id="total-earnings">0.00</span> earned to date
                                                     </div>
                                                 </div>
@@ -100,19 +100,19 @@ $user_role = $_SESSION['role'] ?? 'user';
                                                 <ul class="wallet-stat-list">
                                                     <li>
                                                         <span class="wallet-stat-label f14-regular text-Gray">
-                                                            <span class="iconify" data-icon="mdi:arrow-down-bold"></span> Total deposited
+                                                            <i class="ph ph-arrow-down"></i> Total deposited
                                                         </span>
                                                         <span class="f14-bold text-Primary">$<span id="total-deposited">0.00</span></span>
                                                     </li>
                                                     <li>
                                                         <span class="wallet-stat-label f14-regular text-Gray">
-                                                            <span class="iconify" data-icon="mdi:arrow-up-bold"></span> Total withdrawn
+                                                            <i class="ph ph-arrow-up"></i> Total withdrawn
                                                         </span>
                                                         <span class="f14-bold text-Primary">$<span id="total-withdrawn">0.00</span></span>
                                                     </li>
                                                     <li>
                                                         <span class="wallet-stat-label f14-regular text-Gray">
-                                                            <span class="iconify" data-icon="mdi:trending-up"></span> Total earnings
+                                                            <i class="ph ph-trend-up"></i> Total earnings
                                                         </span>
                                                         <span class="f14-bold text-Green">$<span id="wallet-total-earnings">0.00</span></span>
                                                     </li>
@@ -130,52 +130,52 @@ $user_role = $_SESSION['role'] ?? 'user';
                                                 <div class="title mb-16 flex justify-between items-center">
                                                     <div class="label-01 text-Primary">Your portfolio</div>
                                                     <a href="/dashboard.investment" class="view-all f12-regular text-Primary">
-                                                        Manage <span class="iconify ml-2" data-icon="mdi:chevron-right"></span>
+                                                        Manage <i class="ph ph-caret-right ml-2"></i>
                                                     </a>
                                                 </div>
                                                 <ul class="wallet-alloc-list">
                                                     <li class="wallet-alloc-item">
                                                         <a href="/dashboard.investment">
-                                                            <span class="wallet-alloc-icon"><span class="iconify" data-icon="mdi:chart-timeline-variant"></span></span>
+                                                            <span class="wallet-alloc-icon"><i class="ph ph-chart-line-up"></i></span>
                                                             <span class="wallet-alloc-meta">
                                                                 <span class="f14-bold text-Primary">X-Yield</span>
                                                                 <span class="f12-regular text-Gray">Fixed-duration plans</span>
                                                             </span>
                                                             <span class="wallet-alloc-value f14-bold text-Primary">$<span id="total-investments">0.00</span></span>
-                                                            <span class="iconify wallet-alloc-arrow" data-icon="mdi:chevron-right"></span>
+                                                            <i class="ph ph-caret-right wallet-alloc-arrow"></i>
                                                         </a>
                                                     </li>
                                                     <li class="wallet-alloc-item">
                                                         <a href="/dashboard.xlock">
-                                                            <span class="wallet-alloc-icon"><span class="iconify" data-icon="mdi:lock-outline"></span></span>
+                                                            <span class="wallet-alloc-icon"><i class="ph ph-lock"></i></span>
                                                             <span class="wallet-alloc-meta">
                                                                 <span class="f14-bold text-Primary">X-Lock</span>
                                                                 <span class="f12-regular text-Gray">Fixed-term savings</span>
                                                             </span>
                                                             <span class="wallet-alloc-value f14-bold text-Primary">$<span id="holdlock-savings">0.00</span></span>
-                                                            <span class="iconify wallet-alloc-arrow" data-icon="mdi:chevron-right"></span>
+                                                            <i class="ph ph-caret-right wallet-alloc-arrow"></i>
                                                         </a>
                                                     </li>
                                                     <li class="wallet-alloc-item">
                                                         <a href="/dashboard.xweekly">
-                                                            <span class="wallet-alloc-icon"><span class="iconify" data-icon="mdi:calendar-refresh-outline"></span></span>
+                                                            <span class="wallet-alloc-icon"><i class="ph ph-calendar-check"></i></span>
                                                             <span class="wallet-alloc-meta">
                                                                 <span class="f14-bold text-Primary">X-Weekly</span>
                                                                 <span class="f12-regular text-Gray">Automated weekly investing</span>
                                                             </span>
                                                             <span class="wallet-alloc-value f14-bold text-Primary">$<span id="xweekly-invested">0.00</span></span>
-                                                            <span class="iconify wallet-alloc-arrow" data-icon="mdi:chevron-right"></span>
+                                                            <i class="ph ph-caret-right wallet-alloc-arrow"></i>
                                                         </a>
                                                     </li>
                                                     <li class="wallet-alloc-item">
                                                         <a href="/dashboard.xshares">
-                                                            <span class="wallet-alloc-icon"><span class="iconify" data-icon="mdi:chart-pie-outline"></span></span>
+                                                            <span class="wallet-alloc-icon"><i class="ph ph-chart-pie"></i></span>
                                                             <span class="wallet-alloc-meta">
                                                                 <span class="f14-bold text-Primary">X-Shares</span>
                                                                 <span class="f12-regular text-Gray">Fractional equity</span>
                                                             </span>
                                                             <span class="wallet-alloc-value f14-bold text-Primary">$<span id="xshares-invested">0.00</span></span>
-                                                            <span class="iconify wallet-alloc-arrow" data-icon="mdi:chevron-right"></span>
+                                                            <i class="ph ph-caret-right wallet-alloc-arrow"></i>
                                                         </a>
                                                     </li>
                                                 </ul>
@@ -192,7 +192,7 @@ $user_role = $_SESSION['role'] ?? 'user';
                                             <div class="wg-box deposit-form">
                                                 <div class="title mb-16 flex justify-between items-center">
                                                     <div class="label-01 text-Primary flex items-center gap-2">
-                                                        <span class="iconify" data-icon="mdi:arrow-down-bold" style="color: var(--Green);"></span>
+                                                        <i class="ph ph-arrow-down" style="color: var(--Green);"></i>
                                                         Deposit Funds
                                                     </div>
                                                 </div>
@@ -224,7 +224,7 @@ $user_role = $_SESSION['role'] ?? 'user';
                                             <div class="wg-box withdraw-form">
                                                 <div class="title mb-16 flex justify-between items-center">
                                                     <div class="label-01 text-Primary flex items-center gap-2">
-                                                        <span class="iconify" data-icon="mdi:arrow-up-bold" style="color: var(--Primary);"></span>
+                                                        <i class="ph ph-arrow-up" style="color: var(--Primary);"></i>
                                                         Withdraw Funds
                                                     </div>
                                                 </div>
@@ -265,7 +265,7 @@ $user_role = $_SESSION['role'] ?? 'user';
                                                     <div class="view-all">
                                                         <a href="/dashboard.transactions" class="f12-regular text-Primary">
                                                             View All
-                                                            <span class="iconify ml-2" data-icon="mdi:chevron-right"></span>
+                                                            <i class="ph ph-caret-right ml-2"></i>
                                                         </a>
                                                     </div>
                                                 </div>
@@ -472,7 +472,7 @@ $user_role = $_SESSION['role'] ?? 'user';
                             <input type="text" id="pending-deposit-address" readonly />
                             <button type="button" class="copy-btn" data-target="pending-deposit-address" aria-label="Copy address"
                                     style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer;">
-                                <span class="iconify" data-icon="mdi:content-copy" data-width="20" data-height="20" style="color: var(--Primary);"></span>
+                                <i class="ph ph-copy" style="font-size:20px; color: var(--Primary);"></i>
                             </button>
                         </div>
                     </div>
@@ -489,20 +489,19 @@ $user_role = $_SESSION['role'] ?? 'user';
 
 
 <!-- core libs: jquery then bootstrap -->
-<script src="<?= txh_asset('../../assets/js/jquery.min.js') ?>"></script>
-<script src="<?= txh_asset('../../assets/js/bootstrap.min.js') ?>"></script>
+<script src="<?= anc_asset('../../assets/js/jquery.min.js') ?>"></script>
+<script src="<?= anc_asset('../../assets/js/bootstrap.min.js') ?>"></script>
 
 <!-- app/network layer (deferred) -->
-<script src="<?= txh_asset('../../assets/js/api.js') ?>" defer></script>
+<script src="<?= anc_asset('../../assets/js/api.js') ?>" defer></script>
 
 <!-- plugins (deferred if they support it) -->
-<script src="<?= txh_asset('../../assets/js/countto.js') ?>" defer></script>
-<script src="<?= txh_asset('../../assets/js/bootstrap-select.min.js') ?>" defer></script>
+<script src="<?= anc_asset('../../assets/js/countto.js') ?>" defer></script>
+<script src="<?= anc_asset('../../assets/js/bootstrap-select.min.js') ?>" defer></script>
 
 <!-- main dashboard behaviour (deferred so it runs after DOM is parsed and after api.js) -->
-<script src="<?= txh_asset('../../assets/js/dashboard.js') ?>" defer></script>
+<script src="<?= anc_asset('../../assets/js/dashboard.js') ?>" defer></script>
 
     <!-- Iconify CDN -->
-    <script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
 </body>
 </html>

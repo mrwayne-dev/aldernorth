@@ -18,10 +18,10 @@ $user_email = $_SESSION['email'] ?? null;
 $user_role = $_SESSION['role'] ?? 'user';
 ?>
 <?php
-  $page_title = "Dashboard | TitanXHoldings";
+  $page_title = "Dashboard | Aldernorth Capital";
   include __DIR__ . "/_partials/head.php";
 ?>
-<body class="counter-scroll txh-dash">
+<body class="counter-scroll anc-dash">
     <!-- #wrapper -->
     <div id="wrapper">
         <!-- #page -->
@@ -59,7 +59,7 @@ $user_role = $_SESSION['role'] ?? 'user';
     <div class="section-header flex justify-between items-center mb-16">
       <h6 class="label-01">Wallet Overview</h6>
       <a href="#" class="f14-regular flex items-center gap8 text-Primary" onclick="refreshDashboard()">
-        <span class="iconify" data-icon="mdi:refresh"></span> Refresh Balances
+        <i class="ph ph-arrows-clockwise"></i> Refresh Balances
       </a>
     </div>
 
@@ -70,7 +70,7 @@ $user_role = $_SESSION['role'] ?? 'user';
         <div class="wallet-card-header">Main Wallet</div>
         <div class="wallet-card-balance">$<span id="total-balance">0.00</span></div>
         <div class="wallet-card-footer">
-          TXH-MAIN-<?= str_pad($user_id, 4, '0', STR_PAD_LEFT) ?>
+          ANC-MAIN-<?= str_pad($user_id, 4, '0', STR_PAD_LEFT) ?>
         </div>
       </div>
 
@@ -79,7 +79,7 @@ $user_role = $_SESSION['role'] ?? 'user';
         <div class="wallet-card-header">Total Earnings</div>
         <div class="wallet-card-balance">$<span id="total-earnings">0.00</span></div>
         <div class="wallet-card-footer">
-          TXH-ERN-<?= str_pad($user_id, 4, '0', STR_PAD_LEFT) ?>
+          ANC-ERN-<?= str_pad($user_id, 4, '0', STR_PAD_LEFT) ?>
         </div>
       </div>
 
@@ -88,7 +88,7 @@ $user_role = $_SESSION['role'] ?? 'user';
         <div class="wallet-card-header">X-Yield</div>
         <div class="wallet-card-balance">$<span id="total-investments">0.00</span></div>
         <div class="wallet-card-footer">
-          TXH-INV-<?= str_pad($user_id, 4, '0', STR_PAD_LEFT) ?>
+          ANC-INV-<?= str_pad($user_id, 4, '0', STR_PAD_LEFT) ?>
         </div>
       </div>
 
@@ -97,7 +97,7 @@ $user_role = $_SESSION['role'] ?? 'user';
         <div class="wallet-card-header">X-Lock Savings</div>
         <div class="wallet-card-balance">$<span id="total-holdlock">0.00</span></div>
         <div class="wallet-card-footer">
-          TXH-HLD-<?= str_pad($user_id, 4, '0', STR_PAD_LEFT) ?>
+          ANC-HLD-<?= str_pad($user_id, 4, '0', STR_PAD_LEFT) ?>
         </div>
       </div>
 
@@ -131,8 +131,8 @@ $user_role = $_SESSION['role'] ?? 'user';
             <strong id="card-valid">08/26</strong>
           </li>
           <li>
-            <span>TXH ID</span>
-            <strong id="card-id">TXH-<?= str_pad($user_id, 4, '0', STR_PAD_LEFT) ?>-9011-3298</strong>
+            <span>ANC ID</span>
+            <strong id="card-id">ANC-<?= str_pad($user_id, 4, '0', STR_PAD_LEFT) ?>-9011-3298</strong>
             </li>
           <li>
             <span>Card Holder</span>
@@ -140,7 +140,7 @@ $user_role = $_SESSION['role'] ?? 'user';
           </li>
           <li>
             <span>Bank Name</span>
-            <strong id="card-bank">TitanXHoldings Bank</strong>
+            <strong id="card-bank">Aldernorth Capital Bank</strong>
           </li>
         </ul>
       </div>
@@ -250,18 +250,17 @@ $user_role = $_SESSION['role'] ?? 'user';
     <!-- Toast Notifications -->
     <div id="toast-container"></div>
     
-<script src="<?= txh_asset('../../assets/js/api.js') ?>" defer></script>
-<script src="<?= txh_asset('../../assets/js/jquery.min.js') ?>"></script>
-<script src="<?= txh_asset('../../assets/js/bootstrap.min.js') ?>"></script>
-<script src="<?= txh_asset('../../assets/js/countto.js') ?>" defer></script>
-<script src="<?= txh_asset('../../assets/js/bootstrap-select.min.js') ?>" defer></script>
-<script src="<?= txh_asset('../../assets/js/dashboard.js') ?>" defer></script>
+<script src="<?= anc_asset('../../assets/js/api.js') ?>" defer></script>
+<script src="<?= anc_asset('../../assets/js/jquery.min.js') ?>"></script>
+<script src="<?= anc_asset('../../assets/js/bootstrap.min.js') ?>"></script>
+<script src="<?= anc_asset('../../assets/js/countto.js') ?>" defer></script>
+<script src="<?= anc_asset('../../assets/js/bootstrap-select.min.js') ?>" defer></script>
+<script src="<?= anc_asset('../../assets/js/dashboard.js') ?>" defer></script>
 
 <!-- Chart.js CDN -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <!-- Iconify CDN -->
-<script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
 
 <script>
 async function renderCardUsageChart() {

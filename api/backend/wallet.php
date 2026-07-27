@@ -3,7 +3,7 @@ ini_set('display_errors', 0);
 error_reporting(0);
     // ===============================================
     // FILE: /api/backend/wallet.php
-    // PURPOSE: Central wallet controller for TitanXHoldings
+    // PURPOSE: Central wallet controller for Aldernorth Capital
     // DESCRIPTION:
     // Handles all wallet actions — deposits, withdrawals,
     // confirmations, and pending data retrieval.
@@ -123,7 +123,7 @@ error_reporting(0);
                     jsonResponse('error', 'Invalid deposit details provided.');
                 }
 
-                $reference = generateReference('TXH-DEP');
+                $reference = generateReference('ANC-DEP');
                 $timestamp = date('Y-m-d H:i:s');
                 $details = json_encode(['initiated_at' => $timestamp, 'method' => $method]);
 
@@ -237,7 +237,7 @@ error_reporting(0);
                 $wallet = getUserWallet($pdo, $user_id);
                 if (!$wallet || $wallet['balance'] < $amount) jsonResponse('error', 'Insufficient wallet balance.');
 
-                $reference = generateReference('TXH-WD');
+                $reference = generateReference('ANC-WD');
                 $detailsJson = json_encode([
                     'method' => $method,
                     'withdraw_details' => $details,

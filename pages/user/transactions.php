@@ -22,11 +22,11 @@ $user_role = $_SESSION['role'] ?? 'user';
 $transactions = [];
 ?>
 <?php
-  $page_title = "Transactions | TitanXHoldings";
+  $page_title = "Transactions | Aldernorth Capital";
   include __DIR__ . "/_partials/head.php";
 ?>
 
-<body class="counter-scroll txh-dash">
+<body class="counter-scroll anc-dash">
 <div id="wrapper">
     <div id="page">
         <div class="layout-wrap loader-off">
@@ -75,8 +75,8 @@ $transactions = [];
                                 </div>
 
                                 <!-- Transaction Table (real table, horizontal scroll on mobile) -->
-                                <div class="txh-scroll-table mt-3">
-                                    <table class="txh-table">
+                                <div class="anc-scroll-table mt-3">
+                                    <table class="anc-table">
                                         <thead>
                                             <tr>
                                                 <th>Transaction ID</th>
@@ -103,11 +103,10 @@ $transactions = [];
     </div>
 </div>
 
-<script src="<?= txh_asset('../../assets/js/api.js') ?>"></script> <!-- Or move after jQuery if dependent -->
-<script src="<?= txh_asset('../../assets/js/jquery.min.js') ?>"></script>
-<script src="<?= txh_asset('../../assets/js/bootstrap.min.js') ?>"></script>
-<script src="<?= txh_asset('../../assets/js/dashboard.js') ?>" defer></script>
-<script src="<?= txh_asset('../../assets/js/transaction.js') ?>" defer></script>
-<script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
+<script src="<?= anc_asset('../../assets/js/api.js') ?>"></script> <!-- Or move after jQuery if dependent -->
+<script src="<?= anc_asset('../../assets/js/jquery.min.js') ?>"></script>
+<script src="<?= anc_asset('../../assets/js/bootstrap.min.js') ?>"></script>
+<script src="<?= anc_asset('../../assets/js/dashboard.js') ?>" defer></script>
+<script src="<?= anc_asset('../../assets/js/transaction.js') ?>" defer></script>
 </body>
 </html>

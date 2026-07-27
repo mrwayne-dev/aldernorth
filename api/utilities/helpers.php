@@ -1,6 +1,6 @@
 <?php
 // ========================================
-// HELPER FUNCTIONS — TitanXHoldings
+// HELPER FUNCTIONS — Aldernorth Capital
 // ========================================
 
 /**

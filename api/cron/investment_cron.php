@@ -1,22 +1,27 @@
 <?php
-// Restrict execution to CLI or localhost — prevents unauthenticated web triggering
-// of financial batch processing (payouts/debits). Mirrors xgrid_cron.php.
+// ============================================================
+// FILE: /api/cron/investment_cron.php
+// PURPOSE: Credits scheduled ROI payouts and releases principal
+//          at maturity for Aldernorth Capital investments.
+//
+// MODEL: each investment carries a cadence (weekly | monthly), an
+// roi_percent PER PERIOD, and a next_payout_date. Every run:
+//   1. pays every period that is due (catching up if the cron was
+//      down for several periods),
+//   2. releases the principal once the maturity date has passed.
+//
+// SCHEDULE: run daily. Running it more than once a day is safe —
+// nothing is due until next_payout_date arrives.
+//   0 2 * * *  php /path/to/api/cron/investment_cron.php
+// ============================================================
+
+// Restrict execution to CLI or localhost — prevents unauthenticated web
+// triggering of financial batch processing (payouts).
 if (php_sapi_name() !== 'cli' && !in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1'], true)) {
     http_response_code(403);
     exit("Access Denied\n");
 }
 
-file_put_contents(__DIR__ . '/../../logs/investment_cron.log', "[" . date('Y-m-d H:i:s') . "] Cron started\n", FILE_APPEND);
-// ============================================================
-// FILE: /api/cron/investment_cron.php
-// PURPOSE: Weekly automated investment ROI updater & maturities handler
-// SCHEDULE: Run weekly (or daily) via CRON
-// AUTHOR: TitanXHoldings Core
-// ============================================================
-
-// ------------------------------------------------------------
-// Initialization
-// ------------------------------------------------------------
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/constants.php';
 require_once __DIR__ . '/../../config/env.php';
@@ -24,163 +29,212 @@ require_once __DIR__ . '/../backend/email.php';
 
 date_default_timezone_set('UTC');
 
+$logFile = __DIR__ . '/../../logs/investment_cron.log';
+function cronLog(string $msg): void {
+    global $logFile;
+    $line = '[' . date('Y-m-d H:i:s') . '] ' . $msg . "\n";
+    @file_put_contents($logFile, $line, FILE_APPEND);
+    if (php_sapi_name() === 'cli') echo $line;
+}
+
+// --- Cadence helpers: must stay identical to api/backend/invest.php ---
+function cadenceDays(string $cadence): int {
+    return $cadence === 'monthly' ? 30 : 7;
+}
+function nextPayoutDate(string $cadence, string $from): string {
+    return $cadence === 'monthly'
+        ? date('Y-m-d', strtotime($from . ' +1 month'))
+        : date('Y-m-d', strtotime($from . ' +7 days'));
+}
+function generateReference(string $prefix): string {
+    return strtoupper($prefix . '-' . uniqid() . '-' . rand(1000, 9999));
+}
+
+cronLog('Cron started');
+
 try {
     $pdo = getPDO();
 } catch (Exception $e) {
-    error_log("Investment Cron — DB connection failed: " . $e->getMessage());
+    cronLog('DB connection failed: ' . $e->getMessage());
     exit("DB connection failed.\n");
 }
 
 $today = date('Y-m-d');
-$now = date('Y-m-d H:i:s');
-
-$log = [];
-$processedCount = 0;
-$maturedCount = 0;
+$paidPeriods = 0;
+$releasedCount = 0;
+$errorCount = 0;
 
 // ------------------------------------------------------------
-// STEP 1: Fetch all active investments
+// STEP 1 — pay every period that is due
 // ------------------------------------------------------------
 $stmt = $pdo->query("
-    SELECT inv.id, inv.user_id, inv.amount, inv.roi_percent, inv.duration_days, inv.status, 
-           inv.roi_earned, inv.maturity_date, inv.plan_name, inv.created_at,
-           u.email, u.full_name AS user_name
+    SELECT inv.id, inv.user_id, inv.plan_name, inv.cadence, inv.amount, inv.roi_percent,
+           inv.payouts_total, inv.payouts_made, inv.next_payout_date, inv.maturity_date,
+           inv.roi_earned, u.email, u.full_name AS user_name
     FROM investments inv
     JOIN users u ON u.id = inv.user_id
-    WHERE inv.status = 'active'
+    WHERE inv.status = 'active' AND inv.next_payout_date <= CURDATE()
 ");
-$investments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$due = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-if (!$investments) {
-    exit("No active investments found.\n");
-}
+cronLog('Investments with a payout due: ' . count($due));
 
-// ------------------------------------------------------------
-// STEP 2: Loop through investments and process weekly ROI
-// ------------------------------------------------------------
-foreach ($investments as $inv) {
-    $user_id = (int)$inv['user_id'];
-    $investment_id = (int)$inv['id'];
-    $amount = (float)$inv['amount'];
-    $roi_percent = (float)$inv['roi_percent'];
-    $duration_days = (int)$inv['duration_days'];
-    $roi_earned = (float)$inv['roi_earned'];
-    $plan_name = $inv['plan_name'];
-    $user_email = $inv['email'];
-    $user_name = $inv['user_name'] ?? 'User';
-    $maturity_date = $inv['maturity_date'];
+foreach ($due as $inv) {
+    $inv_id     = (int) $inv['id'];
+    $user_id    = (int) $inv['user_id'];
+    $amount     = (float) $inv['amount'];
+    $roi_pct    = (float) $inv['roi_percent'];
+    $cadence    = $inv['cadence'];
+    $total      = (int) $inv['payouts_total'];
+    $made       = (int) $inv['payouts_made'];
+    $nextDate   = $inv['next_payout_date'];
+    $per_payout = round($amount * $roi_pct / 100, 2);
 
-    // Skip if already matured
-    if (strtotime($maturity_date) <= strtotime($today)) {
-        // Handle maturity completion
-        $maturedCount++;
-        $pdo->beginTransaction();
-        try {
-            // Calculate final ROI
-            $final_roi = round(($amount * $roi_percent / 100), 2);
-            $total_payout = $amount + $final_roi;
+    // Catch-up: if the cron missed runs, pay every period that has since
+    // come due — but never more than the plan's total payout count.
+    $periodsDue = 0;
+    $cursor     = $nextDate;
+    while ($cursor <= $today && ($made + $periodsDue) < $total) {
+        $periodsDue++;
+        $cursor = nextPayoutDate($cadence, $cursor);
+    }
 
-            // Update investment status
-            $pdo->prepare("UPDATE investments SET status='completed', roi_earned=? WHERE id=?")
-                ->execute([$final_roi, $investment_id]);
-
-            // Credit wallet
-            $pdo->prepare("UPDATE wallets SET balance = balance + ?, total_earnings = total_earnings + ? WHERE user_id = ?")
-                ->execute([$total_payout, $final_roi, $user_id]);
-
-            // Insert payout transaction
-            $ref = 'TXH-MATURE-' . strtoupper(uniqid());
-            $details = json_encode(['investment_id' => $investment_id, 'payout' => $total_payout]);
-            $pdo->prepare("INSERT INTO transactions (user_id, type, amount, reference, status, details, created_at) 
-                VALUES (?, 'investment', ?, ?, 'completed', ?, ?)")
-                ->execute([$user_id, $total_payout, $ref, $details, $now]);
-
-            $pdo->commit();
-
-            // Email notification
-            if (function_exists('sendEmail')) {
-                sendEmail([
-                    'to' => $user_email,
-                    'template' => 'investment_matured',
-                    'variables' => [
-                        'user_name' => $user_name,
-                        'plan_name' => $plan_name,
-                        'amount' => number_format($amount, 2),
-                        'roi_earned' => number_format($final_roi, 2),
-                        'total_payout' => number_format($total_payout, 2),
-                        'maturity_date' => date('M d, Y', strtotime($maturity_date))
-                    ]
-                ]);
-            }
-
-            $log[] = "Matured: Investment #$investment_id ($plan_name) for $user_email";
-        } catch (Exception $e) {
-            $pdo->rollBack();
-            $log[] = "Error finalizing investment #$investment_id: " . $e->getMessage();
-        }
+    if ($periodsDue < 1) {
+        // Already fully paid; STEP 2 releases the principal at maturity.
         continue;
     }
 
-    // ------------------------------------------------------------
-    // STEP 3: Calculate this week’s ROI increment
-    // ------------------------------------------------------------
-    $weekly_roi = round(($amount * $roi_percent / 100) / ($duration_days / 7), 2);
+    $payout = round($per_payout * $periodsDue, 2);
 
-    // Skip trivial earnings (less than 0.01)
-    if ($weekly_roi < 0.01) continue;
-
-    $pdo->beginTransaction();
     try {
-        // Update investment ROI
-        $pdo->prepare("UPDATE investments SET roi_earned = roi_earned + ? WHERE id = ?")
-            ->execute([$weekly_roi, $investment_id]);
+        $pdo->beginTransaction();
 
-        // Update wallet
-        $pdo->prepare("UPDATE wallets SET balance = balance + ?, total_earnings = total_earnings + ? WHERE user_id = ?")
-            ->execute([$weekly_roi, $weekly_roi, $user_id]);
+        $pdo->prepare("UPDATE investments
+                       SET payouts_made     = payouts_made + ?,
+                           roi_earned       = roi_earned + ?,
+                           next_payout_date = ?
+                       WHERE id = ? AND status = 'active'")
+            ->execute([$periodsDue, $payout, $cursor, $inv_id]);
 
-        // Insert transaction record
-        $ref = 'TXH-ROI-' . strtoupper(uniqid());
-        $details = json_encode(['investment_id' => $investment_id, 'weekly_roi' => $weekly_roi]);
-        $pdo->prepare("INSERT INTO transactions (user_id, type, amount, reference, status, details, created_at)
-            VALUES (?, 'investment', ?, ?, 'completed', ?, ?)")
-            ->execute([$user_id, $weekly_roi, $ref, $details, $now]);
+        $pdo->prepare("UPDATE wallets
+                       SET balance = balance + ?, total_earnings = total_earnings + ?
+                       WHERE user_id = ?")
+            ->execute([$payout, $payout, $user_id]);
+
+        $reference = generateReference('ANC-ROI');
+        $details = json_encode([
+            'investment_id' => $inv_id,
+            'plan_name'     => $inv['plan_name'],
+            'cadence'       => $cadence,
+            'periods_paid'  => $periodsDue,
+            'per_payout'    => $per_payout,
+        ]);
+        $pdo->prepare("INSERT INTO transactions (user_id, type, method, amount, reference, status, details, created_at)
+                       VALUES (?, 'roi_payout', 'system', ?, ?, 'completed', ?, ?)")
+            ->execute([$user_id, $payout, $reference, $details, date('Y-m-d H:i:s')]);
 
         $pdo->commit();
-        $processedCount++;
+        $paidPeriods += $periodsDue;
 
-        // Send weekly email (optional but nice UX)
-        if (function_exists('sendEmail')) {
+        cronLog(sprintf('Investment #%d (%s %s): paid %d period(s) = %.2f to user #%d',
+                        $inv_id, $inv['plan_name'], $cadence, $periodsDue, $payout, $user_id));
+
+        if (function_exists('sendEmail') && !empty($inv['email'])) {
             sendEmail([
-                'to' => $user_email,
-                'template' => 'weekly_investment_update',
+                'to' => $inv['email'],
+                'template' => 'investment_payout',
                 'variables' => [
-                    'user_name' => $user_name,
-                    'plan_name' => $plan_name,
-                    'weekly_roi' => number_format($weekly_roi, 2),
-                    'total_roi' => number_format($roi_earned + $weekly_roi, 2),
-                    'next_maturity' => date('M d, Y', strtotime($maturity_date))
+                    'user_name'     => $inv['user_name'] ?? 'Investor',
+                    'plan_name'     => $inv['plan_name'],
+                    'amount'        => number_format($payout, 2),
+                    'cadence'       => $cadence,
+                    'payouts_made'  => $made + $periodsDue,
+                    'payouts_total' => $total,
+                    'next_payout'   => date('M d, Y', strtotime($cursor)),
+                    'reference'     => $reference,
                 ]
             ]);
         }
-
-        $log[] = "Updated weekly ROI for investment #$investment_id ($plan_name) — +$" . number_format($weekly_roi, 2);
-
     } catch (Exception $e) {
-        $pdo->rollBack();
-        $log[] = "Error processing investment #$investment_id: " . $e->getMessage();
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        $errorCount++;
+        cronLog("ERROR paying investment #$inv_id: " . $e->getMessage());
     }
 }
 
 // ------------------------------------------------------------
-// STEP 4: Log summary
+// STEP 2 — release principal on matured positions
 // ------------------------------------------------------------
-$summary = sprintf(
-    "[%s] Weekly ROI Update Complete — Processed: %d | Matured: %d\n",
-    date('Y-m-d H:i:s'),
-    $processedCount,
-    $maturedCount
-);
-file_put_contents(__DIR__ . '/../../logs/investment_cron.log', $summary . implode("\n", $log) . "\n\n", FILE_APPEND);
+$stmt = $pdo->query("
+    SELECT inv.id, inv.user_id, inv.plan_name, inv.amount, inv.roi_earned,
+           u.email, u.full_name AS user_name
+    FROM investments inv
+    JOIN users u ON u.id = inv.user_id
+    WHERE inv.status = 'active' AND inv.maturity_date <= CURDATE()
+");
+$matured = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-echo $summary;
+cronLog('Investments at maturity: ' . count($matured));
+
+foreach ($matured as $inv) {
+    $inv_id    = (int) $inv['id'];
+    $user_id   = (int) $inv['user_id'];
+    $principal = (float) $inv['amount'];
+
+    try {
+        $pdo->beginTransaction();
+
+        // Only the principal moves here — ROI was credited period by period
+        // in STEP 1, so adding it again would pay the member twice.
+        // The status guard also makes a concurrent run a no-op.
+        $upd = $pdo->prepare("UPDATE investments SET status = 'completed' WHERE id = ? AND status = 'active'");
+        $upd->execute([$inv_id]);
+        if ($upd->rowCount() === 0) {
+            $pdo->rollBack();
+            continue;
+        }
+
+        $pdo->prepare("UPDATE wallets SET balance = balance + ? WHERE user_id = ?")
+            ->execute([$principal, $user_id]);
+
+        $reference = generateReference('ANC-INVREL');
+        $details = json_encode([
+            'investment_id'  => $inv_id,
+            'plan_name'      => $inv['plan_name'],
+            'principal'      => $principal,
+            'roi_paid_total' => (float) $inv['roi_earned'],
+        ]);
+        $pdo->prepare("INSERT INTO transactions (user_id, type, method, amount, reference, status, details, created_at)
+                       VALUES (?, 'investment_release', 'system', ?, ?, 'completed', ?, ?)")
+            ->execute([$user_id, $principal, $reference, $details, date('Y-m-d H:i:s')]);
+
+        $pdo->commit();
+        $releasedCount++;
+
+        cronLog(sprintf('Investment #%d (%s): released principal %.2f to user #%d',
+                        $inv_id, $inv['plan_name'], $principal, $user_id));
+
+        if (function_exists('sendEmail') && !empty($inv['email'])) {
+            sendEmail([
+                'to' => $inv['email'],
+                'template' => 'investment_matured',
+                'variables' => [
+                    'user_name'  => $inv['user_name'] ?? 'Investor',
+                    'plan_name'  => $inv['plan_name'],
+                    'principal'  => number_format($principal, 2),
+                    'roi_earned' => number_format((float) $inv['roi_earned'], 2),
+                    'payout'     => number_format($principal + (float) $inv['roi_earned'], 2),
+                    'reference'  => $reference,
+                ]
+            ]);
+        }
+    } catch (Exception $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        $errorCount++;
+        cronLog("ERROR releasing investment #$inv_id: " . $e->getMessage());
+    }
+}
+
+cronLog(sprintf('Cron finished — %d period(s) paid, %d position(s) released, %d error(s)',
+                $paidPeriods, $releasedCount, $errorCount));
+exit($errorCount > 0 ? 1 : 0);

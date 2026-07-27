@@ -1,5 +1,5 @@
 // =============================
-// main.js — TitanXHoldings
+// main.js — Aldernorth Capital
 // =============================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
       {
         image: "url('../../assets/images/bgimage2.webp')",
         title: "Healthcare, Connected and Simplified.",
-        subtitle: "TitanXHoldings brings patients, doctors, and pharmacies together in one trusted digital platform. From diagnostics to payments, we make care clear, secure, and accessible."
+        subtitle: "Aldernorth Capital brings patients, doctors, and pharmacies together in one trusted digital platform. From diagnostics to payments, we make care clear, secure, and accessible."
       },
       {
         image: "url('../../assets/images/bgimage.webp')",
@@ -227,7 +227,9 @@ document.addEventListener('DOMContentLoaded', () => {
     animatedElements.forEach(el => el.classList.add('appear'));
   }
 
-  const statNumbers = document.querySelectorAll('.stat-number');
+  // Target any element with a data-count (the "Our Numbers" spans use data-count
+  // without the .stat-number class, so the old selector matched nothing).
+  const statNumbers = document.querySelectorAll('[data-count]');
   function animateCountUp(el, target, duration = 2000) {
     let startTime = null;
     const step = (timestamp) => {
@@ -281,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
     automate: {
       title: "Automate",
       subtitle: "Streamline repetitive healthcare tasks with AI precision",
-      desc: "TitanXHoldings automates appointment reminders, prescription renewals, claims processing, and medical record updates — freeing providers to focus on patients, not paperwork. Each workflow adapts to your team’s needs and improves over time.",
+      desc: "Aldernorth Capital automates appointment reminders, prescription renewals, claims processing, and medical record updates — freeing providers to focus on patients, not paperwork. Each workflow adapts to your team’s needs and improves over time.",
       image: "../../assets/images/workflow-automate.png"
     },
     enrich: {
@@ -358,7 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
     '/solutions/patients': {
       title: "AI & Patient Tools",
       description: `
-        TitanXHoldings puts advanced healthcare directly in your hands. 
+        Aldernorth Capital puts advanced healthcare directly in your hands. 
         Our AI-driven platform helps patients identify potential health concerns early, 
         track ongoing symptoms, and access remote consultations — all in a secure, easy-to-use space.
       `
@@ -366,7 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
     '/charity': {
       title: "Charity & Donations",
       description: `
-        Every act of care deserves to make an impact. Through TitanXHoldings’s verified donation system, 
+        Every act of care deserves to make an impact. Through Aldernorth Capital’s verified donation system, 
         your giving directly supports patients, clinics, and emergency programs — 
         without intermediaries or hidden fees.
       `
@@ -374,7 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
     '/investment': {
       title: "X-Yield Pools",
       description: `
-        TitanXHoldings transforms healthcare investment into measurable impact.  
+        Aldernorth Capital transforms healthcare investment into measurable impact.  
         Our tokenized investment pools allow individuals and institutions to fund verified medical innovations 
         and infrastructure — while earning transparent ROI.
       `
@@ -382,7 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
     '/trust-fund': {
       title: "Trust Funds",
       description: `
-        TitanXHoldings’s Trust Funds help families, patients, and employers plan ahead for health.  
+        Aldernorth Capital’s Trust Funds help families, patients, and employers plan ahead for health.  
         Secure, automated, and compliant — healthcare peace of mind.
       `
     },

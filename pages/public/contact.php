@@ -1,11 +1,11 @@
 <?php
-$page_title = 'Contact | TitanXHoldings';
-$page_description = 'Get in touch with TitanXHoldings — London-based FCA-authorised investment platform. Open an account, ask about regulatory permissions, or discuss a partnership.';
+$page_title = 'Contact | Aldernorth Capital';
+$page_description = 'Get in touch with Aldernorth Capital — London-based FCA-authorised investment platform. Open an account, ask about regulatory permissions, or discuss a partnership.';
 $page_path = '/contact';
 $nav_variant = 'solid';
 include __DIR__ . '/_partials/head.php';
 ?>
-<body class="txh-redesign">
+<body class="anc-redesign">
 
 <?php include __DIR__ . '/_partials/navbar.php'; ?>
 
@@ -99,7 +99,7 @@ include __DIR__ . '/_partials/head.php';
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6h16v12H4z"/><path d="M4 6l8 7 8-7"/></svg>
             </span>
             <div>
-              <p style="font-weight: var(--fw-medium); color: var(--color-ink-primary);">support@titanxholdings.com</p>
+              <p style="font-weight: var(--fw-medium); color: var(--color-ink-primary);">support@aldernorthcapital.com</p>
               <p style="font-size: var(--text-sm); color: var(--color-ink-muted);">General enquiries &amp; member support</p>
             </div>
           </li>
@@ -132,6 +132,6 @@ include __DIR__ . '/_partials/head.php';
 
 <?php include __DIR__ . '/_partials/footer.php'; ?>
 
-<script src="<?= txh_asset('/assets/js/main.js') ?>" defer></script>
+<script src="<?= anc_asset('/assets/js/main.js') ?>" defer></script>
 </body>
 </html>

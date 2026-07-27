@@ -11,8 +11,8 @@ if (!isset($plan_product)) return;
 
 require_once __DIR__ . '/../../../config/database.php';
 
-if (!function_exists('txh_fmt_term')) {
-    function txh_fmt_term($days) {
+if (!function_exists('anc_fmt_term')) {
+    function anc_fmt_term($days) {
         $days = (int) $days;
         if ($days <= 0)            return 'Open-ended';
         if ($days % 365 === 0)     { $y = $days / 365; return $y . ' year'  . ($y > 1 ? 's' : ''); }
@@ -20,17 +20,17 @@ if (!function_exists('txh_fmt_term')) {
         return $days . ' days';
     }
 }
-if (!function_exists('txh_money')) {
-    function txh_money($n) { return '£' . number_format((float) $n, 0); }
+if (!function_exists('anc_money')) {
+    function anc_money($n) { return '£' . number_format((float) $n, 0); }
 }
-if (!function_exists('txh_pct')) {
-    function txh_pct($n) {
+if (!function_exists('anc_pct')) {
+    function anc_pct($n) {
         $s = rtrim(rtrim(number_format((float) $n, 2, '.', ''), '0'), '.');
         return $s . '%';
     }
 }
-if (!function_exists('txh_nice')) {
-    function txh_nice($s) { return ucwords(str_replace('_', ' ', (string) $s)); }
+if (!function_exists('anc_nice')) {
+    function anc_nice($s) { return ucwords(str_replace('_', ' ', (string) $s)); }
 }
 
 $__headings = [
@@ -56,7 +56,7 @@ try {
                                    FROM holdlock_plans ORDER BY min_amount ASC")->fetchAll(PDO::FETCH_ASSOC);
             foreach ($rows as $r) $__cards[] = [
                 'tier' => 'X-Lock', 'roi' => $r['roi_range'], 'name' => $r['name'],
-                'meta' => ['Term' => $r['lock_period_text'], 'Minimum' => txh_money($r['min_amount']), 'Payout' => txh_nice($r['payout'])],
+                'meta' => ['Term' => $r['lock_period_text'], 'Minimum' => anc_money($r['min_amount']), 'Payout' => anc_nice($r['payout'])],
                 'summary' => $r['summary'],
             ];
             break;
@@ -65,8 +65,8 @@ try {
             $rows = $__pdo->query("SELECT title, roi_percent, duration_days, min_amount, payout_option, summary, description
                                    FROM investment_plans WHERE status='active' ORDER BY min_amount ASC")->fetchAll(PDO::FETCH_ASSOC);
             foreach ($rows as $r) $__cards[] = [
-                'tier' => 'X-Yield', 'roi' => txh_pct($r['roi_percent']), 'name' => $r['title'],
-                'meta' => ['Term' => txh_fmt_term($r['duration_days']), 'Minimum' => txh_money($r['min_amount']), 'Payout' => txh_nice($r['payout_option'])],
+                'tier' => 'X-Yield', 'roi' => anc_pct($r['roi_percent']), 'name' => $r['title'],
+                'meta' => ['Term' => anc_fmt_term($r['duration_days']), 'Minimum' => anc_money($r['min_amount']), 'Payout' => anc_nice($r['payout_option'])],
                 'summary' => $r['summary'] ?: $r['description'],
             ];
             break;
@@ -75,8 +75,8 @@ try {
             $rows = $__pdo->query("SELECT plan_name, roi_percent, min_weekly, max_weekly, description
                                    FROM xweekly_plans WHERE status='active' ORDER BY min_weekly ASC")->fetchAll(PDO::FETCH_ASSOC);
             foreach ($rows as $r) $__cards[] = [
-                'tier' => 'X-Weekly', 'roi' => txh_pct($r['roi_percent']), 'name' => $r['plan_name'],
-                'meta' => ['Weekly' => txh_money($r['min_weekly']) . '–' . txh_money($r['max_weekly']), 'Frequency' => 'Every week'],
+                'tier' => 'X-Weekly', 'roi' => anc_pct($r['roi_percent']), 'name' => $r['plan_name'],
+                'meta' => ['Weekly' => anc_money($r['min_weekly']) . '–' . anc_money($r['max_weekly']), 'Frequency' => 'Every week'],
                 'summary' => $r['description'],
             ];
             break;
@@ -85,8 +85,8 @@ try {
             $rows = $__pdo->query("SELECT asset_name, ticker, roi_percent, payout_schedule, min_amount, description
                                    FROM xshares_assets WHERE status='active' ORDER BY min_amount ASC")->fetchAll(PDO::FETCH_ASSOC);
             foreach ($rows as $r) $__cards[] = [
-                'tier' => $r['ticker'], 'roi' => txh_pct($r['roi_percent']), 'name' => $r['asset_name'],
-                'meta' => ['Minimum' => txh_money($r['min_amount']), 'Payout' => txh_nice($r['payout_schedule'])],
+                'tier' => $r['ticker'], 'roi' => anc_pct($r['roi_percent']), 'name' => $r['asset_name'],
+                'meta' => ['Minimum' => anc_money($r['min_amount']), 'Payout' => anc_nice($r['payout_schedule'])],
                 'summary' => $r['description'],
             ];
             break;
@@ -95,8 +95,8 @@ try {
             $rows = $__pdo->query("SELECT name, roi_percent, duration_days, min_amount, payout_option, summary
                                    FROM infrastructure_plans ORDER BY min_amount ASC")->fetchAll(PDO::FETCH_ASSOC);
             foreach ($rows as $r) $__cards[] = [
-                'tier' => 'X-Grid', 'roi' => txh_pct($r['roi_percent']), 'name' => $r['name'],
-                'meta' => ['Term' => txh_fmt_term($r['duration_days']), 'Minimum' => txh_money($r['min_amount']), 'Payout' => txh_nice($r['payout_option'])],
+                'tier' => 'X-Grid', 'roi' => anc_pct($r['roi_percent']), 'name' => $r['name'],
+                'meta' => ['Term' => anc_fmt_term($r['duration_days']), 'Minimum' => anc_money($r['min_amount']), 'Payout' => anc_nice($r['payout_option'])],
                 'summary' => $r['summary'],
             ];
             break;
@@ -145,8 +145,8 @@ if (empty($__cards)) return;
                 <p class="plan-card__summary"><?= htmlspecialchars($c['summary']) ?></p>
               <?php endif; ?>
               <div class="plan-card__price">
-                <span class="plan-card__price-member"><?= txh_money($c['member']) ?></span>
-                <span class="plan-card__price-retail"><?= txh_money($c['retail']) ?></span>
+                <span class="plan-card__price-member"><?= anc_money($c['member']) ?></span>
+                <span class="plan-card__price-retail"><?= anc_money($c['retail']) ?></span>
               </div>
             </div>
           </article>

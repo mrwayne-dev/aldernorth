@@ -1,6 +1,6 @@
 /**
  * ============================================================
- * TitanXHoldings Admin Transactions.js
+ * Aldernorth Capital Admin Transactions.js
  * Purpose: Frontend logic for the Admin Transactions management page.
  * Handles: Data fetching, metric rendering, table rendering, pagination, search/filter, and export.
  * ============================================================
@@ -183,7 +183,7 @@ function renderTransactionsTable(transactions) {
             const filterVal = $(this).data('filter');
             
             // Update the button text to show current filter
-            $(this).closest('.dropdown').find('button').html(`<span class="iconify" data-icon="mdi:filter"></span> ${$(this).text()}`);
+            $(this).closest('.dropdown').find('button').html(`<i class="ph ph-funnel"></i> ${$(this).text()}`);
             
             loadTransactions(1, filterVal, currentSearch);
         });

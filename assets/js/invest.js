@@ -1,6 +1,6 @@
 /* =======================================================
    investment.js — Final Dynamic Version (DB + Cards)
-   TitanXHoldings XYields Frontend Logic
+   Aldernorth Capital XYields Frontend Logic
    ======================================================= */
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', function () {
       amountEl.removeAttribute('min');
       amountEl.removeAttribute('max');
       investBtn.disabled = true;
-      window.txhRenderPlanPanel && window.txhRenderPlanPanel(null);
+      window.ancRenderPlanPanel && window.ancRenderPlanPanel(null);
       return;
     }
 
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
       investBtn.disabled = false;
 
-      window.txhRenderPlanPanel && window.txhRenderPlanPanel({
+      window.ancRenderPlanPanel && window.ancRenderPlanPanel({
         name: cached.title,
         roi: (cached.roi_percent != null) ? (cached.roi_percent + '%') : '—',
         roiLabel: 'Expected ROI',

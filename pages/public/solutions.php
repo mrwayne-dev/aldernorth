@@ -1,10 +1,10 @@
 <?php
-$page_title = 'Solutions | Tailored for every investor profile | TitanXHoldings';
-$page_description = 'TitanXHoldings solutions for every kind of investor — savers, income builders, portfolio diversifiers, and institutional allocators.';
+$page_title = 'Solutions | Tailored for every investor profile | Aldernorth Capital';
+$page_description = 'Aldernorth Capital solutions for every kind of investor — savers, income builders, portfolio diversifiers, and institutional allocators.';
 $page_path = '/solutions';
 include __DIR__ . '/_partials/head.php';
 ?>
-<body class="txh-redesign">
+<body class="anc-redesign">
 
 <?php include __DIR__ . '/_partials/navbar.php'; ?>
 
@@ -20,7 +20,7 @@ include __DIR__ . '/_partials/head.php';
     <div class="hero__content">
       <p class="eyebrow"><span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>Solutions</p>
       <h1 class="hero__title">Solutions for every kind of investor.</h1>
-      <p class="hero__subtitle">Whether you're parking salary surplus, building income, or diversifying a portfolio — there's a TXH path designed for it.</p>
+      <p class="hero__subtitle">Whether you're parking salary surplus, building income, or diversifying a portfolio — there's a ANC path designed for it.</p>
       <div class="hero__cta-row">
         <a href="#profiles" class="btn btn--primary">Find your profile</a>
         <a href="/register" class="btn btn--ghost">Open an account</a>
@@ -34,7 +34,7 @@ include __DIR__ . '/_partials/head.php';
     <div class="section-header" style="margin-bottom: var(--space-10);">
       <p class="eyebrow"><span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>Investor profiles</p>
       <h2 class="section-header__title">Tailored solutions for every investor profile.</h2>
-      <p class="section-header__body">Four common starting points — each maps to a primary TXH product and a sensible add-on stack.</p>
+      <p class="section-header__body">Four common starting points — each maps to a primary ANC product and a sensible add-on stack.</p>
     </div>
 
     <div class="grid-2">
@@ -66,7 +66,7 @@ include __DIR__ . '/_partials/head.php';
   <div class="container">
     <div class="section-header" style="margin-bottom: var(--space-10);">
       <p class="eyebrow"><span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>How it works</p>
-      <h2 class="section-header__title">How TitanXHoldings compounds your wealth.</h2>
+      <h2 class="section-header__title">How Aldernorth Capital compounds your wealth.</h2>
       <p class="section-header__body">Three steps. No spreadsheets, no quarterly statements buried under three menus.</p>
     </div>
 
@@ -105,6 +105,6 @@ include __DIR__ . '/_partials/head.php';
 
 <?php include __DIR__ . '/_partials/footer.php'; ?>
 
-<script src="<?= txh_asset('/assets/js/main.js') ?>" defer></script>
+<script src="<?= anc_asset('/assets/js/main.js') ?>" defer></script>
 </body>
 </html>

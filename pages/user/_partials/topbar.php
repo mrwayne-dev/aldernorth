@@ -31,6 +31,9 @@ $topbar_avatar = htmlspecialchars($_SESSION['profile_picture'] ?? '/assets/image
             <h6><?= htmlspecialchars($page_heading) ?></h6>
         </div>
         <div class="header-grid">
+            <button class="theme-toggle" data-theme-toggle type="button" aria-label="Switch to light theme" aria-pressed="false">
+                <i class="ph ph-sun"></i>
+            </button>
             <div class="line1"></div>
             <div class="popup-wrap user type-header">
                 <div class="dropdown">

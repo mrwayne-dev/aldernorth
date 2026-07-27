@@ -1,11 +1,11 @@
 <?php
-$page_title = 'Create your account | TitanXHoldings';
-$page_description = 'Open a TitanXHoldings account in minutes. FCA-authorised investment platform with FSCS-protected savings, fractional shares, and automated investing.';
+$page_title = 'Create your account | Aldernorth Capital';
+$page_description = 'Open a Aldernorth Capital account in minutes. FCA-authorised investment platform with FSCS-protected savings, fractional shares, and automated investing.';
 $page_path = '/register';
 $nav_variant = 'solid';
 include __DIR__ . '/_partials/head.php';
 ?>
-<body class="txh-redesign">
+<body class="anc-redesign">
 
 <?php include __DIR__ . '/_partials/navbar.php'; ?>
 
@@ -80,7 +80,6 @@ include __DIR__ . '/_partials/head.php';
 
 <?php include __DIR__ . '/_partials/footer.php'; ?>
 
-<script src="<?= txh_asset('/assets/js/api.js') ?>" defer></script>
-<script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
+<script src="<?= anc_asset('/assets/js/api.js') ?>" defer></script>
 </body>
 </html>

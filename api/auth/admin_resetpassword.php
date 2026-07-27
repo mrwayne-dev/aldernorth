@@ -1,6 +1,6 @@
 <?php
 // ========================================
-// ADMIN RESET PASSWORD — TitanXHoldings
+// ADMIN RESET PASSWORD — Aldernorth Capital
 // ========================================
 
 ini_set('display_errors', 0);

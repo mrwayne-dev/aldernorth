@@ -3,7 +3,7 @@
 // FILE: /config/assets.php
 // PURPOSE: Automatic per-file asset cache-busting.
 //
-// txh_asset('/assets/js/x.js') -> '/assets/js/x.js?v=<filemtime>'
+// anc_asset('/assets/js/x.js') -> '/assets/js/x.js?v=<filemtime>'
 //
 // The version is the file's modification time, so editing a CSS/JS file
 // changes its URL and browsers re-fetch it — no manual version bumping,
@@ -11,8 +11,8 @@
 // ("/assets/..") and relative ("../../assets/..") URL forms.
 // ============================================================
 
-if (!function_exists('txh_asset')) {
-    function txh_asset(string $url): string {
+if (!function_exists('anc_asset')) {
+    function anc_asset(string $url): string {
         $pos = strpos($url, 'assets/');
         if ($pos === false) {
             return $url; // not a local asset (e.g. a CDN URL) — leave untouched

@@ -12,10 +12,10 @@ if (!isset($_SESSION['admin_id'])) {
 $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
 ?>
 <?php
-  $page_title = "Announcements | TitanXHoldings Admin";
+  $page_title = "Announcements | Aldernorth Capital Admin";
   include __DIR__ . "/_partials/head.php";
 ?>
-<body class="counter-scroll txh-dash">
+<body class="counter-scroll anc-dash">
 <div id="wrapper">
     <div id="page" class="">
         <div class="layout-wrap loader-off">
@@ -40,7 +40,7 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
                                     <div class="d-flex justify-between items-center mb-16">
                                         <h5 class="label-01">Member Announcements</h5>
                                         <button id="add-announcement-btn" class="tf-button bg-Primary text-White f12-bold">
-                                            <span class="iconify" data-icon="mdi:plus"></span> New Announcement
+                                            <i class="ph ph-plus"></i> New Announcement
                                         </button>
                                     </div>
 
@@ -126,12 +126,11 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
 </div>
 <div id="toast-container"></div>
 
-<script src="<?= txh_asset('../../assets/js/api.js') ?>" defer></script>
-<script src="<?= txh_asset('../../assets/js/jquery.min.js') ?>"></script>
-<script src="<?= txh_asset('../../assets/js/bootstrap.min.js') ?>"></script>
-<script src="<?= txh_asset('../../assets/js/bootstrap-select.min.js') ?>" defer></script>
-<script src="<?= txh_asset('../../assets/js/admin/admin.js') ?>" defer></script>
-<script src="<?= txh_asset('../../assets/js/admin/announcements.js') ?>" defer></script>
-<script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
+<script src="<?= anc_asset('../../assets/js/api.js') ?>" defer></script>
+<script src="<?= anc_asset('../../assets/js/jquery.min.js') ?>"></script>
+<script src="<?= anc_asset('../../assets/js/bootstrap.min.js') ?>"></script>
+<script src="<?= anc_asset('../../assets/js/bootstrap-select.min.js') ?>" defer></script>
+<script src="<?= anc_asset('../../assets/js/admin/admin.js') ?>" defer></script>
+<script src="<?= anc_asset('../../assets/js/admin/announcements.js') ?>" defer></script>
 </body>
 </html>

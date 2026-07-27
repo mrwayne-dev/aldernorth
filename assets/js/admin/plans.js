@@ -1,7 +1,7 @@
 /**
  * FILE: /assets/js/admin/funds.js
  * ============================================================
- * TitanXHoldings Admin Funds.js
+ * Aldernorth Capital Admin Funds.js
  * Purpose: Frontend logic for the Admin Fund Management (XYields) page.
  * Handles: Metrics, XYield Plan CRUD, Active XYield list/pagination/edit.
  * Assumes global utility functions (fetchApi, formatCurrency, showToast, showModal, closeModal) are available.

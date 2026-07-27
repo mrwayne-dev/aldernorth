@@ -1,11 +1,11 @@
 <?php
-$page_title = 'Reset your password | TitanXHoldings';
-$page_description = 'Reset your TitanXHoldings account password securely. Enter your email to receive a one-time reset code.';
+$page_title = 'Reset your password | Aldernorth Capital';
+$page_description = 'Reset your Aldernorth Capital account password securely. Enter your email to receive a one-time reset code.';
 $page_path = '/forgotpassword';
 $nav_variant = 'solid';
 include __DIR__ . '/_partials/head.php';
 ?>
-<body class="txh-redesign">
+<body class="anc-redesign">
 
 <?php include __DIR__ . '/_partials/navbar.php'; ?>
 
@@ -62,6 +62,6 @@ include __DIR__ . '/_partials/head.php';
 
 <?php include __DIR__ . '/_partials/footer.php'; ?>
 
-<script src="<?= txh_asset('/assets/js/api.js') ?>" defer></script>
+<script src="<?= anc_asset('/assets/js/api.js') ?>" defer></script>
 </body>
 </html>

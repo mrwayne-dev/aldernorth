@@ -1,7 +1,7 @@
 <?php
 /**
  * ============================================================
- * TitanXHoldings — PROCESS WITHDRAWAL ACTION (ADMIN)
+ * Aldernorth Capital — PROCESS WITHDRAWAL ACTION (ADMIN)
  * ============================================================
  * POST: id, action (complete|cancel), [reason]
  * Actions:

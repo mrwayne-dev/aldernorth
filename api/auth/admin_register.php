@@ -1,6 +1,6 @@
 <?php
 // ========================================
-// ADMIN REGISTRATION — TitanXHoldings
+// ADMIN REGISTRATION — Aldernorth Capital
 // ========================================
 
 ini_set('display_errors', 0);

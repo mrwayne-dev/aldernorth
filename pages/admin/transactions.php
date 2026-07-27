@@ -12,10 +12,10 @@ if (!isset($_SESSION['admin_id'])) {
 $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
 ?>
 <?php
-  $page_title = "Transactions | TitanXHoldings Admin";
+  $page_title = "Transactions | Aldernorth Capital Admin";
   include __DIR__ . "/_partials/head.php";
 ?>
-<body class="counter-scroll txh-dash">
+<body class="counter-scroll anc-dash">
     <div id="wrapper">
         <div id="page" class="">
             <div class="layout-wrap loader-off">
@@ -46,22 +46,22 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
                                                 <div class="wallet-card wallet-main">
                                                     <div class="wallet-card-header">Total Transactions</div>
                                                     <div class="wallet-card-balance"><span id="total-transactions">0</span></div>
-                                                    <div class="wallet-card-footer"> <span class="iconify" data-icon="mdi:history"></span> All Time</div>
+                                                    <div class="wallet-card-footer"> <i class="ph ph-clock-counter-clockwise"></i> All Time</div>
                                                 </div>
                                                 <div class="wallet-card wallet-green">
                                                     <div class="wallet-card-header">Total Volume</div>
                                                     <div class="wallet-card-balance">$<span id="total-volume">0.00</span></div>
-                                                    <div class="wallet-card-footer"> <span class="iconify" data-icon="mdi:chart-line"></span> Processed</div>
+                                                    <div class="wallet-card-footer"> <i class="ph ph-chart-line"></i> Processed</div>
                                                 </div>
                                                 <div class="wallet-card wallet-accent">
                                                     <div class="wallet-card-header">Pending</div>
                                                     <div class="wallet-card-balance"><span id="pending-count">0</span></div>
-                                                    <div class="wallet-card-footer"> <span class="iconify" data-icon="mdi:progress-clock"></span> Awaiting Action</div>
+                                                    <div class="wallet-card-footer"> <i class="ph ph-clock"></i> Awaiting Action</div>
                                                 </div>
                                                 <div class="wallet-card wallet-purple">
                                                     <div class="wallet-card-header">Today</div>
                                                     <div class="wallet-card-balance"><span id="today-count">0</span></div>
-                                                    <div class="wallet-card-footer"> <span class="iconify" data-icon="mdi:calendar-today"></span> Transactions</div>
+                                                    <div class="wallet-card-footer"> <i class="ph ph-calendar-blank"></i> Transactions</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -79,12 +79,12 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
                                         </form>
                                         <div class="right">
                                             <a href="#" id="export-csv" class="tf-button style-2 f12-bold d-md-flex d-none">
-                                                <span class="iconify" data-icon="mdi:file-export"></span>
+                                                <i class="ph ph-export"></i>
                                                 Export Report
                                             </a>
                                             <div class="dropdown default style-fill">
                                                 <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                                    <span class="iconify" data-icon="mdi:filter"></span> Filter
+                                                    <i class="ph ph-funnel"></i> Filter
                                                 </button>
                                                 <ul class="dropdown-menu dropdown-menu-end">
                                                     <li><a href="#" data-filter="all">All Transactions</a></li>
@@ -99,8 +99,8 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
                                     </div>
 
                                     <!-- TRANSACTIONS TABLE (real table, horizontal scroll on mobile) -->
-                                    <div class="txh-scroll-table">
-                                        <table class="txh-table w-100">
+                                    <div class="anc-scroll-table">
+                                        <table class="anc-table w-100">
                                             <thead>
                                                 <tr>
                                                     <th>Transaction ID</th>
@@ -135,14 +135,13 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
     </div>
     <div id="toast-container"></div>
 
-    <script src="<?= txh_asset('../../assets/js/api.js') ?>" defer></script>
-    <script src="<?= txh_asset('../../assets/js/jquery.min.js') ?>"></script>
-    <script src="<?= txh_asset('../../assets/js/bootstrap.min.js') ?>"></script>
-    <script src="<?= txh_asset('../../assets/js/bootstrap-select.min.js') ?>" defer></script>
-    <script src="<?= txh_asset('../../assets/js/admin/admin.js') ?>" defer></script>
-    <script src="<?= txh_asset('../../assets/js/admin/transactions.js') ?>" defer></script>
+    <script src="<?= anc_asset('../../assets/js/api.js') ?>" defer></script>
+    <script src="<?= anc_asset('../../assets/js/jquery.min.js') ?>"></script>
+    <script src="<?= anc_asset('../../assets/js/bootstrap.min.js') ?>"></script>
+    <script src="<?= anc_asset('../../assets/js/bootstrap-select.min.js') ?>" defer></script>
+    <script src="<?= anc_asset('../../assets/js/admin/admin.js') ?>" defer></script>
+    <script src="<?= anc_asset('../../assets/js/admin/transactions.js') ?>" defer></script>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
 </body>
 </html>

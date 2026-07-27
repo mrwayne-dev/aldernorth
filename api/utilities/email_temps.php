@@ -1,6 +1,6 @@
 <?php
 // ========================================
-// EMAIL TEMPLATES — TitanXHoldings (Optimized and Consistent)
+// EMAIL TEMPLATES — Aldernorth Capital (Optimized and Consistent)
 // ========================================
 /**
  * Returns all email templates used in the system.
@@ -13,15 +13,15 @@
 function getEmailTemplates() {
     $year = date('Y');
     // IMPORTANT: Update this URL to your actual logo path accessible via the web
-    $logoUrl = 'https://titanxholdings.com/assets/images/logo/titanx-white.png';
-    $appName = 'TitanXHoldings';
-    $supportEmail = 'support@titanxholdings.com'; // Define support email for easy updates
-    $websiteUrl = 'https://titanxholdings.com/'; // Define main website URL
-    $adminUrl = 'https://titanxholdings.com/admin'; // Define Admin Login URL
+    $logoUrl = 'https://aldernorthcapital.com/assets/images/logo/aldernorth-white.png';
+    $appName = 'Aldernorth Capital';
+    $supportEmail = 'support@aldernorthcapital.com'; // Define support email for easy updates
+    $websiteUrl = 'https://aldernorthcapital.com/'; // Define main website URL
+    $adminUrl = 'https://aldernorthcapital.com/admin'; // Define Admin Login URL
 
-    // TXH email color palette — light mode email
+    // ANC email color palette — light mode email
     $colors = [
-        'primary'           => '#CC0000',   // TXH brand red
+        'primary'           => '#CC0000',   // ANC brand red
         'primary_light'     => '#FFFFFF',   // Email outer body — white
         'surface'           => '#FFFFFF',   // Email card surface — white
         'background'        => '#F8F8F8',   // Subtle neutral for data blocks
@@ -29,7 +29,7 @@ function getEmailTemplates() {
         'muted'             => '#6B7C7D',   // Muted text
         'border'            => 'rgba(28, 38, 40, 0.1)', // Hairline border
         'success'           => '#22C55E',   // Success green
-        'danger'            => '#CC0000',   // TXH brand red (used for security/CTA)
+        'danger'            => '#CC0000',   // ANC brand red (used for security/CTA)
         'warning_bg'        => '#FEF3C7',   // Warning block background (warm light)
         'warning_border'    => '#F59E0B',   // Warning block border (amber)
         'highlight_text'    => '#1C2628',   // Contrast text color
@@ -43,7 +43,7 @@ function getEmailTemplates() {
     // 2. Consistent Alert Block for Security/Cancellation/Warning
     $alertBlockStyle = "background-color: {$colors['background']}; border-left: 4px solid {{color}}; padding: 14px 18px; margin: 20px 0; border-radius: 0 6px 6px 0;";
 
-    // Header structure — TXH red brand band
+    // Header structure — ANC red brand band
     $header = "
         <table role='presentation' cellspacing='0' cellpadding='0' border='0' width='100%' style='background:{$colors['primary']};'>
             <tr>
@@ -1114,7 +1114,7 @@ function getEmailTemplates() {
                 <div style='background-color: {$colors['background']}; padding: 18px; margin: 20px 0; border-radius: 8px; border: 1px solid {$colors['border']};'>
                     {{message_body}}
                 </div>
-                <p>This is a direct message from the TitanXHoldings Administration team.</p>
+                <p>This is a direct message from the Aldernorth Capital Administration team.</p>
                 <p>If you have questions, reply to this email or contact <a href='mailto:{$supportEmail}' style='color:{$colors['primary']};'>{$supportEmail}</a>.</p>
                 <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Administration</strong></p>
             "),

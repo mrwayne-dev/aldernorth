@@ -218,7 +218,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $details = $input['details'] ?? 'Detailed plan features.';
         $income = $input['income'] ?? 'General investment returns.';
         $summary = $input['summary'] ?? 'Summary of the plan.';
-        $icon = $input['icon'] ?? 'mdi:chart-line';
+        $icon = $input['icon'] ?? 'ph-chart-line';
         $color = $input['color'] ?? 'Blue';
         $payout_option = $input['payout_option'] ?? 'maturity';
         

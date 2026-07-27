@@ -23,11 +23,11 @@ $user_role = $_SESSION['role'] ?? 'user';
 
 ?>
 <?php
-  $page_title = "X-Yield | TitanXHoldings";
+  $page_title = "X-Yield | Aldernorth Capital";
   include __DIR__ . "/_partials/head.php";
 ?>
 
-<body class="counter-scroll txh-dash">
+<body class="counter-scroll anc-dash">
     <!-- #wrapper -->
     <div id="wrapper">
         <!-- #page -->
@@ -42,7 +42,7 @@ $user_role = $_SESSION['role'] ?? 'user';
                 </div>
                 <!-- /preload -->
                 <!-- section-menu-left -->
-                <?php $active = "investment"; include __DIR__ . "/_partials/sidebar.php"; ?>
+                <?php $active = "invest"; include __DIR__ . "/_partials/sidebar.php"; ?>
                 <!-- section-content-right -->
                 <div class="section-content-right">
                     <!-- header-dashboard -->
@@ -62,17 +62,17 @@ $user_role = $_SESSION['role'] ?? 'user';
                                         <div class="wallet-card wallet-main wallet-hero">
                                           <div class="wallet-hero-top">
                                             <div class="title-box flex items-center gap-2">
-                                              <span class="iconify" data-icon="mdi:chart-timeline-variant"></span>
+                                              <i class="ph ph-chart-line-up"></i>
                                               <span class="f12-medium text-White">Active X-Yields (USD)</span>
                                             </div>
                                             <span class="box-status bg-Green f12-medium flex items-center gap-2">
-                                              <span class="iconify" data-icon="mdi:shield-check"></span> Active
+                                              <i class="ph ph-shield-check"></i> Active
                                             </span>
                                           </div>
                                           <div class="wallet-hero-balance">
                                             <h2 class="counter text-White" id="card-active-investments">$0.00</h2>
                                             <div class="wallet-hero-change f14-regular">
-                                              <span class="iconify" data-icon="mdi:trending-up"></span>
+                                              <i class="ph ph-trend-up"></i>
                                               <span id="card-total-roi">$0.00</span>&nbsp;ROI earned to date
                                             </div>
                                           </div>
@@ -88,7 +88,7 @@ $user_role = $_SESSION['role'] ?? 'user';
                                           </div>
                                           <div class="wallet-hero-actions">
                                             <a href="/dashboard.transactions" class="tf-button bg-Accent f14-bold">
-                                              <span class="iconify" data-icon="mdi:history"></span> Transactions
+                                              <i class="ph ph-clock-counter-clockwise"></i> Transactions
                                             </a>
                                           </div>
                                         </div>
@@ -124,7 +124,7 @@ $user_role = $_SESSION['role'] ?? 'user';
                                                             <label class="f14-regular text-Black mb-8">Wallet Balance</label>
                                                             <!-- In form -->
                                                             <div class="input-group">
-                                                                <span class="input-icon"><span class="iconify" data-icon="mdi:wallet-outline"></span></span>
+                                                                <span class="input-icon"><i class="ph ph-wallet"></i></span>
                                                                 <span id="wallet-balance" class="form-control readonly-input">$0.00</span>  <!-- <span> not input -->
                                                             </div>
                                                             </div>
@@ -151,7 +151,7 @@ $user_role = $_SESSION['role'] ?? 'user';
                                         <div class="col-lg-5 col-md-12">
                                             <div class="wg-box plan-detail-panel">
                                                 <div class="pdp-empty" id="pdp-empty">
-                                                    <span class="iconify" data-icon="mdi:gesture-tap-button" data-width="32" data-height="32"></span>
+                                                    <i class="ph ph-hand-pointing" style="font-size:32px"></i>
                                                     <div class="f14-bold text-Primary">Select a plan</div>
                                                     <div class="f12-regular text-Gray">Choose a plan from the dropdown to see its full details.</div>
                                                 </div>
@@ -178,14 +178,14 @@ $user_role = $_SESSION['role'] ?? 'user';
                                                 <div class="view-all">
                                                 <a href="#" class="f12-regular text-Primary hover:underline flex items-center">
                                                     View All
-                                                    <span class="iconify ml-2" data-icon="mdi:chevron-right"></span>
+                                                    <i class="ph ph-caret-right ml-2"></i>
                                                 </a>
                                                 </div>
                                             </div>
 
                                             <div class="content">
-                                                <div class="txh-scroll-table mt-3">
-                                                <table class="txh-table">
+                                                <div class="anc-scroll-table mt-3">
+                                                <table class="anc-table">
                                                     <thead><tr>
                                                         <th>Plan Name</th>
                                                         <th>Amount Invested</th>
@@ -212,14 +212,14 @@ $user_role = $_SESSION['role'] ?? 'user';
         <div class="view-all">
           <a href="#" class="f12-regular text-Primary hover:underline flex items-center">
             View All
-            <span class="iconify ml-2" data-icon="mdi:chevron-right"></span>
+            <i class="ph ph-caret-right ml-2"></i>
           </a>
         </div>
       </div>
 
       <div class="content">
-        <div class="txh-scroll-table mt-3">
-          <table class="txh-table">
+        <div class="anc-scroll-table mt-3">
+          <table class="anc-table">
             <thead><tr>
               <th>Plan Name</th>
               <th>Original Amount</th>
@@ -264,16 +264,15 @@ $user_role = $_SESSION['role'] ?? 'user';
     <div id="toast-container"></div>
 
 
-<script src="<?= txh_asset('../../assets/js/jquery.min.js') ?>"></script>
-<script src="<?= txh_asset('../../assets/js/api.js') ?>"></script>
-<script src="<?= txh_asset('../../assets/js/investment.js') ?>"></script>
-<script src="<?= txh_asset('../../assets/js/bootstrap.min.js') ?>"></script>
-<script src="<?= txh_asset('../../assets/js/countto.js') ?>" defer></script>
-<script src="<?= txh_asset('../../assets/js/bootstrap-select.min.js') ?>" defer></script>
-<script src="<?= txh_asset('../../assets/js/dashboard.js') ?>" defer></script>
+<script src="<?= anc_asset('../../assets/js/jquery.min.js') ?>"></script>
+<script src="<?= anc_asset('../../assets/js/api.js') ?>"></script>
+<script src="<?= anc_asset('../../assets/js/investment.js') ?>"></script>
+<script src="<?= anc_asset('../../assets/js/bootstrap.min.js') ?>"></script>
+<script src="<?= anc_asset('../../assets/js/countto.js') ?>" defer></script>
+<script src="<?= anc_asset('../../assets/js/bootstrap-select.min.js') ?>" defer></script>
+<script src="<?= anc_asset('../../assets/js/dashboard.js') ?>" defer></script>
 
     <!-- Iconify CDN -->
-    <script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
     <script>
         $(document).ready(function() {
             $('.selectpicker').selectpicker();

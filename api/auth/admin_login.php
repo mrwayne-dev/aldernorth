@@ -1,6 +1,6 @@
 <?php
 // ========================================
-// ADMIN LOGIN — TitanXHoldings (Finalized)
+// ADMIN LOGIN — Aldernorth Capital (Finalized)
 // ========================================
 
 ini_set('display_errors', 0);

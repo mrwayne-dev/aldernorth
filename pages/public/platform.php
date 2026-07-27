@@ -1,10 +1,10 @@
 <?php
-$page_title = 'Platform | One wallet, every way to grow it | TitanXHoldings';
-$page_description = 'The TitanXHoldings platform — six FCA-regulated products, one wallet, audit-grade reporting. Built on trust, secured by design.';
+$page_title = 'Platform | One wallet, every way to grow it | Aldernorth Capital';
+$page_description = 'The Aldernorth Capital platform — six FCA-regulated products, one wallet, audit-grade reporting. Built on trust, secured by design.';
 $page_path = '/platform';
 include __DIR__ . '/_partials/head.php';
 ?>
-<body class="txh-redesign">
+<body class="anc-redesign">
 
 <?php include __DIR__ . '/_partials/navbar.php'; ?>
 
@@ -29,7 +29,7 @@ include __DIR__ . '/_partials/head.php';
   <div class="container">
     <div class="section-header" style="margin-bottom: var(--space-10);">
       <p class="eyebrow"><span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>Products</p>
-      <h2 class="section-header__title">The TitanXHoldings product suite.</h2>
+      <h2 class="section-header__title">The Aldernorth Capital product suite.</h2>
       <p class="section-header__body">Six regulated products, all under the same FCA framework. Use them alone or stack them across short, medium, and long horizons.</p>
     </div>
 
@@ -102,7 +102,7 @@ include __DIR__ . '/_partials/head.php';
       <article class="card-feature">
         <span class="card-feature__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg></span>
         <h3 class="card-feature__title">FCA authorisation &amp; FSCS protection</h3>
-        <p class="card-feature__desc">TitanXHoldings Ltd is authorised by the FCA. Client money in segregated UK bank accounts. Eligible deposits covered by FSCS up to £85,000.</p>
+        <p class="card-feature__desc">Aldernorth Capital Ltd is authorised by the FCA. Client money in segregated UK bank accounts. Eligible deposits covered by FSCS up to £85,000.</p>
       </article>
       <article class="card-feature">
         <span class="card-feature__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="16" r="1"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><rect x="3" y="11" width="18" height="11" rx="2"/></svg></span>
@@ -138,6 +138,6 @@ include __DIR__ . '/_partials/head.php';
 
 <?php include __DIR__ . '/_partials/footer.php'; ?>
 
-<script src="<?= txh_asset('/assets/js/main.js') ?>" defer></script>
+<script src="<?= anc_asset('/assets/js/main.js') ?>" defer></script>
 </body>
 </html>

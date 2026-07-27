@@ -1,5 +1,5 @@
 /* =======================================================
-    TitanXHoldings - API.js
+    Aldernorth Capital - API.js
     Purpose: Unified frontend API logic for Auth & Backend
     ======================================================= */
 
@@ -171,7 +171,7 @@ function showToast(message, type = 'info', duration = 4000) {
 
   // Build inner content (icon + message)
   toast.innerHTML = `
-    <span class="iconify" data-icon="${getToastIcon(type)}"></span>
+    <i class="ph ${getToastIcon(type)}"></i>
     <div class="toast-message">${message}</div>
   `;
 
@@ -193,11 +193,11 @@ function showToast(message, type = 'info', duration = 4000) {
  */
 function getToastIcon(type) {
   switch (type) {
-    case 'success': return 'mdi:check-circle-outline';
-    case 'error': return 'mdi:alert-circle-outline';
-    case 'info': return 'mdi:information-outline';
-    case 'warning': return 'mdi:alert-outline';
-    default: return 'mdi:bell-outline';
+    case 'success': return 'ph-check-circle';
+    case 'error': return 'ph-warning-circle';
+    case 'info': return 'ph-info';
+    case 'warning': return 'ph-warning';
+    default: return 'ph-bell';
   }
 }
 

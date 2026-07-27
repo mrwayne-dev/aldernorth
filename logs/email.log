@@ -379,3 +379,5 @@
 [2025-11-24 06:43:59] SENT → aleruchi0987@gmail.com | Template: deposit_initiated | Subject: Deposit Request Received!
 [2025-11-24 06:44:04] SENT → support@healthruncare.com | Template: admin_deposit_notification | Subject: New Deposit Request!
 [2025-11-24 06:51:54] SENT → support@healthruncare.com | Template: admin_payment_confirmed | Subject: User Confirmed Payment for Deposit!
+[2026-07-27 19:16:23] SENT → tester@aldernorthcapital.com | Template: investment_payout | Subject: Aldernorth Capital Notification
+[2026-07-27 19:16:28] SENT → tester@aldernorthcapital.com | Template: investment_matured | Subject: Your Investment Has Matured — Funds Credited

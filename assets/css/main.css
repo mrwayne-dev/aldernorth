@@ -86,7 +86,7 @@ html {
 body {
   margin: 0;
   padding: 0;
-  font-family: var(--txh-font-body);
+  font-family: var(--anc-font-body);
   font-size: 1.6rem;
   line-height: 1.6;
   color: var(--color-text);
@@ -94,7 +94,7 @@ body {
   overflow-x: hidden;
 }
 h1, h2, h3 {
-  font-family: var(--txh-font-display);
+  font-family: var(--anc-font-display);
 }
 li { list-style: none; }
 a {
@@ -1415,7 +1415,7 @@ table { border-collapse: collapse; width: 100%; }
   color: rgba(255, 255, 255, 0.85);
 }
 .cta-visual--whyhrc {
-  background: url('../../assets/images/why-txh-cta.png') center/cover no-repeat;
+  background: url('../../assets/images/why-anc-cta.png') center/cover no-repeat;
 }
 
 .cta-visual--whyhrc::before {

@@ -1,24 +1,19 @@
 <?php
 // ============================================================
 // ADMIN SIDEBAR partial
-// $active      = dashboard | users | transactions | wallets |
-//                announcements | funds
-// $active_fund = (when $active === 'funds') yield | xlock |
-//                xweekly | xgrid | xshares | xrewards
+// $active = dashboard | users | transactions | wallets |
+//           announcements | plans
 // ============================================================
 $active = $active ?? 'dashboard';
-$active_fund = $active_fund ?? '';
 $is = static fn(string $s) => $active === $s ? ' active' : '';
-$isFund = static fn(string $s) => $active_fund === $s ? ' active' : '';
-$fundsOpen = ($active === 'funds') ? ' active' : '';
 ?>
 <div class="section-menu-left">
     <div class="box-logo">
         <a href="/admin.dashboard" id="site-logo-inner">
-            <img id="logo_header" alt="TitanXHoldings Admin" src="/assets/images/logo/titanx-white.png" width="150px">
+            <img id="logo_header" alt="Aldernorth Capital Admin" src="/assets/images/logo/aldernorth-white.svg" width="150px">
         </a>
         <div class="button-show-hide">
-            <span class="iconify" data-icon="mdi:chevron-left"></span>
+            <i class="ph ph-caret-left"></i>
         </div>
     </div>
 
@@ -33,7 +28,7 @@ $fundsOpen = ($active === 'funds') ? ' active' : '';
                     <!-- DASHBOARD -->
                     <li class="menu-item has-children<?= $is('dashboard') ?>">
                         <a href="javascript:void(0);" class="menu-item-button<?= $is('dashboard') ?>">
-                            <div class="icon"><span class="iconify" data-icon="mdi:view-dashboard-outline"></span></div>
+                            <div class="icon"><i class="ph ph-squares-four"></i></div>
                             <div class="text">Dashboard</div>
                         </a>
                         <ul class="sub-menu">
@@ -44,7 +39,7 @@ $fundsOpen = ($active === 'funds') ? ' active' : '';
                     <!-- USERS -->
                     <li class="menu-item<?= $is('users') ?>">
                         <a href="/admin.users" class="menu-item-button<?= $is('users') ?>">
-                            <div class="icon"><span class="iconify" data-icon="mdi:account-group-outline"></span></div>
+                            <div class="icon"><i class="ph ph-users-three"></i></div>
                             <div class="text">Users</div>
                         </a>
                     </li>
@@ -52,7 +47,7 @@ $fundsOpen = ($active === 'funds') ? ' active' : '';
                     <!-- TRANSACTIONS -->
                     <li class="menu-item<?= $is('transactions') ?>">
                         <a href="/admin.transactions" class="menu-item-button<?= $is('transactions') ?>">
-                            <div class="icon"><span class="iconify" data-icon="mdi:receipt-text"></span></div>
+                            <div class="icon"><i class="ph ph-receipt"></i></div>
                             <div class="text">Transactions</div>
                         </a>
                     </li>
@@ -60,7 +55,7 @@ $fundsOpen = ($active === 'funds') ? ' active' : '';
                     <!-- WALLET MANAGEMENT -->
                     <li class="menu-item<?= $is('wallets') ?>">
                         <a href="/admin.wallets" class="menu-item-button<?= $is('wallets') ?>">
-                            <div class="icon"><span class="iconify" data-icon="mdi:wallet-outline"></span></div>
+                            <div class="icon"><i class="ph ph-wallet"></i></div>
                             <div class="text">Wallet Management</div>
                         </a>
                     </li>
@@ -68,25 +63,17 @@ $fundsOpen = ($active === 'funds') ? ' active' : '';
                     <!-- ANNOUNCEMENTS -->
                     <li class="menu-item<?= $is('announcements') ?>">
                         <a href="/admin.announcements" class="menu-item-button<?= $is('announcements') ?>">
-                            <div class="icon"><span class="iconify" data-icon="mdi:bullhorn-outline"></span></div>
+                            <div class="icon"><i class="ph ph-megaphone"></i></div>
                             <div class="text">Announcements</div>
                         </a>
                     </li>
 
-                    <!-- FUND MANAGEMENT -->
-                    <li class="menu-item has-children<?= $fundsOpen ?>">
-                        <a href="javascript:void(0);" class="menu-item-button<?= $fundsOpen ?>">
-                            <div class="icon"><span class="iconify" data-icon="mdi:money"></span></div>
-                            <div class="text">Fund Management</div>
+                    <!-- PLANS -->
+                    <li class="menu-item<?= $is('plans') ?>">
+                        <a href="/admin.plans" class="menu-item-button<?= $is('plans') ?>">
+                            <div class="icon"><i class="ph ph-chart-line-up"></i></div>
+                            <div class="text">Investment Plans</div>
                         </a>
-                        <ul class="sub-menu">
-                            <li class="sub-menu-item<?= $isFund('yield') ?>"><a href="/admin.funds"><div class="text">X-Yield</div></a></li>
-                            <li class="sub-menu-item<?= $isFund('xlock') ?>"><a href="/admin.funds/xlock"><div class="text">X-Lock</div></a></li>
-                            <li class="sub-menu-item<?= $isFund('xweekly') ?>"><a href="/admin.funds/xweekly"><div class="text">X-Weekly</div></a></li>
-                            <li class="sub-menu-item<?= $isFund('xgrid') ?>"><a href="/admin.funds/xgrid"><div class="text">X-Grid</div></a></li>
-                            <li class="sub-menu-item<?= $isFund('xshares') ?>"><a href="/admin.funds/xshares"><div class="text">X-Shares</div></a></li>
-                            <li class="sub-menu-item<?= $isFund('xrewards') ?>"><a href="/admin.funds/xrewards"><div class="text">X-Rewards</div></a></li>
-                        </ul>
                     </li>
                 </ul>
             </div>

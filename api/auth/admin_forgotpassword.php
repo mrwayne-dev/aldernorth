@@ -1,6 +1,6 @@
 <?php
 // ========================================
-// ADMIN FORGOT PASSWORD — TitanXHoldings
+// ADMIN FORGOT PASSWORD — Aldernorth Capital
 // ========================================
 
 ini_set('display_errors', 0);

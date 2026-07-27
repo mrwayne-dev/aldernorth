@@ -1,11 +1,11 @@
 <?php
-$page_title = 'Sign in | TitanXHoldings';
-$page_description = 'Sign in to your TitanXHoldings account to manage your investments and portfolio.';
+$page_title = 'Sign in | Aldernorth Capital';
+$page_description = 'Sign in to your Aldernorth Capital account to manage your investments and portfolio.';
 $page_path = '/login';
 $nav_variant = 'solid';
 include __DIR__ . '/_partials/head.php';
 ?>
-<body class="txh-redesign">
+<body class="anc-redesign">
 
 <?php include __DIR__ . '/_partials/navbar.php'; ?>
 
@@ -17,7 +17,7 @@ include __DIR__ . '/_partials/head.php';
           <span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>
           Welcome back
         </p>
-        <h1>Sign in to TitanXHoldings</h1>
+        <h1>Sign in to Aldernorth Capital</h1>
         <p>Manage your investments, savings, and portfolio.</p>
       </div>
 
@@ -71,7 +71,6 @@ include __DIR__ . '/_partials/head.php';
 
 <?php include __DIR__ . '/_partials/footer.php'; ?>
 
-<script src="<?= txh_asset('/assets/js/api.js') ?>" defer></script>
-<script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
+<script src="<?= anc_asset('/assets/js/api.js') ?>" defer></script>
 </body>
 </html>

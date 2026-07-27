@@ -1,6 +1,6 @@
 <?php
 // ========================================
-// DATABASE CONNECTION HANDLER — TitanXHoldings
+// DATABASE CONNECTION HANDLER — Aldernorth Capital
 // ========================================
 
 function getPDO() {

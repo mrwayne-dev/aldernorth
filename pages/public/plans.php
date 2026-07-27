@@ -1,10 +1,10 @@
 <?php
-$page_title = 'X-Yield | Fixed-duration investment plans | TitanXHoldings';
-$page_description = 'TitanXHoldings X-Yield — fixed-duration investment plans with a known ROI and a known maturity date. Pick a tier, fund it, watch it compound.';
+$page_title = 'X-Yield | Fixed-duration investment plans | Aldernorth Capital';
+$page_description = 'Aldernorth Capital X-Yield — fixed-duration investment plans with a known ROI and a known maturity date. Pick a tier, fund it, watch it compound.';
 $page_path = '/investment';
 include __DIR__ . '/_partials/head.php';
 ?>
-<body class="txh-redesign">
+<body class="anc-redesign">
 
 <?php include __DIR__ . '/_partials/navbar.php'; ?>
 
@@ -65,6 +65,6 @@ include __DIR__ . '/_partials/head.php';
 
 <?php include __DIR__ . '/_partials/footer.php'; ?>
 
-<script src="<?= txh_asset('/assets/js/main.js') ?>" defer></script>
+<script src="<?= anc_asset('/assets/js/main.js') ?>" defer></script>
 </body>
 </html>
