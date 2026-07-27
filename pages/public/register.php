@@ -1,6 +1,6 @@
 <?php
 $page_title = 'Create your account | Aldernorth Capital';
-$page_description = 'Open a Aldernorth Capital account in minutes. FCA-authorised investment platform with FSCS-protected savings, fractional shares, and automated investing.';
+$page_description = 'Open an Aldernorth Capital account in minutes. Invest a lump sum and get paid weekly or monthly, with your principal returned at maturity.';
 $page_path = '/register';
 $nav_variant = 'solid';
 include __DIR__ . '/_partials/head.php';
@@ -18,7 +18,7 @@ include __DIR__ . '/_partials/head.php';
           New here
         </p>
         <h1>Open your account</h1>
-        <p>Takes about three minutes. FSCS-protected from your first deposit.</p>
+        <p>Takes about three minutes. Your funds are segregated from your first deposit.</p>
       </div>
 
       <form id="register-form" class="form-stack" autocomplete="off">

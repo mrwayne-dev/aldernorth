@@ -1,6 +1,6 @@
 <?php
 $page_title = 'Platform | One wallet, every way to grow it | Aldernorth Capital';
-$page_description = 'The Aldernorth Capital platform — six FCA-regulated products, one wallet, audit-grade reporting. Built on trust, secured by design.';
+$page_description = 'The Aldernorth Capital platform — one investment product, one wallet, audit-grade reporting. Built on trust, secured by design.';
 $page_path = '/platform';
 include __DIR__ . '/_partials/head.php';
 ?>
@@ -16,7 +16,7 @@ include __DIR__ . '/_partials/head.php';
     <div class="hero__content">
       <p class="eyebrow"><span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>The platform</p>
       <h1 class="hero__title">One platform. Every way to grow your money.</h1>
-      <p class="hero__subtitle">Six FCA-regulated products, one wallet, one statement. Fund once. Route capital wherever your strategy needs it next.</p>
+      <p class="hero__subtitle">One product, one wallet, one statement. Fund once, choose your payout rhythm, and let the schedule run.</p>
       <div class="hero__cta-row">
         <a href="#products" class="btn btn--primary">Explore the products</a>
         <a href="/register" class="btn btn--ghost">Open an account</a>
@@ -80,8 +80,8 @@ include __DIR__ . '/_partials/plans-section.php';
     <div class="grid-2">
       <article class="card-feature">
         <span class="card-feature__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg></span>
-        <h3 class="card-feature__title">FCA authorisation &amp; FSCS protection</h3>
-        <p class="card-feature__desc">Aldernorth Capital Ltd is authorised by the FCA. Client money in segregated UK bank accounts. Eligible deposits covered by FSCS up to £85,000.</p>
+        <h3 class="card-feature__title">Safeguarding &amp; segregation</h3>
+        <p class="card-feature__desc">Client funds sit in segregated accounts, never co-mingled with company operating funds, and are reconciled on a regular schedule.</p>
       </article>
       <article class="card-feature">
         <span class="card-feature__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="16" r="1"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><rect x="3" y="11" width="18" height="11" rx="2"/></svg></span>
@@ -96,7 +96,7 @@ include __DIR__ . '/_partials/plans-section.php';
       <article class="card-feature">
         <span class="card-feature__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg></span>
         <h3 class="card-feature__title">Compliance beyond regulation</h3>
-        <p class="card-feature__desc">UK GDPR, SYSC, SUP, MLR, FCA safeguarding rules. Quarterly security reviews. Annual independent audit of client-money reconciliations.</p>
+        <p class="card-feature__desc">UK GDPR, anti-money-laundering checks, and internal safeguarding rules. Quarterly security reviews. Annual independent audit of client-fund reconciliations.</p>
       </article>
     </div>
   </div>
@@ -108,7 +108,7 @@ include __DIR__ . '/_partials/plans-section.php';
       <h2 class="testimonial__quote">Put your capital to work — at institutional terms, retail minimums.</h2>
       <div>
         <p class="eyebrow" style="margin-bottom: var(--space-4);"><span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>Open an account</p>
-        <p style="color: var(--color-ink-muted); margin-bottom: var(--space-5);">Three-minute sign-up. FSCS-protected from your first deposit. Pause or close anytime.</p>
+        <p style="color: var(--color-ink-muted); margin-bottom: var(--space-5);">Three-minute sign-up. Segregated from your first deposit. Close your account anytime.</p>
         <a href="/register" class="btn btn--primary">Open an account</a>
       </div>
     </div>

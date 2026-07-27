@@ -1,6 +1,6 @@
 <?php
 $page_title = 'Contact | Aldernorth Capital';
-$page_description = 'Get in touch with Aldernorth Capital — London-based FCA-authorised investment platform. Open an account, ask about regulatory permissions, or discuss a partnership.';
+$page_description = 'Get in touch with Aldernorth Capital. Open an account, ask how the plans work, or discuss a partnership.';
 $page_path = '/contact';
 $nav_variant = 'solid';
 include __DIR__ . '/_partials/head.php';

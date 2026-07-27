@@ -74,7 +74,7 @@ include __DIR__ . '/_partials/head.php';
       <article class="card-feature">
         <p style="font-family: var(--font-mono); font-size: 14px; color: var(--color-accent-red); margin-bottom: var(--space-3);">01 ·</p>
         <h3 class="card-feature__title">Open your wallet</h3>
-        <p class="card-feature__desc">Three-minute sign-up, full KYC, FSCS-protected from your first deposit.</p>
+        <p class="card-feature__desc">Three-minute sign-up, full KYC, funds segregated from your first deposit.</p>
       </article>
       <article class="card-feature">
         <p style="font-family: var(--font-mono); font-size: 14px; color: var(--color-accent-red); margin-bottom: var(--space-3);">02 ·</p>

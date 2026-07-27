@@ -4,7 +4,7 @@
 <head>
   <!-- Meta -->
   <meta charset="UTF-8">
-  <meta name="description" content="Aldernorth Capital is an FCA-authorised investment platform with high-yield savings, fractional shares, automated weekly investing, and infrastructure co-investments — all in one wallet, FSCS-protected up to £85,000.">
+  <meta name="description" content="Aldernorth Capital — invest a lump sum, choose weekly or monthly payouts, and get your principal back in full at maturity.">
   <meta name="author" content="Aldernorth Capital">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="index, follow">
@@ -103,13 +103,13 @@
         <span class="eyebrow__icon">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="6"/></svg>
         </span>
-        FCA-Authorised · FSCS-Protected
+        Segregated client funds
       </p>
 
       <h1 class="hero__title">Build wealth on autopilot.</h1>
 
       <p class="hero__subtitle">
-        High-yield savings, fractional shares, automated weekly investing, and infrastructure co-investments — in one regulated wallet, FSCS-protected up to £85,000, and engineered to compound while you sleep.
+        Invest a lump sum, pick weekly or monthly payouts, and watch them land in your wallet on schedule. Your principal comes back in full at the end of the term.
       </p>
 
       <div class="hero__cta-row">
@@ -135,7 +135,7 @@
         </p>
         <h2 class="section-header__title">Smarter investing.</h2>
         <p class="section-header__body">
-          Aldernorth Capital gives everyday savers access to the products institutions use — fixed-term yield, fractional equity, automated DCA, and infrastructure co-investments — in one wallet with one statement and one set of FSCS-protected protections. Set a strategy, fund the wallet, and compound.
+          Aldernorth Capital gives everyday savers a fixed, predictable income schedule on capital they commit for a set term — in one wallet, with one statement. Fund the wallet, pick a plan, and collect.
         </p>
         <div class="section-header__cta">
           <a href="/platform" class="btn btn--primary">See how it works</a>
@@ -174,7 +174,7 @@
           </svg>
         </span>
         <h3 class="card-feature__title">Fixed-term savings, above the high street</h3>
-        <p class="card-feature__desc">Lock in a rate at enrolment. Capital is FSCS-protected up to £85,000 and pays out automatically on maturity.</p>
+        <p class="card-feature__desc">Lock in a rate at enrolment. Payouts are credited automatically each period, and your principal is released on the maturity date.</p>
       </article>
 
       <article class="card-feature">
@@ -203,8 +203,8 @@
             <path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/>
           </svg>
         </span>
-        <h3 class="card-feature__title">FCA-authorised. FSCS-protected.</h3>
-        <p class="card-feature__desc">Client money sits in segregated accounts at a UK-regulated banking partner. Eligible deposits covered up to £85,000.</p>
+        <h3 class="card-feature__title">Segregated and reconciled.</h3>
+        <p class="card-feature__desc">Client funds sit in segregated accounts, never co-mingled with company operating funds, and are reconciled on a regular schedule.</p>
       </article>
     </div>
   </div>
@@ -293,11 +293,11 @@
           </span>
           Vision
         </p>
-        <p class="testimonial__quote">We democratise yield. The products institutions use, available from £50.</p>
+        <p class="testimonial__quote">We democratise yield. A published rate and a real schedule, available from $250.</p>
       </div>
       <div>
         <p style="font-size: var(--text-body); line-height: var(--lh-body); color: var(--color-ink-muted);">
-          For decades, the best yields, the best terms, and the cleanest reporting have been reserved for clients with seven-figure balances. We built Aldernorth Capital to flatten that — the same fixed-term products, the same fractional equity, the same infrastructure deals, available from £50 upwards, under the same FCA framework that governs the high street.
+          For decades, the best yields, the best terms, and the cleanest reporting have been reserved for clients with seven-figure balances. We built Aldernorth Capital to flatten that — a fixed, published rate and a clear payout schedule, available from $250 upwards, with the same reporting we would expect ourselves.
         </p>
       </div>
     </div>
@@ -403,7 +403,7 @@
           </svg>
         </span>
         <h3 class="card-feature__title">One wallet</h3>
-        <p class="card-feature__desc">Six regulated products, one balance, one statement. No bouncing between apps to manage savings, shares, and infrastructure.</p>
+        <p class="card-feature__desc">One product, one balance, one statement. No bouncing between apps to see what your capital is doing.</p>
       </article>
 
       <article class="card-feature">
@@ -442,8 +442,8 @@
             <path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/>
           </svg>
         </span>
-        <h3 class="card-feature__title">FCA + FSCS</h3>
-        <p class="card-feature__desc">Authorised by the Financial Conduct Authority. Eligible deposits FSCS-protected up to £85,000. Client money held in segregated accounts at a UK-regulated banking partner.</p>
+        <h3 class="card-feature__title">Safeguarding</h3>
+        <p class="card-feature__desc">Client funds held in segregated accounts, never co-mingled with company operating funds, and reconciled on a regular schedule.</p>
       </article>
 
       <article class="card-feature">
@@ -509,7 +509,7 @@
           <span class="accordion__icon" aria-hidden="true"></span>
         </summary>
         <div class="accordion__body">
-          Aldernorth Capital is an FCA-authorised investment platform built around a single product: you invest a lump sum into a plan that pays a fixed percentage of your capital back to your wallet either weekly or monthly, and returns your principal in full at the end of the term. One wallet, one statement, one set of FSCS-backed protections.
+          Aldernorth Capital is an investment platform built around a single product: you invest a lump sum into a plan that pays a fixed percentage of your capital back to your wallet either weekly or monthly, and returns your principal in full at the end of the term. One wallet, one statement, one schedule.
         </div>
       </details>
 
@@ -519,7 +519,7 @@
           <span class="accordion__icon" aria-hidden="true"></span>
         </summary>
         <div class="accordion__body">
-          Client money is held in segregated accounts at a UK-regulated banking partner — never co-mingled with company funds. Eligible deposits are covered by the Financial Services Compensation Scheme (FSCS) up to £85,000 per client. Capital is at risk on non-FSCS-protected products, and we disclose the worst-case scenario before every allocation.
+          Client funds are held in segregated accounts, never co-mingled with company operating funds, and reconciled on a regular schedule. Your capital is at risk: rates are not guaranteed, and we disclose the worst-case scenario before every allocation.
         </div>
       </details>
 

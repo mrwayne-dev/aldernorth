@@ -1,6 +1,6 @@
 <?php
-$page_title = 'About Aldernorth Capital | FCA-Authorised Investment Platform';
-$page_description = 'Aldernorth Capital — London-based FCA-authorised investment platform giving everyday investors access to institutional-grade yield products, transparency, and FSCS-backed protections.';
+$page_title = 'About Aldernorth Capital | Weekly and monthly investment plans';
+$page_description = 'Aldernorth Capital — invest a lump sum, choose weekly or monthly payouts, and get your principal back in full at maturity.';
 $page_path = '/about';
 include __DIR__ . '/_partials/head.php';
 ?>
@@ -47,7 +47,7 @@ include __DIR__ . '/_partials/head.php';
       <article class="card-feature">
         <span class="card-feature__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg></span>
         <h3 class="card-feature__title">Authorisation &amp; protection</h3>
-        <p class="card-feature__desc">Authorised and regulated by the Financial Conduct Authority. Client money in segregated UK bank accounts. Eligible deposits FSCS-protected up to £85,000 per client.</p>
+        <p class="card-feature__desc">Client funds are held in segregated accounts, separate from company operating funds, and reconciled on a regular schedule.</p>
       </article>
       <article class="card-feature">
         <span class="card-feature__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12c0 5-4 9-9 9s-9-4-9-9 4-9 9-9 9 4 9 9z"/><path d="M9 12l2 2 4-4"/></svg></span>
@@ -71,7 +71,7 @@ include __DIR__ . '/_partials/head.php';
       <div>
         <p class="eyebrow" style="margin-bottom: var(--space-4);"><span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>How it started</p>
         <p style="color: var(--color-ink-muted);">
-          Aldernorth Capital began in 2020, when the founding team — alumni of major UK banks, fintech start-ups, and asset managers — kept hearing the same complaint: <em>"Why are the only options my bank gives me a 0.5% saver and a cash ISA?"</em> With backgrounds in regulated financial services and investment operations, they set out to build a single platform that delivered institutional-grade yield products to retail savers, under the same FCA framework that governs the high street.
+          Aldernorth Capital began in 2020, when the founding team — alumni of major UK banks, fintech start-ups, and asset managers — kept hearing the same complaint: <em>"Why are the only options my bank gives me a 0.5% saver and a cash ISA?"</em> With backgrounds in regulated financial services and investment operations, they set out to build a single platform that delivered a clear, published rate and a predictable payout schedule to everyday savers.
         </p>
       </div>
     </div>
@@ -86,7 +86,7 @@ include __DIR__ . '/_partials/head.php';
       <div>
         <p class="eyebrow" style="margin-bottom: var(--space-4);"><span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>Privacy policy</p>
         <p style="color: var(--color-ink-muted);">
-          At Aldernorth Capital, privacy is a core design principle. As a London-based, FCA-authorised investment firm, we operate under UK GDPR, the Data Protection Act 2018, and the FCA's SYSC and SUP requirements. Every customer's information is stored using end-to-end encryption and processed only on the lawful bases set out in our Privacy Notice. We never sell identifiable personal data, and our internal analytics run on de-identified datasets.
+          At Aldernorth Capital, privacy is a core design principle. We operate under UK GDPR, the Data Protection Act 2018, and recognised operational-resilience and record-keeping standards. Every customer's information is stored using end-to-end encryption and processed only on the lawful bases set out in our Privacy Notice. We never sell identifiable personal data, and our internal analytics run on de-identified datasets.
         </p>
       </div>
     </div>
@@ -101,10 +101,10 @@ include __DIR__ . '/_partials/head.php';
       <div>
         <p class="eyebrow" style="margin-bottom: var(--space-4);"><span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>Terms of use</p>
         <p style="color: var(--color-ink-muted); margin-bottom: var(--space-3);">
-          By opening an account you agree to our suitability process, fee schedule, and the FCA-mandated disclosures presented before each allocation. Customers may invest across our weekly and monthly plans — subject to per-plan minimums, fixed terms, and risk disclosures.
+          By opening an account you agree to our suitability process, fee schedule, and the risk disclosures presented before each allocation. Customers may invest across our weekly and monthly plans — subject to per-plan minimums, fixed terms, and risk disclosures.
         </p>
         <p style="color: var(--color-ink-muted);">
-          Past performance does not guarantee future returns; capital is at risk on non-FSCS-protected products. Accounts must be used only by the registered individual. Misuse may result in account suspension and referral to relevant authorities.
+          Past performance does not guarantee future returns, and your capital is at risk. Accounts must be used only by the registered individual. Misuse may result in account suspension and referral to relevant authorities.
         </p>
       </div>
     </div>
