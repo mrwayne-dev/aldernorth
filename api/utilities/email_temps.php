@@ -19,20 +19,24 @@ function getEmailTemplates() {
     $websiteUrl = 'https://aldernorthcapital.com/'; // Define main website URL
     $adminUrl = 'https://aldernorthcapital.com/admin'; // Define Admin Login URL
 
-    // ANC email color palette — light mode email
+    // ANC email palette. Deliberately light-mode only: email clients have no
+    // reliable prefers-color-scheme support, and the dark UI palette does not
+    // survive Outlook's renderer. Brand orange carries the identity instead.
     $colors = [
-        'primary'           => '#CC0000',   // ANC brand red
+        'primary'           => '#C24608',   // Brand orange, darkened for AA on white
         'primary_light'     => '#FFFFFF',   // Email outer body — white
         'surface'           => '#FFFFFF',   // Email card surface — white
-        'background'        => '#F8F8F8',   // Subtle neutral for data blocks
-        'text'              => '#1C2628',   // Body text
-        'muted'             => '#6B7C7D',   // Muted text
-        'border'            => 'rgba(28, 38, 40, 0.1)', // Hairline border
-        'success'           => '#22C55E',   // Success green
-        'danger'            => '#CC0000',   // ANC brand red (used for security/CTA)
+        'background'        => '#FAF6F4',   // Warm neutral for data blocks
+        'text'              => '#161316',   // Body text — brand ink
+        'muted'             => '#6B615C',   // Muted text
+        'border'            => 'rgba(22, 19, 22, 0.10)', // Hairline border
+        'success'           => '#15803D',   // Success green
+        'danger'            => '#B91C1C',   // True red, reserved for security alerts
         'warning_bg'        => '#FEF3C7',   // Warning block background (warm light)
         'warning_border'    => '#F59E0B',   // Warning block border (amber)
-        'highlight_text'    => '#1C2628',   // Contrast text color
+        'highlight_text'    => '#161316',   // Contrast text color
+        'header_bg'         => '#161316',   // Masthead — brand ink
+        'accent'            => '#FF6D29',   // True brand orange for fills/rules
     ];
 
     // --- Reusable HTML Blocks ---
@@ -45,7 +49,7 @@ function getEmailTemplates() {
 
     // Header structure — ANC red brand band
     $header = "
-        <table role='presentation' cellspacing='0' cellpadding='0' border='0' width='100%' style='background:{$colors['primary']};'>
+        <table role='presentation' cellspacing='0' cellpadding='0' border='0' width='100%' style='background:{$colors['header_bg']};'>
             <tr>
                 <td style='padding: 20px 28px; border-bottom: 1px solid {$colors['primary']};'>
                     <a href='{$websiteUrl}' target='_blank'>
@@ -435,13 +439,40 @@ function getEmailTemplates() {
                 <p>Hi {{user_name}},</p>
                 <p>Your investment in <strong>{{plan_name}}</strong> has been successfully initiated.</p>
                 <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Amount:</strong> \${{amount}}</p>
-                    <p style='margin: 6px 0;'><strong>ROI:</strong> {{roi_percent}}%</p>
-                    <p style='margin: 6px 0;'><strong>Duration:</strong> {{duration_days}} days</p>
-                    <p style='margin: 6px 0;'><strong>Maturity Date:</strong> {{maturity_date}}</p>
+                    <p style='margin: 6px 0;'><strong>Amount invested:</strong> \${{amount}}</p>
+                    <p style='margin: 6px 0;'><strong>Rate:</strong> {{roi_percent}}% per {{cadence}} period</p>
+                    <p style='margin: 6px 0;'><strong>You receive:</strong> \${{per_payout}} every {{cadence}} period</p>
+                    <p style='margin: 6px 0;'><strong>Number of payouts:</strong> {{payouts_total}}</p>
+                    <p style='margin: 6px 0;'><strong>First payout:</strong> {{first_payout}}</p>
+                    <p style='margin: 6px 0;'><strong>Maturity date:</strong> {{maturity_date}}</p>
                     <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
                 </div>
+                <p>Each payout is credited straight to your wallet and is available to
+                withdraw immediately. Your original \${{amount}} is returned in full on
+                the maturity date, on top of every payout you have already received.</p>
                 <p>Thank you for trusting <strong>{$appName}</strong> with your investment. You can monitor its progress anytime in your dashboard.</p>
+                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
+            "),
+        ],
+
+        'investment_payout' => [
+            'subject' => 'Your scheduled payout has been credited',
+            'html' => $wrap("
+                <h2 style='color: {$colors['success']}; margin-top: 0;'>Payout Credited</h2>
+                <p>Hi {{user_name}},</p>
+                <p>A scheduled payout from <strong>{{plan_name}}</strong> has just landed in your wallet.</p>
+                <div style='{$dataBlockStyle}'>
+                    <p style='margin: 6px 0;'><strong>Amount credited:</strong> \${{amount}}</p>
+                    <p style='margin: 6px 0;'><strong>Schedule:</strong> {{cadence}}</p>
+                    <p style='margin: 6px 0;'><strong>Payouts so far:</strong> {{payouts_made}} of {{payouts_total}}</p>
+                    <p style='margin: 6px 0;'><strong>Next payout:</strong> {{next_payout}}</p>
+                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
+                </div>
+                <p>The funds are available to withdraw now, or you can leave them in your
+                wallet to put towards another plan.</p>
+                <p style='text-align:center; margin: 26px 0;'>
+                    <a href='{$websiteUrl}dashboard.invest' style='display:inline-block; background-color: {$colors['accent']}; color: #161316; padding: 12px 28px; text-decoration: none; border-radius: 6px; font-weight: 600;' target='_blank'>View your positions</a>
+                </p>
                 <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
             "),
         ],
@@ -463,284 +494,6 @@ function getEmailTemplates() {
         ],
 
         // ========================== X-WEEKLY EMAILS ==========================
-        'xweekly_enrolled' => [
-            'subject' => 'Your X-Weekly Program Has Started',
-            'html' => $wrap("
-                <h2 style='color: {$colors['success']}; margin-top: 0;'>X-Weekly Program Confirmed</h2>
-                <p>Hi {{user_name}},</p>
-                <p>You're now enrolled in <strong>{{plan_name}}</strong>. Your first weekly contribution has been credited to the program.</p>
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Weekly Amount:</strong> \${{weekly_amount}}</p>
-                    <p style='margin: 6px 0;'><strong>ROI:</strong> {{roi_percent}}%</p>
-                    <p style='margin: 6px 0;'><strong>Next Debit:</strong> {{next_debit}}</p>
-                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
-                </div>
-                <p>Each week we'll automatically debit your wallet on the scheduled date. You can pause, resume, or cancel anytime from your dashboard.</p>
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
-            "),
-        ],
-
-        'admin_xweekly_notification' => [
-            'subject' => 'New X-Weekly Enrolment on ' . $appName,
-            'html' => $wrap("
-                <h2 style='color: {$colors['primary']}; margin-top: 0;'>New X-Weekly Enrolment</h2>
-                <p>Hello Admin,</p>
-                <p><strong>{{user_name}}</strong> ({{user_email}}) has enrolled in an X-Weekly program.</p>
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Plan:</strong> {{plan_name}}</p>
-                    <p style='margin: 6px 0;'><strong>Weekly Amount:</strong> \${{weekly_amount}}</p>
-                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
-                </div>
-                <p>Please log in to the admin dashboard to review this enrolment.</p>
-                <p style='margin-top:24px;'>— <strong>{$appName} System</strong></p>
-            "),
-        ],
-
-        // ========================== X-SHARES EMAILS ==========================
-        'xshares_started' => [
-            'subject' => 'Your X-Shares Position Has Been Opened',
-            'html' => $wrap("
-                <h2 style='color: {$colors['success']}; margin-top: 0;'>X-Shares Position Confirmed</h2>
-                <p>Hi {{user_name}},</p>
-                <p>Your X-Shares position in <strong>{{asset_name}} ({{ticker}})</strong> — {{company}} — has been opened successfully.</p>
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Amount Invested:</strong> \${{amount}}</p>
-                    <p style='margin: 6px 0;'><strong>ROI:</strong> {{roi_percent}}%</p>
-                    <p style='margin: 6px 0;'><strong>Payout Option:</strong> {{payout_option}}</p>
-                    <p style='margin: 6px 0;'><strong>Maturity Date:</strong> {{maturity_date}}</p>
-                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
-                </div>
-                <p>You can track this position and your accrued ROI anytime from your {$appName} dashboard.</p>
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
-            "),
-        ],
-
-        'admin_xshares_notification' => [
-            'subject' => 'New X-Shares Position on ' . $appName,
-            'html' => $wrap("
-                <h2 style='color: {$colors['primary']}; margin-top: 0;'>New X-Shares Position</h2>
-                <p>Hello Admin,</p>
-                <p><strong>{{user_name}}</strong> ({{user_email}}) has opened a new X-Shares position.</p>
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Asset:</strong> {{asset_name}} ({{ticker}})</p>
-                    <p style='margin: 6px 0;'><strong>Amount:</strong> \${{amount}}</p>
-                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
-                </div>
-                <p>Please log in to the admin dashboard to review this position.</p>
-                <p style='margin-top:24px;'>— <strong>{$appName} System</strong></p>
-            "),
-        ],
-
-        'xshares_matured' => [
-            'subject' => 'Your X-Shares Position Has Been Unlocked',
-            'html' => $wrap("
-                <h2 style='color: {$colors['success']}; margin-top: 0;'>X-Shares Payout Credited</h2>
-                <p>Hi {{user_name}},</p>
-                <p>Your X-Shares position has been unlocked and the proceeds have been credited to your wallet.</p>
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Principal:</strong> \${{principal}}</p>
-                    <p style='margin: 6px 0;'><strong>ROI Earned:</strong> \${{roi_earned}}</p>
-                    <p style='margin: 6px 0;'><strong>Total Payout:</strong> \${{payout}}</p>
-                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
-                </div>
-                <p>Funds are available immediately for reinvestment or withdrawal.</p>
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
-            "),
-        ],
-
-        // ========================== X-REWARDS EMAILS ==========================
-        'xrewards_order_placed' => [
-            'subject' => 'Your X-Rewards Order Has Been Received',
-            'html' => $wrap("
-                <h2 style='color: {$colors['success']}; margin-top: 0;'>Order Confirmed</h2>
-                <p>Hi {{user_name}},</p>
-                <p>Thanks for redeeming through X-Rewards. We've received your order and it's being prepared for fulfilment.</p>
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Product:</strong> {{product_name}}</p>
-                    <p style='margin: 6px 0;'><strong>Quantity:</strong> {{quantity}}</p>
-                    <p style='margin: 6px 0;'><strong>Unit Price:</strong> \${{unit_price}}</p>
-                    <p style='margin: 6px 0;'><strong>Total Charged:</strong> \${{total_price}}</p>
-                    <p style='margin: 6px 0;'><strong>Order Reference:</strong> {{reference}}</p>
-                </div>
-                <p>You'll receive another update once your order ships. You can also track the status from your {$appName} dashboard.</p>
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
-            "),
-        ],
-
-        'admin_xrewards_order' => [
-            'subject' => 'New X-Rewards Order on ' . $appName,
-            'html' => $wrap("
-                <h2 style='color: {$colors['primary']}; margin-top: 0;'>New X-Rewards Order</h2>
-                <p>Hello Admin,</p>
-                <p><strong>{{user_name}}</strong> ({{user_email}}) has placed a new X-Rewards order awaiting fulfilment.</p>
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Product:</strong> {{product_name}}</p>
-                    <p style='margin: 6px 0;'><strong>Quantity:</strong> {{quantity}}</p>
-                    <p style='margin: 6px 0;'><strong>Total:</strong> \${{total_price}}</p>
-                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
-                </div>
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Shipping Details:</strong></p>
-                    <p style='margin: 6px 0; white-space: pre-wrap;'>{{shipping_details}}</p>
-                </div>
-                <p>Please log in to the admin dashboard to confirm and ship.</p>
-                <p style='margin-top:24px;'>— <strong>{$appName} System</strong></p>
-            "),
-        ],
-
-        'xrewards_order_cancelled' => [
-            'subject' => 'Your X-Rewards Order Has Been Cancelled',
-            'html' => $wrap("
-                <h2 style='color: {$colors['danger']}; margin-top: 0;'>Order Cancelled</h2>
-                <p>Hi {{user_name}},</p>
-                <p>Your X-Rewards order for <strong>{{product_name}}</strong> ({{quantity}}× units) has been cancelled and the amount refunded to your wallet.</p>
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Refund Amount:</strong> \${{refund}}</p>
-                    <p style='margin: 6px 0;'><strong>Refund Reference:</strong> {{reference}}</p>
-                </div>
-                <p>The refund is immediately available in your wallet balance. Sorry to see this one go — we hope you'll redeem with us again soon.</p>
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
-            "),
-        ],
-
-        // ========================== RECURRING / ROI CRON EMAILS ==========================
-        'xweekly_debit' => [
-            'subject' => 'X-Weekly: This Week\'s Contribution & ROI Credit',
-            'html' => $wrap("
-                <h2 style='color: {$colors['primary']}; margin-top: 0;'>Weekly X-Weekly Update</h2>
-                <p>Hi {{user_name}},</p>
-                <p>Your scheduled X-Weekly contribution has been processed and this week's ROI has been credited to your wallet.</p>
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Debited This Week:</strong> \${{weekly_amount}}</p>
-                    <p style='margin: 6px 0;'><strong>ROI Credited:</strong> \${{roi_credit}}</p>
-                    <p style='margin: 6px 0;'><strong>Total Invested To Date:</strong> \${{total_invested}}</p>
-                    <p style='margin: 6px 0;'><strong>Next Debit:</strong> {{next_debit}}</p>
-                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
-                </div>
-                <p>Your X-Weekly program continues to compound. You can pause, resume, or cancel anytime from your dashboard.</p>
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
-            "),
-        ],
-
-        'xshares_payout' => [
-            'subject' => 'X-Shares ROI Payout Credited',
-            'html' => $wrap("
-                <h2 style='color: {$colors['success']}; margin-top: 0;'>X-Shares Payout Credited</h2>
-                <p>Hi {{user_name}},</p>
-                <p>Your scheduled X-Shares ROI payout has been credited to your wallet.</p>
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Amount Credited:</strong> \${{amount}}</p>
-                    <p style='margin: 6px 0;'><strong>Schedule:</strong> {{schedule}}</p>
-                    <p style='margin: 6px 0;'><strong>Periods Paid:</strong> {{periods}}</p>
-                    <p style='margin: 6px 0;'><strong>Total ROI Earned:</strong> \${{roi_total}}</p>
-                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
-                </div>
-                <p>Funds are immediately available for reinvestment or withdrawal from your {$appName} dashboard.</p>
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
-            "),
-        ],
-
-        // ========================== X-REWARDS FULFILMENT EMAILS ==========================
-        'xrewards_order_confirmed' => [
-            'subject' => 'Your X-Rewards Order Has Been Confirmed',
-            'html' => $wrap("
-                <h2 style='color: {$colors['success']}; margin-top: 0;'>Order Confirmed</h2>
-                <p>Hi {{user_name}},</p>
-                <p>Good news — our fulfilment team has confirmed your order and it's now being prepared for shipping.</p>
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Product:</strong> {{product_name}}</p>
-                    <p style='margin: 6px 0;'><strong>Quantity:</strong> {{quantity}}</p>
-                    <p style='margin: 6px 0;'><strong>Order Reference:</strong> {{reference}}</p>
-                </div>
-                <p>You'll receive another update the moment it ships. Track progress anytime from your {$appName} dashboard.</p>
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
-            "),
-        ],
-
-        'xrewards_order_shipped' => [
-            'subject' => 'Your X-Rewards Order Is On The Way',
-            'html' => $wrap("
-                <h2 style='color: {$colors['primary']}; margin-top: 0;'>Order Shipped</h2>
-                <p>Hi {{user_name}},</p>
-                <p>Your X-Rewards order is on its way to the address you provided.</p>
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Product:</strong> {{product_name}}</p>
-                    <p style='margin: 6px 0;'><strong>Quantity:</strong> {{quantity}}</p>
-                    <p style='margin: 6px 0;'><strong>Order Reference:</strong> {{reference}}</p>
-                </div>
-                <p>Delivery times vary by region. You can review delivery progress from your {$appName} dashboard.</p>
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
-            "),
-        ],
-
-        // ========================== X-WEEKLY ADMIN ACTION EMAILS ==========================
-        'xweekly_admin_paused' => [
-            'subject' => 'Your X-Weekly Program Has Been Paused',
-            'html' => $wrap("
-                <h2 style='color: {$colors['warning_border']}; margin-top: 0;'>X-Weekly Program Paused</h2>
-                <p>Hi {{user_name}},</p>
-                <p>Your X-Weekly program (#{{program_id}}) has been paused by our team. While paused, no weekly debits will be taken from your wallet.</p>
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Weekly Amount:</strong> \${{weekly_amount}}</p>
-                    <p style='margin: 6px 0;'><strong>Reason:</strong> {{reason}}</p>
-                </div>
-                <p>Your accumulated investment continues to earn ROI in the background. If you have questions, reply to this email — we're happy to help.</p>
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
-            "),
-        ],
-
-        'xweekly_admin_cancelled' => [
-            'subject' => 'Your X-Weekly Program Has Been Cancelled',
-            'html' => $wrap("
-                <h2 style='color: {$colors['danger']}; margin-top: 0;'>X-Weekly Program Cancelled</h2>
-                <p>Hi {{user_name}},</p>
-                <p>Your X-Weekly program (#{{program_id}}) has been cancelled by our team. No further weekly debits will be processed.</p>
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Weekly Amount:</strong> \${{weekly_amount}}</p>
-                    <p style='margin: 6px 0;'><strong>Total Invested To Date:</strong> \${{total_invested}}</p>
-                    <p style='margin: 6px 0;'><strong>Reason:</strong> {{reason}}</p>
-                </div>
-                <p>Funds already invested remain active and continue to earn ROI on their original schedule. You can review them anytime from your {$appName} dashboard.</p>
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
-            "),
-        ],
-
-        // ========================== X-WEEKLY USER ACTION EMAILS ==========================
-        'xweekly_paused' => [
-            'subject' => 'X-Weekly Program Paused',
-            'html' => $wrap("
-                <h2 style='color: {$colors['warning_border']}; margin-top: 0;'>X-Weekly Program Paused</h2>
-                <p>Hi {{user_name}},</p>
-                <p>You've paused your X-Weekly program (#{{program_id}}). No further weekly debits will be taken from your wallet until you resume it.</p>
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Program ID:</strong> #{{program_id}}</p>
-                    <p style='margin: 6px 0;'><strong>Total Invested To Date:</strong> \${{total_invested}}</p>
-                </div>
-                <p>Your accumulated investment continues to earn ROI while paused. Resume anytime from your {$appName} dashboard.</p>
-                <p style='text-align:center; margin: 28px 0;'>
-                    <a href='{$websiteUrl}dashboard.xweekly' style='display:inline-block; background-color: {$colors['danger']}; color: white; padding: 12px 28px; text-decoration: none; border-radius: 6px; font-weight: 600;' target='_blank'>Resume Program</a>
-                </p>
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
-            "),
-        ],
-
-        'xweekly_cancelled' => [
-            'subject' => 'X-Weekly Program Cancelled',
-            'html' => $wrap("
-                <h2 style='color: {$colors['danger']}; margin-top: 0;'>X-Weekly Program Cancelled</h2>
-                <p>Hi {{user_name}},</p>
-                <p>You've cancelled your X-Weekly program. No further weekly debits will be processed from your wallet.</p>
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Total Invested To Date:</strong> \${{total_invested}}</p>
-                </div>
-                <p>Funds already invested remain active and continue to earn ROI on their original schedule. You can review them anytime from your {$appName} dashboard, or start a new program whenever you're ready.</p>
-                <p style='text-align:center; margin: 28px 0;'>
-                    <a href='{$websiteUrl}dashboard.xweekly' style='display:inline-block; background-color: {$colors['danger']}; color: white; padding: 12px 28px; text-decoration: none; border-radius: 6px; font-weight: 600;' target='_blank'>Start a New Program</a>
-                </p>
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
-            "),
-        ],
-
         'weekly_investment_update' => [
             'subject' => 'Weekly ROI Update — ' . $appName . ' Investment',
             'html' => $wrap("
@@ -758,107 +511,28 @@ function getEmailTemplates() {
         ],
 
         'investment_matured' => [
-            'subject' => 'Your Investment Has Matured — Funds Credited',
+            'subject' => 'Your investment has matured — principal released',
             'html' => $wrap("
-                <h2 style='color: {$colors['success']}; margin-top: 0;'>Investment Maturity Notice</h2>
-                <p>Congratulations {{user_name}},</p>
-                <p>Your investment in <strong>{{plan_name}}</strong> has successfully matured and the payout has been credited to your wallet.</p>
+                <h2 style='color: {$colors['success']}; margin-top: 0;'>Investment Matured</h2>
+                <p>Hi {{user_name}},</p>
+                <p>Your <strong>{{plan_name}}</strong> position has reached its maturity date and
+                your original capital has been released back to your wallet.</p>
                 <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Principal:</strong> \${{amount}}</p>
-                    <p style='margin: 6px 0;'><strong>ROI Earned:</strong> \${{roi_earned}}</p>
-                    <p style='margin: 6px 0;'><strong>Total Payout:</strong> \${{total_payout}}</p>
-                    <p style='margin: 6px 0;'><strong>Maturity Date:</strong> {{maturity_date}}</p>
+                    <p style='margin: 6px 0;'><strong>Principal returned:</strong> \${{principal}}</p>
+                    <p style='margin: 6px 0;'><strong>Total payouts received:</strong> \${{roi_earned}}</p>
+                    <p style='margin: 6px 0;'><strong>Total value of this position:</strong> \${{payout}}</p>
+                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
                 </div>
-                <p>Thank you for choosing <strong>{$appName}</strong>. We look forward to helping you grow your impact even further.</p>
-                <p style='margin-top:24px;'>Warm regards,<br><strong>The {$appName} Investments Team</strong></p>
+                <p>Your payouts were credited period by period throughout the term, so this
+                final transfer is the principal only.</p>
+                <p style='text-align:center; margin: 26px 0;'>
+                    <a href='{$websiteUrl}dashboard.invest' style='display:inline-block; background-color: {$colors['accent']}; color: #161316; padding: 12px 28px; text-decoration: none; border-radius: 6px; font-weight: 600;' target='_blank'>Start another plan</a>
+                </p>
+                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
             "),
         ],
         // ===============================
         // 📧 HOLDLOCK EMAIL TEMPLATES
-        // ===============================
-
-        'holdlock_started' => [
-            'subject' => 'Your HoldLock Plan Has Been Activated',
-            'html' => $wrap("
-                <h2 style='color: {$colors['success']}; margin-top: 0;'>HoldLock Plan Activated</h2>
-                <p>Hi {{user_name}},</p>
-                <p>We’re pleased to inform you that your <strong>{{plan_name}}</strong> has been successfully activated on <strong>{$appName}</strong>.</p>
-
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Amount Locked:</strong> \${{amount}}</p>
-                    <p style='margin: 6px 0;'><strong>ROI:</strong> {{roi_percent}}%</p>
-                    <p style='margin: 6px 0;'><strong>Duration:</strong> {{duration_days}} days</p>
-                    <p style='margin: 6px 0;'><strong>Early Unlock Penalty:</strong> {{penalty_percent}}%</p>
-                    <p style='margin: 6px 0;'><strong>Maturity Date:</strong> {{maturity_date}}</p>
-                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
-                </div>
-
-                <p>Your funds are now securely held and will begin accruing interest immediately. You’ll be notified once your plan reaches maturity or becomes eligible for early unlock.</p>
-
-                <p style='margin-top:24px;'>Warm regards,<br><strong>The {$appName} Team</strong></p>
-            "),
-        ],
-
-        'admin_holdlock_notification' => [
-            'subject' => 'New HoldLock Plan Started on ' . $appName,
-            'html' => $wrap("
-                <h2 style='color: {$colors['primary']}; margin-top: 0;'>New HoldLock Plan Alert</h2>
-                <p>Hello Admin,</p>
-                <p>A new HoldLock plan has been initiated by a user.</p>
-
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>User Name:</strong> {{user_name}}</p>
-                    <p style='margin: 6px 0;'><strong>User Email:</strong> {{user_email}}</p>
-                    <p style='margin: 6px 0;'><strong>Plan:</strong> {{plan_name}}</p>
-                    <p style='margin: 6px 0;'><strong>Amount Locked:</strong> \${{amount}}</p>
-                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
-                </div>
-
-                <p>Please review this transaction in the admin dashboard if needed. This notification is for record and tracking purposes.</p>
-                <p style='margin-top:24px;'>Best regards,<br><strong>{$appName} System</strong></p>
-            "),
-        ],
-
-        'holdlock_unlocked_early' => [
-            'subject' => 'Early Unlock Processed for Your HoldLock Plan',
-            'html' => $wrap("
-                <h2 style='color: {$colors['danger']}; margin-top: 0;'>HoldLock Early Unlock Processed</h2>
-                <p>Hi {{user_name}},</p>
-                <p>Your <strong>{{plan_name}}</strong> plan was unlocked early as requested.</p>
-
-                <div style='{$dataBlockStyle}; border-left: 4px solid {$colors['danger']};'>
-                    <p style='margin: 6px 0;'><strong>ROI Earned:</strong> \${{roi}}</p>
-                    <p style='margin: 6px 0;'><strong>Penalty Applied:</strong> \${{penalty}}</p>
-                    <p style='margin: 6px 0;'><strong>Total Payout:</strong> \${{payout}}</p>
-                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
-                </div>
-
-                <p>Your payout has been credited to your wallet. Please note that early unlocks include a penalty deduction as stated in the plan’s terms.</p>
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
-            "),
-        ],
-
-        'holdlock_matured' => [
-            'subject' => 'Your HoldLock Plan Has Matured — Funds Credited!',
-            'html' => $wrap("
-                <h2 style='color: {$colors['success']}; margin-top: 0;'>HoldLock Plan Matured</h2>
-                <p>Congratulations {{user_name}},</p>
-                <p>Your <strong>{{plan_name}}</strong> plan has successfully matured, and your funds have been credited to your wallet.</p>
-
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Amount Locked:</strong> \${{amount}}</p>
-                    <p style='margin: 6px 0;'><strong>ROI Earned:</strong> \${{roi_earned}}</p>
-                    <p style='margin: 6px 0;'><strong>Total Payout:</strong> \${{payout}}</p>
-                    <p style='margin: 6px 0;'><strong>Maturity Date:</strong> {{maturity_date}}</p>
-                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
-                </div>
-
-                <p>Your funds are now available in your {$appName} wallet for withdrawal or reinvestment. We’re delighted to have supported your journey to financial growth.</p>
-                <p style='margin-top:24px;'>Warm regards,<br><strong>The {$appName} Team</strong></p>
-            "),
-        ],
-        // ===============================
-        // 📧 TRUSTFUND EMAIL TEMPLATES
         // ===============================
 
         'trustfund_started' => [
@@ -942,88 +616,6 @@ function getEmailTemplates() {
         ],
         // ===============================
         // 📧 INFRASTRUCTURE EMAIL TEMPLATES
-        // ===============================
-
-        'infrastructure_started' => [
-            'subject' => 'Your Infrastructure Investment Has Been Activated',
-            'html' => $wrap("
-                <h2 style='color: {$colors['success']}; margin-top: 0;'>Infrastructure Investment Activated</h2>
-                <p>Hi {{user_name}},</p>
-                <p>Your investment in <strong>{{plan_name}}</strong> has been successfully activated on {$appName}.</p>
-
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Amount:</strong> \${{amount}}</p>
-                    <p style='margin: 6px 0;'><strong>ROI:</strong> {{roi_percent}}%</p>
-                    <p style='margin: 6px 0;'><strong>Maturity Date:</strong> {{maturity_date}}</p>
-                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
-                </div>
-
-                <p>Your funds are now securely committed to the selected healthcare infrastructure plan. You will receive quarterly ROI payouts, and your full capital will be returned at maturity.</p>
-
-                <p style='margin-top:24px;'>Warm regards,<br><strong>The {$appName} Infrastructure Team</strong></p>
-            "),
-        ],
-
-        'admin_infrastructure_notification' => [
-            'subject' => 'New Infrastructure Investment on ' . $appName,
-            'html' => $wrap("
-                <h2 style='color: {$colors['primary']}; margin-top: 0;'>New Infrastructure Investment Alert</h2>
-                <p>Hello Admin,</p>
-                <p>A user has started a new infrastructure investment plan on {$appName}.</p>
-
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>User Name:</strong> {{user_name}}</p>
-                    <p style='margin: 6px 0;'><strong>User Email:</strong> {{user_email}}</p>
-                    <p style='margin: 6px 0;'><strong>Plan:</strong> {{plan_name}}</p>
-                    <p style='margin: 6px 0;'><strong>Amount:</strong> \${{amount}}</p>
-                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
-                </div>
-
-                <p>This notification is for record purposes. Please review in the admin dashboard if needed.</p>
-                <p style='margin-top:24px;'>— <strong>{$appName} System</strong></p>
-            "),
-        ],
-
-        'infrastructure_matured' => [
-            'subject' => 'Your Infrastructure Investment Has Matured — Funds Credited!',
-            'html' => $wrap("
-                <h2 style='color: {$colors['success']}; margin-top: 0;'>Infrastructure Plan Matured</h2>
-                <p>Congratulations {{user_name}},</p>
-                <p>Your <strong>{{plan_name}}</strong> investment has matured, and your funds have been credited to your wallet.</p>
-
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Principal:</strong> \${{amount}}</p>
-                    <p style='margin: 6px 0;'><strong>ROI Earned:</strong> \${{roi_earned}}</p>
-                    <p style='margin: 6px 0;'><strong>Total Payout:</strong> \${{payout}}</p>
-                    <p style='margin: 6px 0;'><strong>Maturity Date:</strong> {{maturity_date}}</p>
-                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
-                </div>
-
-                <p>Your investment has created meaningful impact while earning healthy returns. Thank you for supporting healthcare advancement through <strong>{$appName}</strong>.</p>
-                <p style='margin-top:24px;'>Warm regards,<br><strong>The {$appName} Infrastructure Team</strong></p>
-            "),
-        ],
-
-        'infrastructure_unlocked_early' => [
-            'subject' => 'Early Unlock Processed for Your Infrastructure Plan',
-            'html' => $wrap("
-                <h2 style='color: {$colors['danger']}; margin-top: 0;'>Infrastructure Early Unlock Processed</h2>
-                <p>Hi {{user_name}},</p>
-                <p>Your <strong>{{plan_name}}</strong> investment was unlocked early as requested.</p>
-
-                <div style='{$dataBlockStyle}; border-left: 4px solid {$colors['danger']};'>
-                    <p style='margin: 6px 0;'><strong>ROI Earned:</strong> \${{roi_earned}}</p>
-                    <p style='margin: 6px 0;'><strong>Total Payout:</strong> \${{payout}}</p>
-                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
-                </div>
-
-                <p>Your payout has been credited to your wallet. Please note that early unlocks may include reduced ROI or penalties as per your plan terms.</p>
-
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
-            "),
-        ],
-        // ===============================
-        // 📧 MAINTENANCE DEVELOPMENT EMAIL TEMPLATES
         // ===============================
 
         'maintenance_started' => [

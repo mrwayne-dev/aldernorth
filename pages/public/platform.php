@@ -28,67 +28,46 @@ include __DIR__ . '/_partials/head.php';
 <section class="section section--white" id="products">
   <div class="container">
     <div class="section-header" style="margin-bottom: var(--space-10);">
-      <p class="eyebrow"><span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>Products</p>
-      <h2 class="section-header__title">The Aldernorth Capital product suite.</h2>
-      <p class="section-header__body">Six regulated products, all under the same FCA framework. Use them alone or stack them across short, medium, and long horizons.</p>
+      <p class="eyebrow"><span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>How it works</p>
+      <h2 class="section-header__title">One product, done properly.</h2>
+      <p class="section-header__body">We deliberately do not run a sprawling product shelf. There is one thing to decide — how often you want to be paid — and everything else is handled for you.</p>
     </div>
 
     <div class="grid-2">
-      <a href="/xlock" class="card-image">
-        <div class="card-image__media"><img src="/assets/images/x-lock-card.webp" width="1200" height="900" alt="" loading="lazy"></div>
-        <div class="card-image__body">
-          <span class="card-image__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
-          <h3 class="card-image__title">X-Lock</h3>
-          <p class="card-image__desc">Fixed-term savings, rates above the high street. FSCS-protected up to £85,000.</p>
-        </div>
-      </a>
-      <a href="/investment" class="card-image">
-        <div class="card-image__media"><img src="/assets/images/x-yield-card.webp" width="1200" height="900" alt="" loading="lazy"></div>
-        <div class="card-image__body">
-          <span class="card-image__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></span>
-          <h3 class="card-image__title">X-Yield</h3>
-          <p class="card-image__desc">Fixed-duration plans with a known ROI and maturity date.</p>
-        </div>
-      </a>
-      <a href="/xweekly" class="card-image">
-        <div class="card-image__media"><img src="/assets/images/x-weekly-card.jpg" width="1200" height="900" alt="" loading="lazy"></div>
-        <div class="card-image__body">
-          <span class="card-image__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12a9 9 0 1 1 9 9"/></svg></span>
-          <h3 class="card-image__title">X-Weekly</h3>
-          <p class="card-image__desc">Automated weekly contributions. Pause, resume, or cancel anytime.</p>
-        </div>
-      </a>
-      <a href="/xshares" class="card-image">
-        <div class="card-image__media"><img src="/assets/images/x-shares-card.jpg" width="1200" height="900" alt="" loading="lazy"></div>
-        <div class="card-image__body">
-          <span class="card-image__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/></svg></span>
-          <h3 class="card-image__title">X-Shares</h3>
-          <p class="card-image__desc">Fractional positions with weekly, monthly, or quarterly payouts.</p>
-        </div>
-      </a>
-      <a href="/xgrid" class="card-image">
+      <a href="/plans#plans" class="card-image">
         <div class="card-image__media"><picture>
-      <source type="image/avif" srcset="/assets/images/xgrid-bg.avif">
-      <source type="image/webp" srcset="/assets/images/xgrid-bg.webp">
-      <img src="/assets/images/xgrid-bg.webp" alt="" width="1920" height="1080" loading="lazy">
-    </picture></div>
+          <source type="image/avif" srcset="/assets/images/weekly.avif">
+          <source type="image/webp" srcset="/assets/images/weekly.webp">
+          <img src="/assets/images/weekly.webp" alt="" width="1800" height="1080" loading="lazy">
+        </picture></div>
         <div class="card-image__body">
-          <span class="card-image__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6"/></svg></span>
-          <h3 class="card-image__title">X-Grid</h3>
-          <p class="card-image__desc">Infrastructure co-investments normally reserved for institutions.</p>
+          <span class="card-image__icon"><i class="ph ph-calendar-dots" aria-hidden="true"></i></span>
+          <h3 class="card-image__title">Weekly plans</h3>
+          <p class="card-image__desc">A payout every week across a 90-day to 12-month term. Lower minimums, faster feedback.</p>
         </div>
       </a>
-      <a href="/xrewards" class="card-image">
-        <div class="card-image__media"><img src="/assets/images/x-rewards-card.jpg" width="1200" height="900" alt="" loading="lazy"></div>
+      <a href="/plans#plans" class="card-image">
+        <div class="card-image__media"><picture>
+          <source type="image/avif" srcset="/assets/images/monthly.avif">
+          <source type="image/webp" srcset="/assets/images/monthly.webp">
+          <img src="/assets/images/monthly.webp" alt="" width="1800" height="1080" loading="lazy">
+        </picture></div>
         <div class="card-image__body">
-          <span class="card-image__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2zM12 22V7"/></svg></span>
-          <h3 class="card-image__title">X-Rewards</h3>
-          <p class="card-image__desc">Redeem accumulated yield at 40% off retail. Paid from your wallet.</p>
+          <span class="card-image__icon"><i class="ph ph-calendar-check" aria-hidden="true"></i></span>
+          <h3 class="card-image__title">Monthly plans</h3>
+          <p class="card-image__desc">A larger payout on the same date each month, over six months to two years. Higher rates for the longer term.</p>
         </div>
       </a>
     </div>
   </div>
 </section>
+
+<!-- Live plan catalogue, straight from the database -->
+<?php
+$plans_eyebrow = 'The catalogue';
+$plans_heading = 'Every plan we currently offer.';
+include __DIR__ . '/_partials/plans-section.php';
+?>
 
 <section class="section section--warm">
   <div class="container">

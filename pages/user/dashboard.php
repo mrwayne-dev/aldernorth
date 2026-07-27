@@ -83,21 +83,21 @@ $user_role = $_SESSION['role'] ?? 'user';
         </div>
       </div>
 
-      <!-- X-Yields -->
+      <!-- Capital invested -->
       <div class="wallet-card wallet-investments">
-        <div class="wallet-card-header">X-Yield</div>
+        <div class="wallet-card-header">Invested</div>
         <div class="wallet-card-balance">$<span id="total-investments">0.00</span></div>
         <div class="wallet-card-footer">
-          ANC-INV-<?= str_pad($user_id, 4, '0', STR_PAD_LEFT) ?>
+          <span id="active-positions">0</span> active position(s)
         </div>
       </div>
 
-      <!-- X-Lock Savings -->
-      <div class="wallet-card wallet-holdlock">
-        <div class="wallet-card-header">X-Lock Savings</div>
-        <div class="wallet-card-balance">$<span id="total-holdlock">0.00</span></div>
+      <!-- Next scheduled payout -->
+      <div class="wallet-card wallet-accent">
+        <div class="wallet-card-header">Next Payout</div>
+        <div class="wallet-card-balance">$<span id="next-payout-amount">0.00</span></div>
         <div class="wallet-card-footer">
-          ANC-HLD-<?= str_pad($user_id, 4, '0', STR_PAD_LEFT) ?>
+          due <span id="next-payout-date">—</span>
         </div>
       </div>
 

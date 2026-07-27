@@ -381,3 +381,11 @@
 [2025-11-24 06:51:54] SENT → support@healthruncare.com | Template: admin_payment_confirmed | Subject: User Confirmed Payment for Deposit!
 [2026-07-27 19:16:23] SENT → tester@aldernorthcapital.com | Template: investment_payout | Subject: Aldernorth Capital Notification
 [2026-07-27 19:16:28] SENT → tester@aldernorthcapital.com | Template: investment_matured | Subject: Your Investment Has Matured — Funds Credited
+[2026-07-27 17:56:00] SENT → e2e@aldernorthcapital.com | Template: investment_confirmed | Subject: Your Investment Has Been Started Successfully
+[2026-07-27 17:56:04] SENT → support@aldernorthcapital.com | Template: admin_investment_notification | Subject: New Investment Started on Aldernorth Capital
+[2026-07-27 17:56:10] SENT → e2e@aldernorthcapital.com | Template: investment_confirmed | Subject: Your Investment Has Been Started Successfully
+[2026-07-27 17:56:14] SENT → support@aldernorthcapital.com | Template: admin_investment_notification | Subject: New Investment Started on Aldernorth Capital
+[2026-07-27 22:20:47] SENT → e2e@aldernorthcapital.com | Template: investment_payout | Subject: Your scheduled payout has been credited
+[2026-07-27 22:20:51] SENT → e2e@aldernorthcapital.com | Template: investment_payout | Subject: Your scheduled payout has been credited
+[2026-07-27 22:22:16] SENT → e2e@aldernorthcapital.com | Template: investment_payout | Subject: Your scheduled payout has been credited
+[2026-07-27 22:22:20] SENT → e2e@aldernorthcapital.com | Template: investment_matured | Subject: Your investment has matured — principal released

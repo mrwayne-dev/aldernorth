@@ -4,7 +4,7 @@ error_reporting(0);
 // ===============================================
 // FILE: /api/backend/dashboard.php
 // PURPOSE: Provides user dashboard data — wallet stats,
-// impacts summary, and recent transactions.
+// live investment position summary, and recent transactions.
 // Supports SPA dashboard requests (via fetch or AJAX).
 // ===============================================
 session_start([
@@ -71,8 +71,8 @@ if ($action === 'get_wallet') {
         if (!$wallet) {
             // Auto-create wallet if not found
             $pdo->prepare("
-                INSERT INTO wallets (user_id, balance, total_deposited, total_withdrawn, total_investments, holdlock_savings, total_earnings, pending_withdrawals)
-                VALUES (?, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00)
+                INSERT INTO wallets (user_id, balance, total_deposited, total_withdrawn, total_investments, total_earnings, pending_withdrawals)
+                VALUES (?, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00)
             ")->execute([$user_id]);
             $wallet = ['balance' => 0.00];
         }
@@ -110,53 +110,49 @@ $wallet = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$wallet) {
     // Create a default wallet if none exists
     $pdo->prepare("
-        INSERT INTO wallets (user_id, balance, total_deposited, total_withdrawn, total_investments, holdlock_savings, total_earnings, pending_withdrawals)
-        VALUES (?, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00)
+        INSERT INTO wallets (user_id, balance, total_deposited, total_withdrawn, total_investments, total_earnings, pending_withdrawals)
+        VALUES (?, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00)
     ")->execute([$user_id]);
     $stmt->execute([$user_id]);
     $wallet = $stmt->fetch(PDO::FETCH_ASSOC);
 }
 // ===========================================================
-// DYNAMIC HOLDLOCK SAVINGS CHECK (syncs dashboard with real lock plans)
+// LIVE INVESTMENT POSITION SUMMARY
+// Derived on read from `investments`, so the dashboard cannot drift
+// out of sync with the positions the cron is actually paying.
 // ===========================================================
-$lockStmt = $pdo->prepare("
-    SELECT COALESCE(SUM(amount), 0) AS total_locked
-    FROM holdlock
-    WHERE user_id = ? AND status IN ('locked','unlock_pending')
+$invStmt = $pdo->prepare("
+    SELECT
+        COALESCE(SUM(CASE WHEN status='active' THEN amount END), 0) AS active_capital,
+        COALESCE(SUM(roi_earned), 0)                                AS roi_earned,
+        COUNT(CASE WHEN status='active' THEN 1 END)                 AS active_count,
+        MIN(CASE WHEN status='active' THEN next_payout_date END)    AS next_payout_date
+    FROM investments
+    WHERE user_id = ?
 ");
-$lockStmt->execute([$user_id]);
-$totalLocked = (float)$lockStmt->fetchColumn();
+$invStmt->execute([$user_id]);
+$invSummary = $invStmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
-// Update wallet holdlock_savings if not up-to-date
-if (abs($totalLocked - (float)$wallet['holdlock_savings']) > 0.01) {
-    $pdo->prepare("UPDATE wallets SET holdlock_savings = ? WHERE user_id = ?")
-        ->execute([$totalLocked, $user_id]);
-    $wallet['holdlock_savings'] = $totalLocked;
-}
-// ===========================================================
-// FETCH USER IMPACT DATA
-// ===========================================================
-$stmt = $pdo->prepare("SELECT * FROM user_impacts WHERE user_id = ?");
-$stmt->execute([$user_id]);
-$impact = $stmt->fetch(PDO::FETCH_ASSOC);
+$activeCapital = (float) ($invSummary['active_capital'] ?? 0);
+$roiEarned     = (float) ($invSummary['roi_earned'] ?? 0);
+$activeCount   = (int)   ($invSummary['active_count'] ?? 0);
+$nextPayoutDay = $invSummary['next_payout_date'] ?? null;
 
-if (!$impact) {
-    $pdo->prepare("
-        INSERT INTO user_impacts (user_id, total_contributions, people_helped, impact_score, communities_helped, packages_funded)
-        VALUES (?, 0.00, 0, 0.00, 0, 0)
-    ")->execute([$user_id]);
-    $stmt->execute([$user_id]);
-    $impact = $stmt->fetch(PDO::FETCH_ASSOC);
+// Value of the next payout across every position falling due that day.
+$nextPayoutAmount = 0.00;
+if ($nextPayoutDay) {
+    $npStmt = $pdo->prepare("SELECT COALESCE(SUM(amount * roi_percent / 100), 0)
+                             FROM investments
+                             WHERE user_id = ? AND status = 'active' AND next_payout_date = ?");
+    $npStmt->execute([$user_id, $nextPayoutDay]);
+    $nextPayoutAmount = round((float) $npStmt->fetchColumn(), 2);
 }
 
-// ===========================================================
-// UPDATE IMPACT (if wallet contributions changed)
-// ===========================================================
-$total_contributions = (float)$wallet['total_investments'] + (float)$wallet['holdlock_savings'];
-if (abs((float)$impact['total_contributions'] - $total_contributions) > 0.01) {
-    $pdo->prepare("UPDATE user_impacts SET total_contributions = ? WHERE user_id = ?")
-        ->execute([$total_contributions, $user_id]);
-    $impact['total_contributions'] = $total_contributions;
+// Keep the denormalised wallet counter honest.
+if (abs($activeCapital - (float) $wallet['total_investments']) > 0.01) {
+    $pdo->prepare("UPDATE wallets SET total_investments = ? WHERE user_id = ?")
+        ->execute([$activeCapital, $user_id]);
+    $wallet['total_investments'] = $activeCapital;
 }
 
 // ===========================================================
@@ -201,16 +197,16 @@ echo json_encode([
             'total_deposited' => (float)$wallet['total_deposited'],
             'total_withdrawn' => (float)$wallet['total_withdrawn'],
             'investments' => (float)$wallet['total_investments'],
-            'holdlock_savings' => (float)$wallet['holdlock_savings'],
             'total_earnings' => (float)$wallet['total_earnings'],
             'pending_withdrawals' => $pendingWithdrawalCount, // now counts requests
         ],
-        'impacts' => [
-            'total_contributions' => (float)$impact['total_contributions'],
-            'people_helped' => (int)$impact['people_helped'],
-            'impact_score' => (float)$impact['impact_score'],
-            'communities_helped' => (int)$impact['communities_helped'],
-            'packages_funded' => (int)$impact['packages_funded'],
+        'investments' => [
+            'active_capital'      => round($activeCapital, 2),
+            'active_count'        => $activeCount,
+            'roi_earned'          => round($roiEarned, 2),
+            'portfolio_value'     => round($activeCapital + (float)$wallet['balance'], 2),
+            'next_payout_date'    => $nextPayoutDay ? date('M d, Y', strtotime($nextPayoutDay)) : null,
+            'next_payout_amount'  => $nextPayoutAmount,
         ],
         'recent_activity' => $recent_activity,
     ],

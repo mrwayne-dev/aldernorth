@@ -8,17 +8,17 @@
   <div class="container">
     <div class="footer__top">
       <a href="/" aria-label="Aldernorth Capital home">
-        <img src="/assets/images/logo/aldernorth-black.png" alt="Aldernorth Capital" loading="lazy" style="height: 30px;">
+        <img src="/assets/images/logo/aldernorth-black.svg" alt="Aldernorth Capital" loading="lazy" style="height: 30px;">
       </a>
       <h2 style="margin: var(--space-2) 0;">Your wealth, simplified in one place.</h2>
       <p style="color: var(--color-ink-muted); max-width: 560px;">
-        Open an account in minutes. Fund the wallet. Deploy across six regulated products — and let Aldernorth Capital handle the compounding, the reporting, and the protections.
+        Open an account in minutes. Fund the wallet. Deploy across weekly and monthly plans — and let Aldernorth Capital handle the compounding, the reporting, and the protections.
       </p>
       <a href="/register" class="btn btn--primary">Start a conversation</a>
     </div>
 
     <nav class="footer__nav" aria-label="Footer">
-      <a href="/whytx">Why ANC</a><span class="footer__sep">·</span>
+      <a href="/plans">Plans</a><span class="footer__sep">·</span>
       <a href="/platform">Platform</a><span class="footer__sep">·</span>
       <a href="/solutions">Solutions</a><span class="footer__sep">·</span>
       <a href="/about">About</a><span class="footer__sep">·</span>

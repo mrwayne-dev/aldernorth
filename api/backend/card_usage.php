@@ -1,7 +1,10 @@
 <?php
 // ========================================
 // CARD USAGE API — Aldernorth Capital
-// Returns user-level distribution of activities
+// Splits the member's capital by payout cadence for the dashboard chart.
+//
+// This used to fan out across six product tables. With a single invest
+// product the meaningful breakdown is weekly vs monthly vs idle cash.
 // ========================================
 
 require_once '../../config/database.php';
@@ -19,37 +22,30 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 
 try {
-    $pdo = getPDO(); // ✅ your actual function name
+    $pdo = getPDO();
 
-    // Queries for each Aldernorth Capital product — keys must match the dashboard chart consumer
-    $queries = [
-        'investment' => "SELECT COALESCE(SUM(amount),0)         FROM investments WHERE user_id = ?",
-        'xlock'      => "SELECT COALESCE(SUM(amount),0)         FROM holdlock WHERE user_id = ?",
-        'xweekly'    => "SELECT COALESCE(SUM(total_invested),0) FROM xweekly_programs WHERE user_id = ?",
-        'xshares'    => "SELECT COALESCE(SUM(amount),0)         FROM xshares_holdings WHERE user_id = ?",
-        'xgrid'      => "SELECT COALESCE(SUM(amount),0)         FROM infrastructure_contributions WHERE user_id = ?",
-        'xrewards'   => "SELECT COALESCE(SUM(total_price),0)    FROM xrewards_orders WHERE user_id = ? AND status <> 'cancelled'",
-    ];
+    // Keys must match the dashboard chart consumer in assets/js/dashboard.js
+    $totals = ['weekly' => 0.0, 'monthly' => 0.0, 'wallet' => 0.0];
 
-    $totals = [];
-    foreach ($queries as $key => $sql) {
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([$user_id]);
-        $totals[$key] = (float) $stmt->fetchColumn();
+    $stmt = $pdo->prepare("SELECT cadence, COALESCE(SUM(amount), 0) AS total
+                           FROM investments
+                           WHERE user_id = ? AND status = 'active'
+                           GROUP BY cadence");
+    $stmt->execute([$user_id]);
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $totals[$row['cadence']] = (float) $row['total'];
     }
+
+    // Uninvested wallet balance, so the chart accounts for all their capital.
+    $wstmt = $pdo->prepare("SELECT COALESCE(balance, 0) FROM wallets WHERE user_id = ?");
+    $wstmt->execute([$user_id]);
+    $totals['wallet'] = (float) $wstmt->fetchColumn();
 
     // Calculate percentage share
     $grandTotal = array_sum($totals);
     $percentages = [];
-    if ($grandTotal > 0) {
-        foreach ($totals as $key => $value) {
-            $percentages[$key] = round(($value / $grandTotal) * 100, 2);
-        }
-    } else {
-        // No activity yet
-        foreach ($totals as $key => $_) {
-            $percentages[$key] = 0;
-        }
+    foreach ($totals as $key => $value) {
+        $percentages[$key] = $grandTotal > 0 ? round(($value / $grandTotal) * 100, 2) : 0;
     }
 
     echo json_encode([

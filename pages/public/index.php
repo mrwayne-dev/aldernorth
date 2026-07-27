@@ -57,19 +57,24 @@
   <div class="container">
     <div class="navbar__inner">
       <a href="/" class="navbar__brand" aria-label="Aldernorth Capital home">
-        <img class="navbar__logo navbar__logo--light" src="../../assets/images/logo/aldernorth-white.png" width="1714" height="308" alt="Aldernorth Capital" loading="lazy">
-        <img class="navbar__logo navbar__logo--dark" src="../../assets/images/logo/aldernorth-black.png" width="1714" height="308" alt="Aldernorth Capital" loading="lazy">
+        <img class="navbar__logo navbar__logo--light" src="/assets/images/logo/aldernorth-white.svg" width="1714" height="308" alt="Aldernorth Capital" loading="lazy">
+        <img class="navbar__logo navbar__logo--dark" src="/assets/images/logo/aldernorth-black.svg" width="1714" height="308" alt="Aldernorth Capital" loading="lazy">
       </a>
 
       <ul class="navbar__links">
-        <li><a href="/whytx" class="navbar__link">Why ANC</a></li>
+        <li><a href="/plans" class="navbar__link">Plans</a></li>
         <li><a href="/platform" class="navbar__link">Platform</a></li>
         <li><a href="/solutions" class="navbar__link">Solutions</a></li>
         <li><a href="/about" class="navbar__link">About</a></li>
         <li><a href="/contact" class="navbar__link">Contact</a></li>
       </ul>
 
-      <a href="/login" class="btn btn--nav navbar__cta">Sign in</a>
+      <div class="navbar__actions">
+        <button class="theme-toggle" data-theme-toggle type="button" aria-label="Switch to light theme" aria-pressed="false">
+          <i class="ph ph-sun"></i>
+        </button>
+        <a href="/login" class="btn btn--nav navbar__cta">Sign in</a>
+      </div>
 
       <button class="navbar__toggle" aria-label="Toggle menu" data-nav-toggler>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
@@ -157,7 +162,7 @@
       </p>
       <h2 class="section-header__title">One wallet. Every way to grow it.</h2>
       <p class="section-header__body">
-        Aldernorth Capital is a single platform with six regulated products — fixed-term savings, automated weekly investing, fractional equity, infrastructure co-investments, and a loyalty rewards layer. Fund the wallet once; route capital wherever your strategy needs it next.
+        Aldernorth Capital is a single platform with weekly and monthly plans — fixed-term savings, automated weekly investing, fractional equity, infrastructure co-investments, and a loyalty rewards layer. Fund the wallet once; route capital wherever your strategy needs it next.
       </p>
     </div>
 
@@ -207,7 +212,7 @@
 
 
 
-<!-- =================== PRODUCT SUITE (Crestmark C.6 / D.6 image-top grid) =================== -->
+<!-- =================== HOW IT WORKS (weekly vs monthly) =================== -->
 <section class="section section--white">
   <div class="container">
     <div class="section-header" style="margin-bottom: var(--space-10);">
@@ -215,131 +220,61 @@
         <span class="eyebrow__icon">
           <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="6"/></svg>
         </span>
-        Products
+        How it works
       </p>
-      <h2 class="section-header__title">The product suite.</h2>
+      <h2 class="section-header__title">Two rhythms. One wallet.</h2>
       <p class="section-header__body">
-        Six regulated products, one wallet, one statement. Pick the ones that match your goals — or use them together to build a portfolio that compounds across short, medium, and long horizons.
+        You invest a lump sum once. From there it is simply a question of how
+        often you want to be paid — every week, or every month. Both return
+        your principal in full at the end of the term.
       </p>
       <div class="section-header__cta">
-        <a href="/platform" class="btn btn--primary">Explore the platform</a>
+        <a href="/plans" class="btn btn--primary">Compare every plan</a>
       </div>
     </div>
 
     <div class="grid-2">
-      <!-- X-Lock -->
-      <a href="/xlock" class="card-image" aria-label="X-Lock — fixed-term savings">
+      <!-- Weekly -->
+      <a href="/plans#plans" class="card-image" aria-label="Weekly plans — a payout every week">
         <div class="card-image__media">
           <picture>
-      <source type="image/avif" srcset="/assets/images/x-lock.avif">
-      <source type="image/webp" srcset="/assets/images/x-lock.webp">
-      <img src="/assets/images/x-lock.webp" alt="" width="1800" height="1080" loading="lazy">
-    </picture>
+            <source type="image/avif" srcset="/assets/images/weekly.avif">
+            <source type="image/webp" srcset="/assets/images/weekly.webp">
+            <img src="/assets/images/weekly.webp" alt="" width="1800" height="1080" loading="lazy">
+          </picture>
         </div>
         <div class="card-image__body">
           <span class="card-image__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-              <rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>
-            </svg>
+            <i class="ph ph-calendar-dots" aria-hidden="true"></i>
           </span>
-          <h3 class="card-image__title">X-Lock</h3>
-          <p class="card-image__desc">Fixed-term savings with rates well above the high street. Capital is FSCS-protected up to £85,000 and pays out automatically on maturity.</p>
+          <h3 class="card-image__title">Weekly plans</h3>
+          <p class="card-image__desc">
+            A payout lands in your wallet every week, from 90 days up to a full
+            year. The shortest way to turn capital into regular income, and the
+            easiest to start with.
+          </p>
         </div>
       </a>
 
-      <!-- X-Yield -->
-      <a href="/investment" class="card-image" aria-label="X-Yield — fixed-duration investment plans">
+      <!-- Monthly -->
+      <a href="/plans#plans" class="card-image" aria-label="Monthly plans — a payout every month">
         <div class="card-image__media">
           <picture>
-      <source type="image/avif" srcset="/assets/images/x-yield.avif">
-      <source type="image/webp" srcset="/assets/images/x-yield.webp">
-      <img src="/assets/images/x-yield.webp" alt="" width="1800" height="1080" loading="lazy">
-    </picture>
+            <source type="image/avif" srcset="/assets/images/monthly.avif">
+            <source type="image/webp" srcset="/assets/images/monthly.webp">
+            <img src="/assets/images/monthly.webp" alt="" width="1800" height="1080" loading="lazy">
+          </picture>
         </div>
         <div class="card-image__body">
           <span class="card-image__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-              <path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/>
-            </svg>
+            <i class="ph ph-calendar-check" aria-hidden="true"></i>
           </span>
-          <h3 class="card-image__title">X-Yield</h3>
-          <p class="card-image__desc">Fixed-duration investment plans with a known ROI and a known maturity date. Choose a tier, fund it, and watch it compound.</p>
-        </div>
-      </a>
-
-      <!-- X-Weekly -->
-      <a href="/xweekly" class="card-image" aria-label="X-Weekly — automated weekly contributions">
-        <div class="card-image__media">
-          <picture>
-      <source type="image/avif" srcset="/assets/images/x-weekly.avif">
-      <source type="image/webp" srcset="/assets/images/x-weekly.webp">
-      <img src="/assets/images/x-weekly.webp" alt="" width="1800" height="1080" loading="lazy">
-    </picture>
-        </div>
-        <div class="card-image__body">
-          <span class="card-image__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-              <path d="M3 12a9 9 0 1 1 9 9"/><path d="M3 12l4-4M3 12l4 4"/>
-            </svg>
-          </span>
-          <h3 class="card-image__title">X-Weekly</h3>
-          <p class="card-image__desc">Automated weekly contributions deployed into your chosen strategy. Pause, resume, or cancel from your dashboard any time.</p>
-        </div>
-      </a>
-
-      <!-- X-Shares -->
-      <a href="/xshares" class="card-image" aria-label="X-Shares — fractional equity positions">
-        <div class="card-image__media">
-          <picture>
-      <source type="image/avif" srcset="/assets/images/x-shares.avif">
-      <source type="image/webp" srcset="/assets/images/x-shares.webp">
-      <img src="/assets/images/x-shares.webp" alt="" width="1800" height="1080" loading="lazy">
-    </picture>
-        </div>
-        <div class="card-image__body">
-          <span class="card-image__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-              <circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>
-            </svg>
-          </span>
-          <h3 class="card-image__title">X-Shares</h3>
-          <p class="card-image__desc">Own fractional positions in real companies, with payouts on a weekly, monthly, or quarterly schedule.</p>
-        </div>
-      </a>
-
-      <!-- X-Rewards -->
-      <a href="/xrewards" class="card-image" aria-label="X-Rewards — loyalty redemption">
-        <div class="card-image__media">
-          <img src="/assets/images/x-rewards.webp" width="1080" height="1350" alt="" loading="lazy">
-        </div>
-        <div class="card-image__body">
-          <span class="card-image__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-              <path d="M20 12v10H4V12"/><path d="M2 7h20v5H2zM12 22V7M12 7H8a2.5 2.5 0 0 1 0-5c2 0 4 5 4 5zM12 7h4a2.5 2.5 0 0 0 0-5c-2 0-4 5-4 5z"/>
-            </svg>
-          </span>
-          <h3 class="card-image__title">X-Rewards</h3>
-          <p class="card-image__desc">Redeem accumulated yield for curated rewards at a 40% member discount. Devices, vouchers, experiences and travel.</p>
-        </div>
-      </a>
-
-      <!-- X-Grid -->
-      <a href="/xgrid" class="card-image" aria-label="X-Grid — infrastructure co-investments">
-        <div class="card-image__media">
-          <picture>
-      <source type="image/avif" srcset="/assets/images/xgrid-bg.avif">
-      <source type="image/webp" srcset="/assets/images/xgrid-bg.webp">
-      <img src="/assets/images/xgrid-bg.webp" alt="" width="1920" height="1080" loading="lazy">
-    </picture>
-        </div>
-        <div class="card-image__body">
-          <span class="card-image__icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-              <path d="M3 21h18M5 21V9l7-5 7 5v12M9 21v-6h6v6"/>
-            </svg>
-          </span>
-          <h3 class="card-image__title">X-Grid</h3>
-          <p class="card-image__desc">Infrastructure co-investments normally reserved for institutions — clear minimums, projected returns, quarterly performance reports.</p>
+          <h3 class="card-image__title">Monthly plans</h3>
+          <p class="card-image__desc">
+            A larger payout on the same date each month, over six months to two
+            years. Higher rates for the longer commitment, and simple to plan
+            your year around.
+          </p>
         </div>
       </a>
     </div>
@@ -574,7 +509,7 @@
           <span class="accordion__icon" aria-hidden="true"></span>
         </summary>
         <div class="accordion__body">
-          Aldernorth Capital is an FCA-authorised investment platform that brings six regulated products — X-Lock fixed-term savings, X-Weekly automated investing, X-Shares fractional equity, X-Yield investment plans, X-Grid infrastructure co-investments, and X-Rewards loyalty redemption — into a single wallet with one statement and one set of FSCS-backed protections.
+          Aldernorth Capital is an FCA-authorised investment platform that brings weekly and monthly plans — X-Lock fixed-term savings, X-Weekly automated investing, X-Shares fractional equity, X-Yield investment plans, X-Grid infrastructure co-investments, and X-Rewards loyalty redemption — into a single wallet with one statement and one set of FSCS-backed protections.
         </div>
       </details>
 
@@ -627,17 +562,17 @@
   <div class="container">
     <div class="footer__top">
       <a href="/" aria-label="Aldernorth Capital home">
-        <img src="../../assets/images/logo/aldernorth-black.png" width="1714" height="308" alt="Aldernorth Capital" loading="lazy" style="height: 30px;">
+        <img src="/assets/images/logo/aldernorth-black.svg" width="1714" height="308" alt="Aldernorth Capital" loading="lazy" style="height: 30px;">
       </a>
       <h2 style="margin: var(--space-2) 0;">Your wealth, simplified in one place.</h2>
       <p style="color: var(--color-ink-muted); max-width: 560px;">
-        Open an account in minutes. Fund the wallet. Deploy across six regulated products — and let Aldernorth Capital handle the compounding, the reporting, and the protections.
+        Open an account in minutes. Fund the wallet. Deploy across weekly and monthly plans — and let Aldernorth Capital handle the compounding, the reporting, and the protections.
       </p>
       <a href="/register" class="btn btn--primary">Start a conversation</a>
     </div>
 
     <nav class="footer__nav" aria-label="Footer">
-      <a href="/whytx">Why ANC</a><span class="footer__sep">·</span>
+      <a href="/plans">Plans</a><span class="footer__sep">·</span>
       <a href="/platform">Platform</a><span class="footer__sep">·</span>
       <a href="/solutions">Solutions</a><span class="footer__sep">·</span>
       <a href="/about">About</a><span class="footer__sep">·</span>
@@ -682,7 +617,7 @@
   "@type": "Organization",
   "name": "Aldernorth Capital",
   "url": "https://aldernorthcapital.com",
-  "logo": "https://aldernorthcapital.com/assets/images/logo/aldernorth-black.png",
+  "logo": "https://aldernorthcapital.com/assets/images/logo/aldernorth-black.svg",
   "sameAs": [
     "https://www.linkedin.com/company/aldernorthholdings",
     "https://twitter.com/aldernorthholdings",

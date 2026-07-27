@@ -129,52 +129,52 @@ $user_role = $_SESSION['role'] ?? 'user';
                                             <div class="wg-box">
                                                 <div class="title mb-16 flex justify-between items-center">
                                                     <div class="label-01 text-Primary">Your portfolio</div>
-                                                    <a href="/dashboard.investment" class="view-all f12-regular text-Primary">
+                                                    <a href="/dashboard.invest" class="view-all f12-regular text-Primary">
                                                         Manage <i class="ph ph-caret-right ml-2"></i>
                                                     </a>
                                                 </div>
                                                 <ul class="wallet-alloc-list">
                                                     <li class="wallet-alloc-item">
-                                                        <a href="/dashboard.investment">
-                                                            <span class="wallet-alloc-icon"><i class="ph ph-chart-line-up"></i></span>
+                                                        <a href="/dashboard.invest">
+                                                            <span class="wallet-alloc-icon"><i class="ph ph-calendar-dots"></i></span>
                                                             <span class="wallet-alloc-meta">
-                                                                <span class="f14-bold text-Primary">X-Yield</span>
-                                                                <span class="f12-regular text-Gray">Fixed-duration plans</span>
+                                                                <span class="f14-bold text-Primary">Weekly plans</span>
+                                                                <span class="f12-regular text-Gray">A payout every week</span>
                                                             </span>
-                                                            <span class="wallet-alloc-value f14-bold text-Primary">$<span id="total-investments">0.00</span></span>
+                                                            <span class="wallet-alloc-value f14-bold text-Primary">$<span id="weekly-invested">0.00</span></span>
                                                             <i class="ph ph-caret-right wallet-alloc-arrow"></i>
                                                         </a>
                                                     </li>
                                                     <li class="wallet-alloc-item">
-                                                        <a href="/dashboard.xlock">
-                                                            <span class="wallet-alloc-icon"><i class="ph ph-lock"></i></span>
-                                                            <span class="wallet-alloc-meta">
-                                                                <span class="f14-bold text-Primary">X-Lock</span>
-                                                                <span class="f12-regular text-Gray">Fixed-term savings</span>
-                                                            </span>
-                                                            <span class="wallet-alloc-value f14-bold text-Primary">$<span id="holdlock-savings">0.00</span></span>
-                                                            <i class="ph ph-caret-right wallet-alloc-arrow"></i>
-                                                        </a>
-                                                    </li>
-                                                    <li class="wallet-alloc-item">
-                                                        <a href="/dashboard.xweekly">
+                                                        <a href="/dashboard.invest">
                                                             <span class="wallet-alloc-icon"><i class="ph ph-calendar-check"></i></span>
                                                             <span class="wallet-alloc-meta">
-                                                                <span class="f14-bold text-Primary">X-Weekly</span>
-                                                                <span class="f12-regular text-Gray">Automated weekly investing</span>
+                                                                <span class="f14-bold text-Primary">Monthly plans</span>
+                                                                <span class="f12-regular text-Gray">A payout every month</span>
                                                             </span>
-                                                            <span class="wallet-alloc-value f14-bold text-Primary">$<span id="xweekly-invested">0.00</span></span>
+                                                            <span class="wallet-alloc-value f14-bold text-Primary">$<span id="monthly-invested">0.00</span></span>
                                                             <i class="ph ph-caret-right wallet-alloc-arrow"></i>
                                                         </a>
                                                     </li>
                                                     <li class="wallet-alloc-item">
-                                                        <a href="/dashboard.xshares">
-                                                            <span class="wallet-alloc-icon"><i class="ph ph-chart-pie"></i></span>
+                                                        <a href="/dashboard.invest">
+                                                            <span class="wallet-alloc-icon"><i class="ph ph-trend-up"></i></span>
                                                             <span class="wallet-alloc-meta">
-                                                                <span class="f14-bold text-Primary">X-Shares</span>
-                                                                <span class="f12-regular text-Gray">Fractional equity</span>
+                                                                <span class="f14-bold text-Primary">Next payout</span>
+                                                                <span class="f12-regular text-Gray">due <span id="next-payout-date">—</span></span>
                                                             </span>
-                                                            <span class="wallet-alloc-value f14-bold text-Primary">$<span id="xshares-invested">0.00</span></span>
+                                                            <span class="wallet-alloc-value f14-bold text-Primary">$<span id="next-payout-amount">0.00</span></span>
+                                                            <i class="ph ph-caret-right wallet-alloc-arrow"></i>
+                                                        </a>
+                                                    </li>
+                                                    <li class="wallet-alloc-item">
+                                                        <a href="/dashboard.invest">
+                                                            <span class="wallet-alloc-icon"><i class="ph ph-chart-line-up"></i></span>
+                                                            <span class="wallet-alloc-meta">
+                                                                <span class="f14-bold text-Primary">Total invested</span>
+                                                                <span class="f12-regular text-Gray">Capital currently deployed</span>
+                                                            </span>
+                                                            <span class="wallet-alloc-value f14-bold text-Primary">$<span id="total-investments">0.00</span></span>
                                                             <i class="ph ph-caret-right wallet-alloc-arrow"></i>
                                                         </a>
                                                     </li>

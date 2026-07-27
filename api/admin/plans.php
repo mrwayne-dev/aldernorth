@@ -46,6 +46,7 @@ function fetchInvestmentMetrics($pdo) {
         'total_roi_paid' => 0.00,
         'ongoing_plans_count' => 0,
         'next_maturity' => '—',
+        'next_payout' => '—',
         'total_plans' => 0,
     ];
 
@@ -71,7 +72,14 @@ function fetchInvestmentMetrics($pdo) {
         }
 
         // Total Plans Count
-        $metrics['total_plans'] = $pdo->query("SELECT COUNT(id) FROM investment_plans")->fetchColumn() ?? 0;
+        $metrics['total_plans'] = $pdo->query("SELECT COUNT(id) FROM plans")->fetchColumn() ?? 0;
+
+        // ROI actually credited by the cron, across every position.
+        $metrics['total_roi_paid'] = (float) ($pdo->query("SELECT COALESCE(SUM(roi_earned), 0) FROM investments")->fetchColumn() ?? 0);
+
+        // Next scheduled payout run.
+        $np = $pdo->query("SELECT MIN(next_payout_date) FROM investments WHERE status = 'active'")->fetchColumn();
+        $metrics['next_payout'] = $np ? date('M d, Y', strtotime($np)) : '—';
 
     } catch (PDOException $e) {
         error_log("Investment Metric Fetch Error: " . $e->getMessage());
@@ -82,44 +90,53 @@ function fetchInvestmentMetrics($pdo) {
 
 // --- Investment Plans Fetcher ---
 function fetchPlans($pdo) {
-    // FIX: Removed 'status' from SELECT list as it is missing from the provided DDL schema.
-    $sql = "SELECT 
-                id, title, roi_percent, duration_days, min_amount, max_amount, risk, created_at 
-            FROM investment_plans 
-            ORDER BY id ASC";
+    $sql = "SELECT id, title, cadence, roi_percent, duration_days, min_amount, max_amount,
+                   risk, status, icon, description, summary, details, created_at
+            FROM plans
+            ORDER BY cadence DESC, min_amount ASC";
 
     $stmt = executeQuery($pdo, $sql);
     $plans = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
-    
-    return array_map(function($p) {
-        $base_roi = (float)$p['roi_percent'];
-        // Use a 10% tolerance for the display range min/max
-        $roi_min = number_format($base_roi * 0.9, 2);
-        $roi_max = number_format($base_roi * 1.1, 2);
-        
-        $days = (int)$p['duration_days'];
+
+    return array_map(function ($p) {
+        $roi     = (float) $p['roi_percent'];
+        $days    = (int) $p['duration_days'];
+        $cadence = $p['cadence'];
+
+        // Whole payout periods in the term — same rule as api/backend/invest.php.
+        $periodDays = $cadence === 'monthly' ? 30 : 7;
+        $payouts    = (int) floor($days / $periodDays);
+
         if ($days >= 365 && $days % 365 === 0) {
             $term_display = ($days / 365) . ' Year(s)';
         } elseif ($days >= 30 && $days % 30 === 0) {
-             $term_display = ($days / 30) . ' Month(s)';
+            $term_display = ($days / 30) . ' Month(s)';
+        } elseif ($days >= 7 && $days % 7 === 0) {
+            $term_display = ($days / 7) . ' Week(s)';
         } else {
-             $term_display = $days . ' Days';
+            $term_display = $days . ' Days';
         }
-        
+
         return [
-            'id' => (int)$p['id'],
-            'title' => htmlspecialchars($p['title']),
-            'roi_base_percent' => $base_roi,
-            'roi_display_range' => "{$roi_min}% - {$roi_max}%", 
-            'duration_days' => $days,
-            'term_display' => $term_display,
-            'min_amount' => (float)$p['min_amount'],
-            'max_amount' => (float)$p['max_amount'],
-            'risk' => ucfirst(htmlspecialchars($p['risk'])),
-            // TEMPORARY FIX: Hardcoded status as 'active' for frontend rendering, 
-            // since the column is missing in the database.
-            'status' => 'active', 
-            'created_at' => date('Y-m-d', strtotime($p['created_at']))
+            'id'             => (int) $p['id'],
+            'title'          => htmlspecialchars($p['title']),
+            'cadence'        => $cadence,
+            'cadence_label'  => ucfirst($cadence),
+            'roi_percent'    => $roi,
+            'roi_display'    => rtrim(rtrim(number_format($roi, 2, '.', ''), '0'), '.') . '% per ' . ($cadence === 'monthly' ? 'month' : 'week'),
+            'payouts_total'  => $payouts,
+            'total_percent'  => round($roi * $payouts, 2),
+            'duration_days'  => $days,
+            'term_display'   => $term_display,
+            'min_amount'     => (float) $p['min_amount'],
+            'max_amount'     => (float) $p['max_amount'],
+            'risk'           => ucfirst(htmlspecialchars($p['risk'])),
+            'status'         => $p['status'],
+            'icon'           => $p['icon'],
+            'description'    => htmlspecialchars($p['description']),
+            'summary'        => htmlspecialchars($p['summary']),
+            'details'        => htmlspecialchars($p['details']),
+            'created_at'     => date('Y-m-d', strtotime($p['created_at'])),
         ];
     }, $plans);
 }
@@ -195,96 +212,115 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'add_plan' || $action === 'edit_plan') {
         $title = trim($input['title'] ?? '');
-        $min_amount = (float)($input['min_amount'] ?? 0);
-        $max_amount = (float)($input['max_amount'] ?? 0);
-        $roi_min = (float)($input['roi_min'] ?? 0); 
-        $roi_max = (float)($input['roi_max'] ?? 0); 
-        $duration = (int)($input['duration'] ?? 0);
-        $risk = trim($input['risk'] ?? 'low');
-        // $status = trim($input['status'] ?? 'active'); // Removed due to missing DDL column
-        $id = (int)($input['id'] ?? 0); 
-        
+        $min_amount  = (float) ($input['min_amount'] ?? 0);
+        $max_amount  = (float) ($input['max_amount'] ?? 0);
+        $roi_percent = (float) ($input['roi_percent'] ?? 0);   // PER PAYOUT PERIOD
+        $duration    = (int)   ($input['duration'] ?? 0);
+        $cadence     = strtolower(trim($input['cadence'] ?? 'monthly'));
+        $risk        = trim($input['risk'] ?? 'Low');
+        $status      = strtolower(trim($input['status'] ?? 'active'));
+        $id          = (int)   ($input['id'] ?? 0);
+
         // --- Required fields validation ---
-        if (empty($title) || $duration <= 0 || $min_amount <= 0 || $roi_min <= 0 || $roi_max <= 0 || $roi_min > $roi_max || $min_amount > $max_amount) {
-            echo json_encode(['status' => 'error', 'message' => 'Invalid or missing required data (Title, Duration, valid min/max amounts/ROI).']);
+        if ($title === '' || $duration <= 0 || $min_amount <= 0 || $max_amount <= 0
+            || $roi_percent <= 0 || $min_amount > $max_amount) {
+            echo json_encode(['status' => 'error', 'message' => 'Invalid or missing required data (title, cadence, duration, ROI, min/max amounts).']);
+            exit;
+        }
+        if (!in_array($cadence, ['weekly', 'monthly'], true)) {
+            echo json_encode(['status' => 'error', 'message' => 'Cadence must be weekly or monthly.']);
+            exit;
+        }
+        if (!in_array($status, ['active', 'hidden'], true)) {
+            $status = 'active';
+        }
+
+        // A term shorter than one payout period would never pay out.
+        $periodDays = $cadence === 'monthly' ? 30 : 7;
+        if ($duration < $periodDays) {
+            echo json_encode(['status' => 'error', 'message' => "A {$cadence} plan needs a term of at least {$periodDays} days."]);
             exit;
         }
 
-        // Calculate the center/base ROI for the investments table
-        $base_roi = round(($roi_min + $roi_max) / 2, 2);
+        // Defaults for NOT NULL copy fields not exposed in the modal
+        $description = trim($input['description'] ?? '') ?: 'Investment plan.';
+        $details     = trim($input['details'] ?? '')     ?: 'Detailed plan terms.';
+        $summary     = trim($input['summary'] ?? '')     ?: 'Summary of the plan.';
+        $icon        = trim($input['icon'] ?? '')        ?: 'ph-chart-line-up';
+        $accent      = trim($input['accent'] ?? '')      ?: 'orange';
 
-        // Required placeholders/defaults for NOT NULL fields not in the modal
-        $description = $input['description'] ?? 'Investment plan description.';
-        $details = $input['details'] ?? 'Detailed plan features.';
-        $income = $input['income'] ?? 'General investment returns.';
-        $summary = $input['summary'] ?? 'Summary of the plan.';
-        $icon = $input['icon'] ?? 'ph-chart-line';
-        $color = $input['color'] ?? 'Blue';
-        $payout_option = $input['payout_option'] ?? 'maturity';
-        
         try {
             if ($action === 'add_plan') {
-                // FIX: Removed 'status' from INSERT query and params since it is missing in the DDL.
-                $sql = "INSERT INTO investment_plans 
-                        (title, roi_percent, duration_days, min_amount, max_amount, risk, description, details, income, summary, icon, color, payout_option) 
-                        VALUES (:title, :roi_percent, :duration, :min_amount, :max_amount, :risk, :description, :details, :income, :summary, :icon, :color, :payout_option)";
+                $sql = "INSERT INTO plans
+                        (title, cadence, roi_percent, duration_days, min_amount, max_amount,
+                         risk, description, details, summary, icon, accent, status)
+                        VALUES (:title, :cadence, :roi_percent, :duration, :min_amount, :max_amount,
+                                :risk, :description, :details, :summary, :icon, :accent, :status)";
                 $params = [
-                    ':title' => $title, 
-                    ':roi_percent' => $base_roi, 
-                    ':duration' => $duration, 
-                    ':min_amount' => $min_amount, 
-                    ':max_amount' => $max_amount, 
-                    ':risk' => strtolower($risk), 
-                    // ':status' => strtolower($status), // Removed
+                    ':title'       => $title,
+                    ':cadence'     => $cadence,
+                    ':roi_percent' => $roi_percent,
+                    ':duration'    => $duration,
+                    ':min_amount'  => $min_amount,
+                    ':max_amount'  => $max_amount,
+                    ':risk'        => $risk,
                     ':description' => $description,
-                    ':details' => $details,
-                    ':income' => $income,
-                    ':summary' => $summary,
-                    ':icon' => $icon,
-                    ':color' => $color,
-                    ':payout_option' => $payout_option
+                    ':details'     => $details,
+                    ':summary'     => $summary,
+                    ':icon'        => $icon,
+                    ':accent'      => $accent,
+                    ':status'      => $status,
                 ];
                 $stmt = executeQuery($pdo, $sql, $params);
 
-                if ($stmt) {
-                    echo json_encode(['status' => 'success', 'message' => 'New investment plan created successfully.']);
-                } else {
-                    echo json_encode(['status' => 'error', 'message' => 'Failed to create plan.']);
-                }
+                echo json_encode($stmt
+                    ? ['status' => 'success', 'message' => 'New investment plan created successfully.']
+                    : ['status' => 'error', 'message' => 'Failed to create plan.']);
+
             } elseif ($action === 'edit_plan') {
                 if ($id <= 0) {
                     echo json_encode(['status' => 'error', 'message' => 'Invalid plan ID for edit.']);
                     exit;
                 }
 
-                // FIX: Removed 'status' from UPDATE query and params since it is missing in the DDL.
-                $sql = "UPDATE investment_plans SET 
-                            title = :title, 
-                            roi_percent = :roi_percent, 
-                            duration_days = :duration, 
-                            min_amount = :min_amount, 
-                            max_amount = :max_amount, 
-                            risk = :risk 
-                            -- status = :status (Removed)
+                // Editing a plan never touches live positions: investments snapshot
+                // their own plan_name / cadence / roi_percent / duration at purchase.
+                $sql = "UPDATE plans SET
+                            title         = :title,
+                            cadence       = :cadence,
+                            roi_percent   = :roi_percent,
+                            duration_days = :duration,
+                            min_amount    = :min_amount,
+                            max_amount    = :max_amount,
+                            risk          = :risk,
+                            description   = :description,
+                            details       = :details,
+                            summary       = :summary,
+                            icon          = :icon,
+                            accent        = :accent,
+                            status        = :status
                         WHERE id = :id";
                 $params = [
-                    ':title' => $title, 
-                    ':roi_percent' => $base_roi, 
-                    ':duration' => $duration, 
-                    ':min_amount' => $min_amount, 
-                    ':max_amount' => $max_amount, 
-                    ':risk' => strtolower($risk), 
-                    // ':status' => strtolower($status), // Removed
-                    ':id' => $id
+                    ':title'       => $title,
+                    ':cadence'     => $cadence,
+                    ':roi_percent' => $roi_percent,
+                    ':duration'    => $duration,
+                    ':min_amount'  => $min_amount,
+                    ':max_amount'  => $max_amount,
+                    ':risk'        => $risk,
+                    ':description' => $description,
+                    ':details'     => $details,
+                    ':summary'     => $summary,
+                    ':icon'        => $icon,
+                    ':accent'      => $accent,
+                    ':status'      => $status,
+                    ':id'          => $id,
                 ];
-
                 $stmt = executeQuery($pdo, $sql, $params);
 
-                if ($stmt) {
-                    echo json_encode(['status' => 'success', 'message' => 'Investment plan updated successfully.']);
-                } else {
-                    echo json_encode(['status' => 'error', 'message' => 'Failed to update plan.']);
-                }
+                echo json_encode($stmt
+                    ? ['status' => 'success', 'message' => 'Investment plan updated successfully.']
+                    : ['status' => 'error', 'message' => 'Failed to update plan.']);
             }
         } catch (Exception $e) {
             error_log("Plan Action Error: " . $e->getMessage());
@@ -394,7 +430,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (isset($input['fetch']) && $input['fetch'] === 'plan_details') {
         $plan_id = (int)($input['id'] ?? 0);
         // FIX: Removed 'status' from SELECT as it's missing from DDL
-        $stmt = executeQuery($pdo, "SELECT id, title, roi_percent, duration_days, min_amount, max_amount, risk FROM investment_plans WHERE id = :id", [':id' => $plan_id]);
+        $stmt = executeQuery($pdo, "SELECT id, title, cadence, roi_percent, duration_days, min_amount, max_amount, risk, status, icon, description, summary, details FROM plans WHERE id = :id", [':id' => $plan_id]);
         $plan = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
 
         if ($plan) {

@@ -1442,3 +1442,37 @@
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
 }
+
+
+/* =================================================================
+ * PLAN CARD ADDITIONS — cadence tier chip, per-period note, total
+ * ================================================================= */
+.anc-redesign .plan-card__tier {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.anc-redesign .plan-card__tier i {
+  font-size: 15px;
+  color: var(--color-accent-text);
+}
+
+.anc-redesign .plan-card__roi-note {
+  display: block;
+  font-size: var(--text-sm);
+  line-height: var(--lh-sm);
+  font-weight: var(--fw-regular);
+  letter-spacing: 0;
+  color: var(--color-ink-muted);
+}
+
+.anc-redesign .plan-card__total {
+  margin-top: var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-accent-soft);
+  color: var(--color-accent-text);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  text-align: center;
+}

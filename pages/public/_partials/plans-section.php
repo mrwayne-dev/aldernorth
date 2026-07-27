@@ -1,27 +1,35 @@
 <?php
 /**
- * Public catalog "plans we offer" section (live from DB).
- * Usage:  <?php $plan_product = 'xlock'; include __DIR__ . '/_partials/plans-section.php'; ?>
- * Renders nothing on any DB/query error so a marketing page never breaks.
+ * Public "plans we offer" section (live from DB).
  *
- * $plan_product ∈ xlock | xyield | xweekly | xshares | xgrid | xrewards
+ * Usage:  <?php include __DIR__ . '/_partials/plans-section.php'; ?>
+ *
+ * Optional before including:
+ *   $plan_cadence  = 'weekly' | 'monthly'   (omit to show both)
+ *   $plans_heading / $plans_eyebrow         (override the copy)
+ *
+ * Renders nothing on any DB/query error so a marketing page never breaks.
  */
 
-if (!isset($plan_product)) return;
-
 require_once __DIR__ . '/../../../config/database.php';
+
+$plan_cadence = $plan_cadence ?? '';
+if ($plan_cadence !== '' && !in_array($plan_cadence, ['weekly', 'monthly'], true)) {
+    $plan_cadence = '';
+}
 
 if (!function_exists('anc_fmt_term')) {
     function anc_fmt_term($days) {
         $days = (int) $days;
-        if ($days <= 0)            return 'Open-ended';
-        if ($days % 365 === 0)     { $y = $days / 365; return $y . ' year'  . ($y > 1 ? 's' : ''); }
-        if ($days % 30  === 0)     { $m = $days / 30;  return $m . ' month' . ($m > 1 ? 's' : ''); }
+        if ($days <= 0)        return 'Open-ended';
+        if ($days % 365 === 0) { $y = $days / 365; return $y . ' year'  . ($y > 1 ? 's' : ''); }
+        if ($days % 30  === 0) { $m = $days / 30;  return $m . ' month' . ($m > 1 ? 's' : ''); }
+        if ($days % 7   === 0) { $w = $days / 7;   return $w . ' week'  . ($w > 1 ? 's' : ''); }
         return $days . ' days';
     }
 }
 if (!function_exists('anc_money')) {
-    function anc_money($n) { return '£' . number_format((float) $n, 0); }
+    function anc_money($n) { return '$' . number_format((float) $n, 0); }
 }
 if (!function_exists('anc_pct')) {
     function anc_pct($n) {
@@ -29,95 +37,62 @@ if (!function_exists('anc_pct')) {
         return $s . '%';
     }
 }
-if (!function_exists('anc_nice')) {
-    function anc_nice($s) { return ucwords(str_replace('_', ' ', (string) $s)); }
+// One payout period, in days. Mirrors api/backend/invest.php.
+if (!function_exists('anc_cadence_days')) {
+    function anc_cadence_days(string $cadence): int {
+        return $cadence === 'monthly' ? 30 : 7;
+    }
 }
 
-$__headings = [
-    'xlock'    => ['X-Lock plans',    'Fixed-term savings tiers.'],
-    'xyield'   => ['X-Yield plans',   'Fixed-duration yield plans.'],
-    'xweekly'  => ['X-Weekly plans',  'Automated weekly investing.'],
-    'xshares'  => ['X-Shares assets', 'Fractional equity positions.'],
-    'xgrid'    => ['X-Grid plans',    'Infrastructure co-investment.'],
-    'xrewards' => ['X-Rewards catalog','Redeem your yield for rewards.'],
-];
-if (!isset($__headings[$plan_product])) return;
-[$__eyebrow, $__title] = $__headings[$plan_product];
-
-$__cards   = [];
-$__variant = 'plan';
+$__cards = [];
 
 try {
     $__pdo = getPDO();
 
-    switch ($plan_product) {
-        case 'xlock':
-            $rows = $__pdo->query("SELECT name, roi_range, lock_period_text, min_amount, payout, summary
-                                   FROM holdlock_plans ORDER BY min_amount ASC")->fetchAll(PDO::FETCH_ASSOC);
-            foreach ($rows as $r) $__cards[] = [
-                'tier' => 'X-Lock', 'roi' => $r['roi_range'], 'name' => $r['name'],
-                'meta' => ['Term' => $r['lock_period_text'], 'Minimum' => anc_money($r['min_amount']), 'Payout' => anc_nice($r['payout'])],
-                'summary' => $r['summary'],
-            ];
-            break;
+    if ($plan_cadence !== '') {
+        $__stmt = $__pdo->prepare("SELECT title, cadence, roi_percent, duration_days, min_amount,
+                                          max_amount, risk, summary, description, icon
+                                   FROM plans WHERE status = 'active' AND cadence = ?
+                                   ORDER BY min_amount ASC");
+        $__stmt->execute([$plan_cadence]);
+    } else {
+        $__stmt = $__pdo->query("SELECT title, cadence, roi_percent, duration_days, min_amount,
+                                        max_amount, risk, summary, description, icon
+                                 FROM plans WHERE status = 'active'
+                                 ORDER BY cadence DESC, min_amount ASC");
+    }
 
-        case 'xyield':
-            $rows = $__pdo->query("SELECT title, roi_percent, duration_days, min_amount, payout_option, summary, description
-                                   FROM investment_plans WHERE status='active' ORDER BY min_amount ASC")->fetchAll(PDO::FETCH_ASSOC);
-            foreach ($rows as $r) $__cards[] = [
-                'tier' => 'X-Yield', 'roi' => anc_pct($r['roi_percent']), 'name' => $r['title'],
-                'meta' => ['Term' => anc_fmt_term($r['duration_days']), 'Minimum' => anc_money($r['min_amount']), 'Payout' => anc_nice($r['payout_option'])],
-                'summary' => $r['summary'] ?: $r['description'],
-            ];
-            break;
+    foreach ($__stmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        $cadence = $r['cadence'];
+        $payouts = (int) floor((int) $r['duration_days'] / anc_cadence_days($cadence));
+        $roi     = (float) $r['roi_percent'];
 
-        case 'xweekly':
-            $rows = $__pdo->query("SELECT plan_name, roi_percent, min_weekly, max_weekly, description
-                                   FROM xweekly_plans WHERE status='active' ORDER BY min_weekly ASC")->fetchAll(PDO::FETCH_ASSOC);
-            foreach ($rows as $r) $__cards[] = [
-                'tier' => 'X-Weekly', 'roi' => anc_pct($r['roi_percent']), 'name' => $r['plan_name'],
-                'meta' => ['Weekly' => anc_money($r['min_weekly']) . '–' . anc_money($r['max_weekly']), 'Frequency' => 'Every week'],
-                'summary' => $r['description'],
-            ];
-            break;
-
-        case 'xshares':
-            $rows = $__pdo->query("SELECT asset_name, ticker, roi_percent, payout_schedule, min_amount, description
-                                   FROM xshares_assets WHERE status='active' ORDER BY min_amount ASC")->fetchAll(PDO::FETCH_ASSOC);
-            foreach ($rows as $r) $__cards[] = [
-                'tier' => $r['ticker'], 'roi' => anc_pct($r['roi_percent']), 'name' => $r['asset_name'],
-                'meta' => ['Minimum' => anc_money($r['min_amount']), 'Payout' => anc_nice($r['payout_schedule'])],
-                'summary' => $r['description'],
-            ];
-            break;
-
-        case 'xgrid':
-            $rows = $__pdo->query("SELECT name, roi_percent, duration_days, min_amount, payout_option, summary
-                                   FROM infrastructure_plans ORDER BY min_amount ASC")->fetchAll(PDO::FETCH_ASSOC);
-            foreach ($rows as $r) $__cards[] = [
-                'tier' => 'X-Grid', 'roi' => anc_pct($r['roi_percent']), 'name' => $r['name'],
-                'meta' => ['Term' => anc_fmt_term($r['duration_days']), 'Minimum' => anc_money($r['min_amount']), 'Payout' => anc_nice($r['payout_option'])],
-                'summary' => $r['summary'],
-            ];
-            break;
-
-        case 'xrewards':
-            $__variant = 'product';
-            $rows = $__pdo->query("SELECT product_name, description, retail_price, reward_price, discount_pct, image_path
-                                   FROM xrewards_products WHERE status='active' ORDER BY retail_price DESC")->fetchAll(PDO::FETCH_ASSOC);
-            foreach ($rows as $r) $__cards[] = [
-                'name' => $r['product_name'], 'summary' => $r['description'],
-                'retail' => $r['retail_price'], 'member' => $r['reward_price'],
-                'discount' => $r['discount_pct'], 'image' => $r['image_path'],
-            ];
-            break;
+        $__cards[] = [
+            'tier'     => ucfirst($cadence),
+            'icon'     => $r['icon'] ?: 'ph-chart-line-up',
+            // Headline is the per-period rate — that is what the member receives.
+            'roi'      => anc_pct($roi),
+            'roi_note' => 'per ' . ($cadence === 'monthly' ? 'month' : 'week'),
+            'name'     => $r['title'],
+            'meta'     => [
+                'Term'    => anc_fmt_term($r['duration_days']),
+                'Payouts' => $payouts . ' x ' . anc_pct($roi),
+                'Minimum' => anc_money($r['min_amount']),
+                'Risk'    => $r['risk'],
+            ],
+            'total'    => anc_pct(round($roi * $payouts, 2)) . ' total return',
+            'summary'  => $r['summary'] ?: $r['description'],
+        ];
     }
 } catch (Throwable $e) {
-    error_log('plans-section (' . $plan_product . '): ' . $e->getMessage());
+    error_log('plans-section: ' . $e->getMessage());
     return; // never break the marketing page
 }
 
 if (empty($__cards)) return;
+
+$__eyebrow = $plans_eyebrow ?? 'Investment plans';
+$__title   = $plans_heading ?? 'Pick your payout rhythm.';
 ?>
 <section class="section section--warm" id="plans">
   <div class="container">
@@ -127,44 +102,35 @@ if (empty($__cards)) return;
         <?= htmlspecialchars($__eyebrow) ?>
       </p>
       <h2 class="section-header__title"><?= htmlspecialchars($__title) ?></h2>
+      <p class="section-header__body">
+        Invest once. Every plan pays a fixed percentage of your capital back to
+        your wallet on a set rhythm, and returns your principal in full at the
+        end of the term.
+      </p>
     </div>
 
     <div class="grid-3">
       <?php foreach ($__cards as $c): ?>
-        <?php if ($__variant === 'product'): ?>
-          <article class="plan-card plan-card--product">
-            <?php if (!empty($c['image'])): ?>
-              <div class="plan-card__media"><img src="<?= htmlspecialchars($c['image']) ?>" alt="<?= htmlspecialchars($c['name']) ?>" loading="lazy"></div>
-            <?php endif; ?>
-            <div class="plan-card__body">
-              <?php if (!empty($c['discount'])): ?>
-                <span class="plan-card__badge"><?= (int) $c['discount'] ?>% member discount</span>
-              <?php endif; ?>
-              <div class="plan-card__name"><?= htmlspecialchars($c['name']) ?></div>
-              <?php if (!empty($c['summary'])): ?>
-                <p class="plan-card__summary"><?= htmlspecialchars($c['summary']) ?></p>
-              <?php endif; ?>
-              <div class="plan-card__price">
-                <span class="plan-card__price-member"><?= anc_money($c['member']) ?></span>
-                <span class="plan-card__price-retail"><?= anc_money($c['retail']) ?></span>
-              </div>
-            </div>
-          </article>
-        <?php else: ?>
-          <article class="plan-card">
-            <span class="plan-card__tier"><?= htmlspecialchars($c['tier']) ?></span>
-            <div class="plan-card__roi"><?= htmlspecialchars($c['roi']) ?></div>
-            <div class="plan-card__name"><?= htmlspecialchars($c['name']) ?></div>
-            <ul class="plan-card__meta">
-              <?php foreach ($c['meta'] as $k => $v): if ($v === '' || $v === null) continue; ?>
-                <li><span><?= htmlspecialchars($k) ?></span><strong><?= htmlspecialchars($v) ?></strong></li>
-              <?php endforeach; ?>
-            </ul>
-            <?php if (!empty($c['summary'])): ?>
-              <p class="plan-card__summary"><?= htmlspecialchars($c['summary']) ?></p>
-            <?php endif; ?>
-          </article>
-        <?php endif; ?>
+        <article class="plan-card">
+          <span class="plan-card__tier">
+            <i class="ph <?= htmlspecialchars($c['icon']) ?>"></i>
+            <?= htmlspecialchars($c['tier']) ?>
+          </span>
+          <div class="plan-card__roi">
+            <?= htmlspecialchars($c['roi']) ?>
+            <span class="plan-card__roi-note"><?= htmlspecialchars($c['roi_note']) ?></span>
+          </div>
+          <div class="plan-card__name"><?= htmlspecialchars($c['name']) ?></div>
+          <ul class="plan-card__meta">
+            <?php foreach ($c['meta'] as $k => $v): if ($v === '' || $v === null) continue; ?>
+              <li><span><?= htmlspecialchars($k) ?></span><strong><?= htmlspecialchars($v) ?></strong></li>
+            <?php endforeach; ?>
+          </ul>
+          <div class="plan-card__total"><?= htmlspecialchars($c['total']) ?></div>
+          <?php if (!empty($c['summary'])): ?>
+            <p class="plan-card__summary"><?= htmlspecialchars($c['summary']) ?></p>
+          <?php endif; ?>
+        </article>
       <?php endforeach; ?>
     </div>
 
@@ -175,5 +141,5 @@ if (empty($__cards)) return;
   </div>
 </section>
 <?php
-unset($__cards, $__variant, $__pdo, $__eyebrow, $__title, $__headings, $rows, $r, $c, $plan_product);
+unset($__cards, $__pdo, $__stmt, $__eyebrow, $__title, $r, $c, $plan_cadence, $plans_heading, $plans_eyebrow);
 ?>

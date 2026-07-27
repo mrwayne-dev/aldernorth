@@ -25,7 +25,7 @@
     <div class="form-card">
       <div class="form-card__header">
         <a href="/" aria-label="Aldernorth Capital home" style="margin-bottom: var(--space-2);">
-          <img src="/assets/images/logo/aldernorth-black.png" alt="Aldernorth Capital" style="height: 30px;">
+          <img src="/assets/images/logo/aldernorth-black.svg" alt="Aldernorth Capital" style="height: 30px;">
         </a>
         <p class="eyebrow">
           <span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>

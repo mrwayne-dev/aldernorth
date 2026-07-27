@@ -258,9 +258,8 @@
     const t = (type || '').toLowerCase();
     if (t.includes('deposit')) return 'ph-arrow-circle-down';
     if (t.includes('withdraw')) return 'ph-arrow-circle-up';
-    if (t.includes('donation')) return 'ph-hand-heart';
     if (t.includes('investment')) return 'ph-chart-line';
-    if (t.includes('holdlock')) return 'ph-lock';
+    if (t.includes('roi') || t.includes('payout')) return 'ph-trend-up';
     if (t.includes('infrastructure')) return 'ph-buildings';
     if (t.includes('maintenance')) return 'ph-wrench';
     return 'ph-wallet';
@@ -269,7 +268,7 @@
 function getAmountClass(type) {
   const t = (type || '').toLowerCase();
   if (t.includes('withdraw')) return 'negative';
-  return 'positive'; // deposit, donation, investment, etc.
+  return 'positive'; // deposit, roi_payout, investment_release, etc.
 }
 
   /* ===================== Toast helper (updated to match new CSS + prevent stacking) ===================== */
@@ -331,24 +330,20 @@ var loadDashboardData = async function () {
         $('#total-deposited').text(formatCurrency(w.total_deposited ?? 0));
         $('#total-withdrawn').text(formatCurrency(w.total_withdrawn ?? 0));
         $('#total-investments').text(formatCurrency(w.total_investments ?? 0));
-        $('#holdlock-savings').text(formatCurrency(w.holdlock_savings ?? 0));
         $('#total-earnings').text(formatCurrency(w.total_earnings ?? 0));
         $('#wallet-total-earnings').text(formatCurrency(w.total_earnings ?? 0));
 
-        // --- Product allocations (computed live by wallet.php) ---
-        const xweekly = Number(w.xweekly_invested ?? 0);
-        const xshares = Number(w.xshares_invested ?? 0);
-        $('#xweekly-invested').text(formatCurrency(xweekly));
-        $('#xshares-invested').text(formatCurrency(xshares));
-        // Prefer the backend-computed total (includes X-Grid); fall back to the
-        // visible allocation rows if the field is ever missing.
+        // --- Allocations by payout cadence (computed live by wallet.php) ---
+        const weekly  = Number(w.weekly_invested ?? 0);
+        const monthly = Number(w.monthly_invested ?? 0);
+        $('#weekly-invested').text(formatCurrency(weekly));
+        $('#monthly-invested').text(formatCurrency(monthly));
         const totalInvested = (w.total_invested != null)
           ? Number(w.total_invested)
-          : (Number(w.total_investments ?? 0) +
-             Number(w.holdlock_savings ?? 0) +
-             Number(w.xgrid_invested ?? 0) +
-             xweekly + xshares);
+          : (weekly + monthly);
         $('#wallet-total-invested').text(formatCurrency(totalInvested));
+        $('#next-payout-date').text(w.next_payout_date ?? '—');
+        $('#next-payout-amount').text(formatCurrency(w.next_payout_amount ?? 0));
 
         // NOTE: do not return early — fall through so the unified loader
         // also populates #wallet-activity (recent_activity from dashboard.php).
@@ -361,7 +356,6 @@ var loadDashboardData = async function () {
     const res = await fetchApi('/api/backend/dashboard.php', { action: 'get_data' });
     if (res.status === 'success') {
       const w = res.data.wallet || {};
-      const i = res.data.impacts || {};
 
       const parseNum = v => {
         if (v == null) return 0;
@@ -383,7 +377,6 @@ var loadDashboardData = async function () {
         $('#total-deposited').text(formatCurrency(parseNum(w.total_deposited ?? 0)));
         $('#total-withdrawn').text(formatCurrency(parseNum(w.total_withdrawn ?? 0)));
         $('#total-investments').text(formatCurrency(parseNum(w.total_investments ?? w.investments ?? 0)));
-        $('#total-holdlock').text(formatCurrency(parseNum(w.holdlock_savings ?? 0)));
         $('#total-earnings').text(formatCurrency(parseNum(w.total_earnings ?? 0)));
       }
 
@@ -406,9 +399,8 @@ var loadDashboardData = async function () {
         let colorClass = '';
         if (txTypeLower.includes('deposit')) colorClass = 'accent-green';
         else if (txTypeLower.includes('withdraw')) colorClass = 'accent-red';
-        else if (txTypeLower.includes('donation')) colorClass = 'accent-orange';
         else if (txTypeLower.includes('investment')) colorClass = 'accent-blue';
-        else if (txTypeLower.includes('holdlock')) colorClass = 'accent-purple';
+        else if (txTypeLower.includes('roi') || txTypeLower.includes('payout')) colorClass = 'accent-green';
         else if (txTypeLower.includes('infrastructure')) colorClass = 'accent-gray';
         else if (txTypeLower.includes('maintenance')) colorClass = 'accent-yellow';
 
@@ -435,16 +427,17 @@ var loadDashboardData = async function () {
 
       // --- Dashboard Overview (dashboard.php) ---
       $('#wallet-balance').text(formatCurrency(parseNum(w.balance ?? 0)));
-      $('#donations').text(formatCurrency(parseNum(w.donations ?? w.total_donations ?? 0)));
       $('#investments').text(formatCurrency(parseNum(w.investments ?? w.total_investments ?? 0)));
-      $('#holdlock-savings').text(formatCurrency(parseNum(w.holdlock_savings ?? 0)));
 
-      // --- Impact Values ---
-      $('#total-contributions').text('$' + formatCurrency(parseNum(i.total_contributions ?? 0)));
-      $('#people-helped').text(parseNum(i.people_helped ?? 0));
-      $('#impact-score').text(formatCurrency(parseNum(i.impact_score ?? 0)) + '%');
-      $('#communities-helped').text(parseNum(i.communities_helped ?? 0));
-      $('#packages-funded').text(parseNum(i.packages_funded ?? 0));
+      // --- Live investment position summary (dashboard.php `investments` block) ---
+      const inv = res.data.investments || {};
+      $('#active-positions').text(parseNum(inv.active_count ?? 0));
+      $('#active-capital').text(formatCurrency(parseNum(inv.active_capital ?? 0)));
+      $('#roi-earned').text(formatCurrency(parseNum(inv.roi_earned ?? 0)));
+      $('#portfolio-value').text(formatCurrency(parseNum(inv.portfolio_value ?? 0)));
+      $('#next-payout-date').text(inv.next_payout_date ?? '—');
+      $('#next-payout-amount').text(formatCurrency(parseNum(inv.next_payout_amount ?? 0)));
+
 
       // --- Recent Activity Table (dashboard.php) ---
       const tableBody = $('#recent-activity');
@@ -454,9 +447,8 @@ var loadDashboardData = async function () {
         let colorClass = '';
         if (txTypeLower.includes('deposit')) colorClass = 'accent-green';
         else if (txTypeLower.includes('withdraw')) colorClass = 'accent-red';
-        else if (txTypeLower.includes('donation')) colorClass = 'accent-orange';
         else if (txTypeLower.includes('investment')) colorClass = 'accent-blue';
-        else if (txTypeLower.includes('holdlock')) colorClass = 'accent-purple';
+        else if (txTypeLower.includes('roi') || txTypeLower.includes('payout')) colorClass = 'accent-green';
         else if (txTypeLower.includes('infrastructure')) colorClass = 'accent-gray';
         else if (txTypeLower.includes('maintenance')) colorClass = 'accent-yellow';
 

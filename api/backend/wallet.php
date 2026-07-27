@@ -340,71 +340,61 @@ error_reporting(0);
                 $wallet = getUserWallet($pdo, $user_id);
                 if (!$wallet) jsonResponse('error', 'Wallet not found.');
 
-                // --- Step 1: Aggregate all ROI earnings across active product tables ---
-                // Each entry: [table, earnings_column]
-                $earningsSources = [
-                    ['investments',                  'roi_earned'],
-                    ['holdlock',                     'roi_earned'],
-                    ['infrastructure_contributions', 'roi_earned'],
-                    ['xweekly_programs',             'total_earned'],
-                    ['xshares_holdings',             'roi_earned'],
-                ];
+                // --- Step 1: Total ROI earned, live from the one investment table ---
+                $stmt = $pdo->prepare("SELECT COALESCE(SUM(roi_earned), 0) FROM investments WHERE user_id = ?");
+                $stmt->execute([$user_id]);
+                $totalEarnings = (float) $stmt->fetchColumn();
 
-                $totalEarnings = 0;
-                foreach ($earningsSources as [$table, $column]) {
-                    $stmt = $pdo->prepare("SELECT COALESCE(SUM({$column}), 0) FROM {$table} WHERE user_id = ?");
-                    $stmt->execute([$user_id]);
-                    $totalEarnings += (float)$stmt->fetchColumn();
-                }
-
-                // --- Step 2: Aggregate invested principal LIVE from each product table ---
-                // The static wallet.* columns were not always kept in sync by the
-                // create-flows, so we recompute the currently-held principal per
-                // product directly from the source tables (current holdings only —
-                // completed/unlocked positions have returned principal to balance).
-                $investedSources = [
-                    'total_investments' => "SELECT COALESCE(SUM(amount), 0) FROM investments WHERE user_id = ? AND status = 'active'",
-                    'holdlock_savings'  => "SELECT COALESCE(SUM(amount), 0) FROM holdlock WHERE user_id = ? AND status IN ('locked','unlock_pending','matured')",
-                    'xweekly_invested'  => "SELECT COALESCE(SUM(total_invested), 0) FROM xweekly_programs WHERE user_id = ? AND status IN ('active','paused')",
-                    'xshares_invested'  => "SELECT COALESCE(SUM(amount), 0) FROM xshares_holdings WHERE user_id = ? AND status IN ('active','matured')",
-                    'xgrid_invested'    => "SELECT COALESCE(SUM(amount), 0) FROM infrastructure_contributions WHERE user_id = ? AND status IN ('active','matured')",
-                ];
-                $invested = [];
-                foreach ($investedSources as $key => $sql) {
-                    $st = $pdo->prepare($sql);
-                    $st->execute([$user_id]);
-                    $invested[$key] = (float)$st->fetchColumn();
+                // --- Step 2: Principal currently held, split by cadence ---
+                // Recomputed from `investments` rather than trusting the denormalised
+                // wallet columns, which historically drifted out of sync.
+                // Completed positions have already returned principal to `balance`.
+                $invested = ['weekly' => 0.0, 'monthly' => 0.0];
+                $cstmt = $pdo->prepare("SELECT cadence, COALESCE(SUM(amount), 0) AS total
+                                        FROM investments
+                                        WHERE user_id = ? AND status = 'active'
+                                        GROUP BY cadence");
+                $cstmt->execute([$user_id]);
+                foreach ($cstmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                    $invested[$row['cadence']] = (float) $row['total'];
                 }
                 $totalInvested = array_sum($invested);
 
-                // --- Step 3: Persist recomputed total earnings (single authoritative value).
-                // NOTE: the invested principal is returned live below but NOT written back —
-                // wallets.total_investments is maintained elsewhere as a cross-product GRAND
-                // total (every create-flow + crons increment it), so overwriting it here with
-                // a per-product figure would break dashboard.php / funds.php / cron accounting.
-                $upd = $pdo->prepare("UPDATE wallets SET total_earnings = ? WHERE user_id = ?");
-                $upd->execute([$totalEarnings, $user_id]);
+                // --- Step 3: Persist the recomputed figures as the authoritative values ---
+                $upd = $pdo->prepare("UPDATE wallets SET total_earnings = ?, total_investments = ? WHERE user_id = ?");
+                $upd->execute([$totalEarnings, $totalInvested, $user_id]);
 
-                // --- Step 4: Re-fetch wallet record (now includes updated total_earnings) ---
+                // --- Step 4: Re-fetch wallet record (now includes updated totals) ---
                 $walletStmt = $pdo->prepare("SELECT * FROM wallets WHERE user_id = ?");
                 $walletStmt->execute([$user_id]);
                 $wallet = $walletStmt->fetch(PDO::FETCH_ASSOC);
 
-                // --- Step 5: Build full summary response for frontend ---
+                // --- Step 5: Next scheduled payout, for the wallet header ---
+                $npStmt = $pdo->prepare("SELECT next_payout_date,
+                                                COALESCE(SUM(amount * roi_percent / 100), 0) AS due
+                                         FROM investments
+                                         WHERE user_id = ? AND status = 'active'
+                                         GROUP BY next_payout_date
+                                         ORDER BY next_payout_date ASC
+                                         LIMIT 1");
+                $npStmt->execute([$user_id]);
+                $nextPayout = $npStmt->fetch(PDO::FETCH_ASSOC) ?: null;
+
+                // --- Step 6: Build full summary response for frontend ---
                 $summary = [
                     'balance'              => (float)$wallet['balance'],
                     'total_deposited'      => (float)$wallet['total_deposited'],
                     'total_withdrawn'      => (float)$wallet['total_withdrawn'],
-                    'total_investments'    => $invested['total_investments'],
-                    'holdlock_savings'     => $invested['holdlock_savings'],
-                    'xweekly_invested'     => $invested['xweekly_invested'],
-                    'xshares_invested'     => $invested['xshares_invested'],
-                    'xgrid_invested'       => $invested['xgrid_invested'],
+                    'total_investments'    => $totalInvested,
+                    'weekly_invested'      => $invested['weekly'],
+                    'monthly_invested'     => $invested['monthly'],
                     'total_invested'       => $totalInvested,
+                    'portfolio_value'      => round((float)$wallet['balance'] + $totalInvested, 2),
                     'pending_withdrawals'  => (float)$wallet['pending_withdrawals'],
                     'total_earnings'       => $totalEarnings,
+                    'next_payout_date'     => $nextPayout ? date('M d, Y', strtotime($nextPayout['next_payout_date'])) : null,
+                    'next_payout_amount'   => $nextPayout ? round((float)$nextPayout['due'], 2) : 0.00,
                 ];
-
 
                 jsonResponse('success', 'Wallet summary retrieved successfully.', $summary);
                 break;
