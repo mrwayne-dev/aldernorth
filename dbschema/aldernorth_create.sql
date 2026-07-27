@@ -293,19 +293,21 @@ INSERT INTO `settings` (`id`,`cash_mailing_address`,`wallet_deposit_address`) VA
 -- ============================================================
 -- SEED DATA — plans
 --
--- roi_percent is PER PERIOD. Sanity check on effective returns:
---   Alder Weekly     1.10% x 13 wk  = 14.3% over 90 days
+-- roi_percent is PER PERIOD. Every duration_days is an exact multiple of
+-- its payout period (7 or 30), so no term ends with dead, unpaid days.
+-- Sanity check on effective returns:
+--   Alder Weekly     1.10% x 13 wk  = 14.3% over 91 days
 --   Rowan Weekly     1.45% x 26 wk  = 37.7% over 182 days
 --   Blackthorn Wkly  1.80% x 52 wk  = 93.6% over 364 days
 --   Northwood Mthly  4.50% x 6 mo   = 27.0% over 180 days
---   Ironwood Mthly   5.75% x 12 mo  = 69.0% over 365 days
---   Aldercrest Mthly 7.20% x 24 mo  = 172.8% over 730 days
+--   Ironwood Mthly   5.75% x 12 mo  = 69.0% over 360 days
+--   Aldercrest Mthly 7.20% x 24 mo  = 172.8% over 720 days
 -- ============================================================
 
 INSERT INTO `plans`
   (`title`,`cadence`,`roi_percent`,`duration_days`,`min_amount`,`max_amount`,`risk`,`description`,`summary`,`details`,`icon`,`accent`,`status`)
 VALUES
-  ('Alder Weekly','weekly',1.10,90,250.00,25000.00,'Low',
+  ('Alder Weekly','weekly',1.10,91,250.00,25000.00,'Low',
    'A 13-week entry position paying out every Friday.',
    'The lightest way in. Put capital to work for a quarter, take a payout every week, and get your principal back on day 90.',
    'Capital is deployed into short-duration fixed-income instruments. Payouts are credited to your Aldernorth wallet each week and are available to withdraw immediately. Principal returns in full at maturity.',
@@ -329,13 +331,13 @@ VALUES
    'A conservative fixed-income allocation. Your payout lands on the same calendar day each month and is immediately withdrawable. Principal returns at maturity.',
    'ph-calendar-check','orange','active'),
 
-  ('Ironwood Monthly','monthly',5.75,365,2500.00,250000.00,'Moderate',
+  ('Ironwood Monthly','monthly',5.75,360,2500.00,250000.00,'Moderate',
    'A 12-month position with an elevated monthly rate.',
    'A full year of monthly income at a rate that rewards the longer commitment. Our most popular tier.',
    'A balanced allocation across fixed income and dividend equity. Monthly payouts are credited automatically and reported quarterly. Principal returns at maturity.',
    'ph-buildings','orange','active'),
 
-  ('Aldercrest Monthly','monthly',7.20,730,25000.00,2000000.00,'High',
+  ('Aldercrest Monthly','monthly',7.20,720,25000.00,2000000.00,'High',
    'A 24-month position for the highest monthly rate we offer.',
    'Two years, twenty-four payouts, and our strongest published rate — for members allocating serious capital.',
    'A higher-risk vehicle built on structured products and growth equity. Capital is at risk and performance is disclosed before allocation. Monthly payouts run for the full term; principal returns at maturity.',

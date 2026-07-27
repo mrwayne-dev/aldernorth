@@ -1,55 +1,9 @@
-<?php require_once __DIR__ . '/../../config/assets.php'; ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <!-- Meta -->
-  <meta charset="UTF-8">
-  <meta name="description" content="Aldernorth Capital — invest a lump sum, choose weekly or monthly payouts, and get your principal back in full at maturity.">
-  <meta name="author" content="Aldernorth Capital">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="robots" content="index, follow">
-  <link rel="canonical" href="https://aldernorthcapital.com/">
-
-
-  <!-- Title -->
-  <title>Aldernorth Capital – Build Wealth on Autopilot</title>
-
-  <!-- Preload CSS -->
-  <link rel="preload" href="<?= anc_asset('../../assets/css/main.css') ?>" as="style">
-
-  <!-- Preload Fonts -->
-  <link rel="preload" href="../../assets/fonts/HostGrotesk-Regular.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="../../assets/fonts/HostGrotesk-Bold.woff2" as="font" type="font/woff2" crossorigin>
-
-  <!-- Unicons CDN -->
-  <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.8/css/line.css">
-  
-  <!-- Stylesheets -->
-  <link rel="stylesheet" href="<?= anc_asset('../../assets/css/main.css') ?>">
-  <link rel="stylesheet" href="<?= anc_asset('../../assets/css/responsive.css') ?>">
-  <link rel="stylesheet" href="<?= anc_asset('../../assets/css/anc-design.css') ?>">
-
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="../../assets/favicon/favicon-32x32.png" sizes="32x32">
-  <link rel="shortcut icon" href="../../assets/favicon/favicon.ico">
-  <link rel="apple-touch-icon" sizes="180x180" href="../../assets/favicon/apple-touch-icon.png">
-  <meta name="apple-mobile-web-app-title" content="Aldernorth Capital">
-  <link rel="manifest" href="../../assets/favicon/site.webmanifest">
-  
-    <!-- Smartsupp Live Chat script -->
-  <script type="text/javascript">
-  var _smartsupp = _smartsupp || {};
-  _smartsupp.key = 'acee1c8fc66bb651454e92b288dd5ddf2d428cc2';
-  window.smartsupp||(function(d) {
-    var s,c,o=smartsupp=function(){ o._.push(arguments)};o._=[];
-    s=d.getElementsByTagName('script')[0];c=d.createElement('script');
-    c.type='text/javascript';c.charset='utf-8';c.async=true;
-    c.src='https://www.smartsuppchat.com/loader.js?';s.parentNode.insertBefore(c,s);
-  })(document);
-  </script>
-  <noscript>Powered by <a href="https://www.smartsupp.com" target="_blank" rel="noopener noreferrer">Smartsupp</a></noscript>
-
-</head>
+<?php
+$page_title = 'Aldernorth Capital – Build Wealth on Autopilot';
+$page_description = 'Aldernorth Capital — invest a lump sum, choose weekly or monthly payouts, and get your principal back in full at maturity.';
+$page_path = '/';
+include __DIR__ . '/_partials/head.php';
+?>
 <body class="anc-redesign">
 
 <!-- =================== NAVBAR (Crestmark D.12 adapted) =================== -->
@@ -91,9 +45,9 @@
 <section class="hero" id="hero">
   <div class="hero__bg" aria-hidden="true">
     <picture>
-      <source type="image/avif" srcset="/assets/images/anc-home.avif">
-      <source type="image/webp" srcset="/assets/images/anc-home.webp">
-      <img src="/assets/images/anc-home.webp" alt="" width="1800" height="1080" loading="eager" fetchpriority="high">
+      <source type="image/avif" srcset="/assets/images/home-hero.avif">
+      <source type="image/webp" srcset="/assets/images/home-hero.webp">
+      <img src="/assets/images/home-hero.webp" alt="" width="1800" height="1080" loading="eager" fetchpriority="high">
     </picture>
   </div>
 

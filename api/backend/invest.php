@@ -87,11 +87,30 @@ function nextPayoutDate(string $cadence, string $from): string {
 /**
  * Full projection for an amount against a plan.
  * Returns per-payout value, payout count, total ROI and totals.
+ *
+ * NOTE ON MATURITY: the maturity date is derived by walking the payout
+ * schedule forward, NOT by adding duration_days. Monthly payouts advance by
+ * CALENDAR month (so they land on the same date each month, as advertised)
+ * while payoutCount() slices the term into 30-day periods -- those two
+ * disagree, and a naive "+duration_days" maturity can fall BEFORE the final
+ * scheduled payout. When that happens the cron closes the position before
+ * paying it and the member silently loses a payout. Deriving maturity from
+ * the schedule guarantees the last payout always lands on maturity day.
  */
 function projectInvestment(float $amount, float $roi_percent, string $cadence, int $duration_days): array {
-    $payouts     = payoutCount($cadence, $duration_days);
-    $per_payout  = round($amount * $roi_percent / 100, 2);
-    $total_roi   = round($per_payout * $payouts, 2);
+    $payouts    = payoutCount($cadence, $duration_days);
+    $per_payout = round($amount * $roi_percent / 100, 2);
+    $total_roi  = round($per_payout * $payouts, 2);
+
+    $today = date('Y-m-d');
+    $first = nextPayoutDate($cadence, $today);
+
+    // Walk the schedule to the final payout; that date IS maturity.
+    $cursor = $today;
+    for ($i = 0; $i < max($payouts, 1); $i++) {
+        $cursor = nextPayoutDate($cadence, $cursor);
+    }
+
     return [
         'cadence'          => $cadence,
         'payouts_total'    => $payouts,
@@ -99,8 +118,8 @@ function projectInvestment(float $amount, float $roi_percent, string $cadence, i
         'total_roi'        => $total_roi,
         'total_return'     => round($amount + $total_roi, 2),
         'effective_percent'=> $amount > 0 ? round($total_roi / $amount * 100, 2) : 0.0,
-        'first_payout_date'=> nextPayoutDate($cadence, date('Y-m-d')),
-        'maturity_date'    => date('Y-m-d', strtotime("+{$duration_days} days")),
+        'first_payout_date'=> $first,
+        'maturity_date'    => $cursor,
     ];
 }
 

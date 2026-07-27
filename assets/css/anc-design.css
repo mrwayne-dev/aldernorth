@@ -750,7 +750,10 @@
   top: 0;
   z-index: 100;
   width: 100%;
-  background: var(--color-bg-dark-40);
+  /* Fixed dark scrim, not a theme token: the nav sits over hero photography
+     in both themes and the links/wordmark on top of it are always white.
+     0.40 was too light to carry white text over bright hero images. */
+  background: rgba(15, 13, 15, 0.58);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   transition: background-color var(--dur-base) var(--ease-out),
@@ -787,6 +790,8 @@
   color: var(--color-ink-white);
 }
 
+/* --color-ink-primary is white in dark theme and ink in light, so this
+   tracks the nav background correctly in both. */
 .anc-redesign .navbar.is-scrolled .navbar__brand,
 .anc-redesign .navbar--solid .navbar__brand {
   color: var(--color-ink-primary);
@@ -797,14 +802,22 @@
   width: auto;
 }
 
-/* Wordmark swaps with the nav background: white over the hero,
-   dark once scrolled or on solid (white) pages. */
+/* Wordmark swaps with whatever is actually BEHIND it, which depends on
+   both the nav state and the theme:
+     - over a hero (default state) the nav is a dark scrim -> white mark
+     - scrolled/solid, the nav is --color-bg-page, which is dark in the
+       dark theme and white in the light theme -> follow the theme
+   Keying only off the state (as this did before) left the ink wordmark
+   invisible on every solid-nav page in the dark theme. */
 .anc-redesign .navbar__logo { display: block; }
 .anc-redesign .navbar__logo--dark { display: none; }
-.anc-redesign .navbar.is-scrolled .navbar__logo--light,
-.anc-redesign .navbar--solid .navbar__logo--light { display: none; }
-.anc-redesign .navbar.is-scrolled .navbar__logo--dark,
-.anc-redesign .navbar--solid .navbar__logo--dark { display: block; }
+
+/* Light theme: solid/scrolled nav is white, so switch to the ink mark. */
+:root[data-theme="light"] .anc-redesign .navbar.is-scrolled .navbar__logo--light,
+:root[data-theme="light"] .anc-redesign .navbar--solid .navbar__logo--light { display: none; }
+:root[data-theme="light"] .anc-redesign .navbar.is-scrolled .navbar__logo--dark,
+:root[data-theme="light"] .anc-redesign .navbar--solid .navbar__logo--dark { display: block; }
+/* Dark theme keeps the white mark in every nav state. */
 
 .anc-redesign .navbar__links {
   display: flex;

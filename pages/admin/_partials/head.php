@@ -38,9 +38,8 @@ $page_description = $page_description ?? 'Aldernorth Capital administration.';
     <link rel="preload" href="/assets/fonts/Switzer-400.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/assets/fonts/Switzer-500.woff2" as="font" type="font/woff2" crossorigin>
 
-    <!-- Phosphor icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/fill/style.css">
+    <!-- Phosphor icons (self-hosted) -->
+    <link rel="stylesheet" href="<?= anc_asset('/assets/fonts/phosphor.css') ?>">
 
     <!-- Non-critical CSS -->
     <link rel="stylesheet" href="<?= anc_asset('/assets/css/animation.min.css') ?>">

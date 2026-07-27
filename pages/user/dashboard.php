@@ -255,7 +255,7 @@ $user_role = $_SESSION['role'] ?? 'user';
 <script src="<?= anc_asset('../../assets/js/dashboard.js') ?>" defer></script>
 
 <!-- Chart.js CDN -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/assets/js/chart.min.js"></script>
 
 <!-- Iconify CDN -->
 

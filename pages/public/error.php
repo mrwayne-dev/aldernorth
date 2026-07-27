@@ -12,9 +12,9 @@ include __DIR__ . '/_partials/head.php';
 <section class="hero">
   <div class="hero__bg" aria-hidden="true">
     <picture>
-      <source type="image/avif" srcset="/assets/images/anc-home.avif">
-      <source type="image/webp" srcset="/assets/images/anc-home.webp">
-      <img src="/assets/images/anc-home.webp" alt="" width="1800" height="1080" loading="eager">
+      <source type="image/avif" srcset="/assets/images/home-hero.avif">
+      <source type="image/webp" srcset="/assets/images/home-hero.webp">
+      <img src="/assets/images/home-hero.webp" alt="" width="1800" height="1080" loading="eager">
     </picture>
   </div>
   <div class="container hero__inner">

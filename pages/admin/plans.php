@@ -268,6 +268,6 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
 <script src="<?= anc_asset('../../assets/js/bootstrap-select.min.js') ?>" defer></script>
 <script src="<?= anc_asset('../../assets/js/admin/admin.js') ?>" defer></script>
 <script src="<?= anc_asset('../../assets/js/admin/funds.js') ?>" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/assets/js/chart.min.js"></script>
 </body>
 </html>

@@ -471,7 +471,7 @@ $admin_email = $_SESSION['admin_email'] ?? '';
 <script src="<?= anc_asset('../../assets/js/admin/admin.js') ?>" defer></script>
 
 <!-- Chart.js CDN -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/assets/js/chart.min.js"></script>
 
 <!-- Iconify CDN -->
 </body>
