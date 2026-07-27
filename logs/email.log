@@ -389,3 +389,6 @@
 [2026-07-27 22:20:51] SENT → e2e@aldernorthcapital.com | Template: investment_payout | Subject: Your scheduled payout has been credited
 [2026-07-27 22:22:16] SENT → e2e@aldernorthcapital.com | Template: investment_payout | Subject: Your scheduled payout has been credited
 [2026-07-27 22:22:20] SENT → e2e@aldernorthcapital.com | Template: investment_matured | Subject: Your investment has matured — principal released
+[2026-07-27 18:33:16] SENT → e2e@aldernorthcapital.com | Template: investment_confirmed | Subject: Your Investment Has Been Started Successfully
+[2026-07-27 18:33:20] SENT → support@aldernorthcapital.com | Template: admin_investment_notification | Subject: New Investment Started on Aldernorth Capital
+[2026-07-27 22:33:25] SENT → final@aldernorthcapital.com | Template: investment_payout | Subject: Your scheduled payout has been credited

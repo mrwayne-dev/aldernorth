@@ -91,7 +91,7 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
                                                     <li><a href="#" data-filter="deposit">Deposits</a></li>
                                                     <li><a href="#" data-filter="withdrawal">Withdrawals</a></li>
                                                     
-                                                    <li><a href="#" data-filter="investment">X-Yield</a></li>
+                                                    <li><a href="#" data-filter="investment">Investments</a></li>
                                                     <li><a href="#" data-filter="pending">Pending Only</a></li>
                                                 </ul>
                                             </div>

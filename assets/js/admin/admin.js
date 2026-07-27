@@ -342,7 +342,7 @@ $(document).on('click', '.cancel-withdrawal-btn', function () {
         adminActivityChart = new Chart(ctx, {
             type: "doughnut",
             data: {
-                labels: ["Revenue", "Donations", "X-Yields", "Users"],
+                labels: ["Revenue", "Payouts", "Invested", "Users"],
                 datasets: [{
                     data: datasetValues,
                     backgroundColor: colors,

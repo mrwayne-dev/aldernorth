@@ -433,7 +433,7 @@
           </svg>
         </span>
         <h3 class="card-feature__title">Accessible minimums</h3>
-        <p class="card-feature__desc">Start from £50 on X-Weekly, scale up over time. The minimums that lock out retail investors elsewhere don't exist here.</p>
+        <p class="card-feature__desc">Start from $250 on a weekly plan and scale up over time. The minimums that lock out retail investors elsewhere don't exist here.</p>
       </article>
 
       <article class="card-feature">
@@ -464,7 +464,7 @@
   <div class="container">
     <div class="testimonial">
       <h2 class="testimonial__quote">
-        I'd been parking my salary surplus in a 0.5% saver for years. Setting up X-Weekly took me ten minutes — and now £200 a week routes straight into a strategy that's actually compounding, with a maturity date I can see on the dashboard.
+        I'd been parking my salary surplus in a 0.5% saver for years. Opening a weekly plan took me ten minutes — and now a payout lands in my wallet every Friday, with a maturity date I can see on the dashboard.
       </h2>
       <div>
         <p class="eyebrow" style="margin-bottom: var(--space-4);">
@@ -477,7 +477,7 @@
           <img src="../../assets/images/avatar/default.png" width="2000" height="2000" alt="" class="testimonial__portrait" loading="lazy">
           <div>
             <p class="testimonial__name">Sarah Johnson</p>
-            <p class="testimonial__role">X-Weekly member, Aldernorth Capital</p>
+            <p class="testimonial__role">Weekly plan member, Aldernorth Capital</p>
           </div>
         </div>
       </div>
@@ -509,7 +509,7 @@
           <span class="accordion__icon" aria-hidden="true"></span>
         </summary>
         <div class="accordion__body">
-          Aldernorth Capital is an FCA-authorised investment platform that brings weekly and monthly plans — X-Lock fixed-term savings, X-Weekly automated investing, X-Shares fractional equity, X-Yield investment plans, X-Grid infrastructure co-investments, and X-Rewards loyalty redemption — into a single wallet with one statement and one set of FSCS-backed protections.
+          Aldernorth Capital is an FCA-authorised investment platform built around a single product: you invest a lump sum into a plan that pays a fixed percentage of your capital back to your wallet either weekly or monthly, and returns your principal in full at the end of the term. One wallet, one statement, one set of FSCS-backed protections.
         </div>
       </details>
 
@@ -539,7 +539,7 @@
           <span class="accordion__icon" aria-hidden="true"></span>
         </summary>
         <div class="accordion__body">
-          Minimums vary by product. X-Weekly starts at £50 per week. X-Lock and X-Shares positions begin from £100. X-Grid co-investments have higher minimums reflective of the underlying deal — typically from £500 — and are presented per-opportunity.
+          Minimums vary by plan. Weekly plans start at $250, monthly plans at $500. Our longest monthly plan carries a $25,000 minimum, reflecting its term and rate. Every minimum is shown on the plan before you commit.
         </div>
       </details>
 
@@ -549,7 +549,7 @@
           <span class="accordion__icon" aria-hidden="true"></span>
         </summary>
         <div class="accordion__body">
-          Your wallet balance is available on demand. Funds inside fixed-term products (X-Lock, X-Yield, X-Grid) are released at maturity. X-Weekly programs can be paused or cancelled instantly; the funds already invested continue to earn until their own term ends.
+          Your wallet balance is available on demand, and every payout is withdrawable the moment it lands. Capital committed to a plan is locked for the term and released in full on the maturity date.
         </div>
       </details>
     </div>

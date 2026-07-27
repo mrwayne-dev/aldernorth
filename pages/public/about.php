@@ -101,7 +101,7 @@ include __DIR__ . '/_partials/head.php';
       <div>
         <p class="eyebrow" style="margin-bottom: var(--space-4);"><span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>Terms of use</p>
         <p style="color: var(--color-ink-muted); margin-bottom: var(--space-3);">
-          By opening an account you agree to our suitability process, fee schedule, and the FCA-mandated disclosures presented before each allocation. Customers may invest across X-Lock, X-Weekly, X-Shares, X-Grid, and X-Rewards — subject to per-product minimums, lock-up periods, and risk disclosures.
+          By opening an account you agree to our suitability process, fee schedule, and the FCA-mandated disclosures presented before each allocation. Customers may invest across our weekly and monthly plans — subject to per-plan minimums, fixed terms, and risk disclosures.
         </p>
         <p style="color: var(--color-ink-muted);">
           Past performance does not guarantee future returns; capital is at risk on non-FSCS-protected products. Accounts must be used only by the registered individual. Misuse may result in account suspension and referral to relevant authorities.

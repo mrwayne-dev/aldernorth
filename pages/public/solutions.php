@@ -41,22 +41,22 @@ include __DIR__ . '/_partials/head.php';
       <article class="card-feature">
         <span class="card-feature__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
         <h3 class="card-feature__title">For everyday savers</h3>
-        <p class="card-feature__desc">Tired of 0.5% high-street savers. Start with X-Lock for FSCS-protected fixed-term yield, layer X-Weekly on top for automated growth.</p>
+        <p class="card-feature__desc">Tired of 0.5% high-street savers. Start with a weekly plan for a payout every seven days, and roll the payouts into a longer monthly position as your balance grows.</p>
       </article>
       <article class="card-feature">
         <span class="card-feature__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 17l6-6 4 4 8-8"/></svg></span>
         <h3 class="card-feature__title">For income builders</h3>
-        <p class="card-feature__desc">Want regular distributions hitting the wallet. X-Shares pays out weekly/monthly/quarterly; X-Grid pays quarterly infrastructure income.</p>
+        <p class="card-feature__desc">Want regular distributions hitting the wallet. Weekly plans pay every seven days; monthly plans pay a larger amount on the same date each month.</p>
       </article>
       <article class="card-feature">
         <span class="card-feature__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg></span>
         <h3 class="card-feature__title">For portfolio diversifiers</h3>
-        <p class="card-feature__desc">Already have an ISA. Use X-Lock as the anchor, X-Shares for growth-equity exposure, X-Grid for non-correlated infrastructure income.</p>
+        <p class="card-feature__desc">Already have an ISA. Use a long monthly plan as the anchor and shorter weekly positions for the capital you want moving more often.</p>
       </article>
       <article class="card-feature">
         <span class="card-feature__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 21h18M5 21V9l7-5 7 5v12"/></svg></span>
         <h3 class="card-feature__title">For institutional-style allocators</h3>
-        <p class="card-feature__desc">Higher minimums, longer horizons. X-Grid's institutional slot and the Apex Yield plan deliver multi-asset exposure with quarterly reporting.</p>
+        <p class="card-feature__desc">Higher minimums, longer horizons. Aldercrest Monthly runs for two years at our strongest published rate, with performance disclosed before allocation.</p>
       </article>
     </div>
   </div>
@@ -96,7 +96,7 @@ include __DIR__ . '/_partials/head.php';
       <h2 class="testimonial__quote">Start compounding today.</h2>
       <div>
         <p class="eyebrow" style="margin-bottom: var(--space-4);"><span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>Open an account</p>
-        <p style="color: var(--color-ink-muted); margin-bottom: var(--space-5);">From £50 on X-Weekly. £100 on X-Lock and X-Shares. £500+ on X-Grid. All FSCS-protected on eligible deposits.</p>
+        <p style="color: var(--color-ink-muted); margin-bottom: var(--space-5);">From $250 on Alder Weekly, $500 on Northwood Monthly, and up to $25,000 on Aldercrest Monthly. Every plan returns your principal in full at maturity.</p>
         <a href="/register" class="btn btn--primary">Open an account</a>
       </div>
     </div>

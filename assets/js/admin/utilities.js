@@ -192,5 +192,3 @@
   };
 });
 
-<td class="f14-regular ${statusClass}">${tx.status? tx.status.charAt(0).toUpperCase() + tx.status.slice(1).toLowerCase(): ''}
-                            </td>

@@ -150,16 +150,13 @@ $user_role = $_SESSION['role'] ?? 'user';
         <canvas id="cardUsageChart" width="200" height="200"></canvas>
         <ul class="chart-legend flex justify-center gap16 mt-12 flex-wrap">
           <li class="flex items-center gap6">
-            <div class="dot bg-Primary"></div> <span>X-Lock</span> <strong>40%</strong>
+            <div class="dot bg-Primary"></div> <span>Weekly</span> <strong>0%</strong>
           </li>
           <li class="flex items-center gap6">
-            <div class="dot bg-Accent"></div> <span>X-Yield</span> <strong>25%</strong>
+            <div class="dot bg-Accent"></div> <span>Monthly</span> <strong>0%</strong>
           </li>
           <li class="flex items-center gap6">
-            <div class="dot bg-Purple"></div> <span>X-Shares</span> <strong>20%</strong>
-          </li>
-          <li class="flex items-center gap6">
-            <div class="dot bg-Gainsboro"></div> <span>X-Grid</span> <strong>15%</strong>
+            <div class="dot bg-Gainsboro"></div> <span>Wallet</span> <strong>0%</strong>
           </li>
         </ul>
       </div>
@@ -183,16 +180,16 @@ $user_role = $_SESSION['role'] ?? 'user';
                                                         <div class="updates-list text-White">
                                                             <div class="update-item flex gap16 items-start mb-20">
                                                                 <div class="update-content">
-                                                                    <div class="f14-bold">New X-Shares assets listed</div>
-                                                                    <div class="f12-regular text-Gainsboro">Tesla (TSLA) and Meta (META) fractional positions are now available in X-Shares.</div>
-                                                                    <div class="f12-regular text-LightGray mt-4">3 days ago</div>
+                                                                    <div class="f14-bold">Weekly plans now open</div>
+                                                                    <div class="f12-regular text-Gainsboro">Alder, Rowan and Blackthorn Weekly are accepting allocations, with a payout credited every seven days.</div>
+                                                                    <div class="f12-regular text-LightGray mt-4">Recently</div>
                                                                 </div>
                                                             </div>
                                                             <div class="update-item flex gap16 items-start mb-0">
                                                                 <div class="update-content">
-                                                                    <div class="f14-bold">X-Grid pool now open</div>
-                                                                    <div class="f12-regular text-Gainsboro">A new infrastructure co-investment pool is accepting allocations, with quarterly distributions.</div>
-                                                                    <div class="f12-regular text-LightGray mt-4">5 days ago</div>
+                                                                    <div class="f14-bold">Monthly plans now open</div>
+                                                                    <div class="f12-regular text-Gainsboro">Northwood, Ironwood and Aldercrest Monthly pay a larger amount on the same date each month.</div>
+                                                                    <div class="f12-regular text-LightGray mt-4">Recently</div>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -276,15 +273,15 @@ async function renderCardUsageChart() {
     // 🟢 Use the correct structure from your PHP output
     const data = result.percentages; // not result.data
 
-    const labels = ["X-Lock", "X-Yield", "X-Weekly", "X-Shares", "X-Grid", "X-Rewards"];
+    // Matches the keys returned by api/backend/card_usage.php
+    const labels = ["Weekly", "Monthly", "Wallet"];
     const datasetValues = [
-      data.xlock || 0,
-      data.investment || 0,
-      data.xweekly || 0,
-      data.xshares || 0,
-      data.xgrid || 0,
-      data.xrewards || 0
+      data.weekly || 0,
+      data.monthly || 0,
+      data.wallet || 0
     ];
+    // Brand orange, a muted brown tint, and a neutral for idle cash.
+    const sliceColors = ["#FF6D29", "#A8623C", "#453027"];
 
     new Chart(ctx, {
       type: "doughnut",
@@ -292,14 +289,7 @@ async function renderCardUsageChart() {
         labels,
         datasets: [{
           data: datasetValues,
-          backgroundColor: [
-            getComputedStyle(document.documentElement).getPropertyValue("--Primary").trim(),
-            "#CADEDE",
-            "#9FB8B8",
-            "#8EA8A8",
-            "#A9C1C1",
-            "#FEFAE0"
-          ],
+          backgroundColor: sliceColors,
           borderWidth: 0,
           cutout: "70%"
         }]
@@ -316,10 +306,7 @@ async function renderCardUsageChart() {
     if (legend) {
       legend.innerHTML = labels.map((label, i) => `
         <li class="flex items-center gap6">
-          <div class="dot" style="background-color:${[
-            getComputedStyle(document.documentElement).getPropertyValue("--Primary").trim(),
-            "#CADEDE", "#9FB8B8", "#8EA8A8", "#A9C1C1", "#FEFAE0"
-          ][i]}"></div>
+          <div class="dot" style="background-color:${sliceColors[i]}"></div>
           <span>${label}</span> <strong>${datasetValues[i]}%</strong>
         </li>
       `).join("");

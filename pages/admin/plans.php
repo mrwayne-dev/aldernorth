@@ -12,7 +12,7 @@ if (!isset($_SESSION['admin_id'])) {
 $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
 ?>
 <?php
-  $page_title = "X-Yield | Aldernorth Capital Admin";
+  $page_title = "Investment Plans | Aldernorth Capital Admin";
   include __DIR__ . "/_partials/head.php";
 ?>
 <body class="counter-scroll anc-dash">
@@ -31,7 +31,7 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
             <!-- Main Content -->
             <div class="section-content-right">
                 <!-- Header -->
-                <?php $page_heading = "X-Yield Funds"; include __DIR__ . "/_partials/topbar.php"; ?>
+                <?php $page_heading = "Investment Plans"; include __DIR__ . "/_partials/topbar.php"; ?>
                 <!-- /Header -->
 
                 <!-- Main Content -->
@@ -44,9 +44,9 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
                                 <div class="row mb-32">
                                     <div class="col-12">
                                         <div class="wallet-cards grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap20">
-                                            <!-- Total Active X-Yields -->
+                                            <!-- Total capital invested -->
                                             <div class="wallet-card wallet-main">
-                                                <div class="wallet-card-header">Total Active X-Yields</div>
+                                                <div class="wallet-card-header">Capital invested</div>
                                                 <div class="wallet-card-balance">$<span id="total-active-invest">0.00</span></div>
                                                 <div class="wallet-card-footer"><i class="ph ph-trend-up"></i> Locked</div>
                                             </div>
@@ -75,7 +75,7 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
                                 <!-- 2. INVESTMENT PLANS MANAGER -->
                                 <div class="mb-32">
                                     <div class="d-flex justify-between items-center mb-16">
-                                        <h5 class="label-01">X-Yield Plans</h5>
+                                        <h5 class="label-01">Plan catalogue</h5>
                                         <button id="add-plan-btn" class="tf-button bg-Primary text-White f12-bold">
                                             <i class="ph ph-plus"></i> Add New Plan
                                         </button>
@@ -100,7 +100,7 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
 
                                 <!-- 4. ACTIVE INVESTMENTS TABLE -->
                                 <div class="mb-32">
-                                    <h5 class="label-01 mb-16">All Active X-Yields</h5>
+                                    <h5 class="label-01 mb-16">All active positions</h5>
                                     <div class="table-list-transaction">
                                         <div class="list-transaction-head title-sort bg-Primary">
                                             <div class="f12-bold text-White">User</div>
@@ -199,12 +199,12 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
                     </div>
                 </div>
 
-                <!-- Edit User X-Yield Modal -->
+                <!-- Edit position modal -->
                 <div class="modal" id="edit-investment-modal">
                     <div class="modal-overlay"></div>
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h2>Edit X-Yield</h2>
+                            <h2>Edit position</h2>
                             <button class="button-close-modal">&times;</button>
                         </div>
                         <div class="modal-body">

@@ -219,7 +219,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       toggleLoader(false);
       if (res.status === 'success') {
-        showToast('X-Yield started successfully.', 'success');
+        showToast('Investment started successfully.', 'success');
         loadSummary();
         loadActivePositions();
         loadMaturedPositions();
@@ -384,7 +384,7 @@ if (plansGrid) {
     toggleLoader(false);
 
     if (res.status === 'success') {
-      showToast('X-Yield unlocked successfully. Wallet credited.', 'success');
+      showToast('Principal released to your wallet.', 'success');
       loadSummary();
       loadActivePositions();
       loadMaturedPositions();

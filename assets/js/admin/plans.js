@@ -176,7 +176,7 @@
         paginationEl.empty();
         if (totalPages <= 1) return;
 
-        // Render Page Links (similar to donations.js logic)
+        // Render page links
         for (let i = 1; i <= totalPages; i++) {
             const activeClass = i === currentPage ? 'bg-Primary text-White' : 'bg-GrayLight text-Black';
             // Use buttons with class page-link to attach event
@@ -265,7 +265,7 @@
                 $('#inv-roi').prop('disabled', isFinal);
                 
                 window.showModal('#edit-investment-modal');
-                window.showToast('X-Yield details loaded.', 'success');
+                window.showToast('Plan details loaded.', 'success');
             } else {
                 window.showToast(res.message || 'Failed to load investment details for editing.', 'error');
             }

@@ -82,9 +82,9 @@ $admin_email = $_SESSION['admin_email'] ?? '';
                                                         </div>
                                                     </div>
 
-                                                    <!-- Active X-Yield -->
+                                                    <!-- Capital invested -->
                                                     <div class="wallet-card wallet-investments">
-                                                        <div class="wallet-card-header">Active X-Yield</div>
+                                                        <div class="wallet-card-header">Capital invested</div>
                                                         <div class="wallet-card-balance"><span id="active-investments">0</span></div>
                                                         <div class="wallet-card-footer">
                                                             ANC-INV-<?= str_pad($admin_id, 3, '0', STR_PAD_LEFT) ?>
@@ -126,7 +126,7 @@ $admin_email = $_SESSION['admin_email'] ?? '';
                                                                 <div class="dot bg-Green"></div> <span>AUM</span> <strong id="chart-aum">0%</strong>
                                                             </li>
                                                             <li class="flex items-center gap6">
-                                                                <div class="dot bg-Accent"></div> <span>X-Yield</span> <strong id="chart-investments">0%</strong>
+                                                                <div class="dot bg-Accent"></div> <span>Invested</span> <strong id="chart-investments">0%</strong>
                                                             </li>
                                                             <li class="flex items-center gap6">
                                                                 <div class="dot bg-Purple"></div> <span>Users</span> <strong id="chart-users">0%</strong>

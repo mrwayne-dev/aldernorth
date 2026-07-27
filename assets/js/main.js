@@ -73,77 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /**
    * ======================
-   * 3. Hero Carousel (Homepage Only)
-   * ======================
-   */
-  const hero = document.querySelector('.home-hero');
-  if (hero) {
-    const titleEl = hero.querySelector('#hero-title');
-    const subtitleEl = hero.querySelector('#hero-subtitle');
-    const dotsContainer = hero.querySelector('#hero-dots');
-
-    const slides = [
-      {
-        image: "url('../../assets/images/bgimage2.webp')",
-        title: "Healthcare, Connected and Simplified.",
-        subtitle: "Aldernorth Capital brings patients, doctors, and pharmacies together in one trusted digital platform. From diagnostics to payments, we make care clear, secure, and accessible."
-      },
-      {
-        image: "url('../../assets/images/bgimage.webp')",
-        title: "Empowering Doctors, Supporting Patients.",
-        subtitle: "We provide tools to enhance consultations, streamline prescriptions, and keep patients engaged in their wellness journey."
-      }
-    ];
-
-    let currentSlide = 0;
-    let carouselInterval;
-
-    function updateSlide(index) {
-      const { image, title, subtitle } = slides[index];
-      hero.style.backgroundImage = image;
-      titleEl.textContent = title;
-      subtitleEl.textContent = subtitle;
-      updateDots(index);
-    }
-
-    function updateDots(index) {
-      const buttons = dotsContainer.querySelectorAll('button');
-      buttons.forEach((btn, i) => btn.classList.toggle('active', i === index));
-    }
-
-    function createDots() {
-      dotsContainer.innerHTML = '';
-      slides.forEach((_, i) => {
-        const btn = document.createElement('button');
-        btn.setAttribute('aria-label', `Go to slide ${i + 1}`);
-        if (i === currentSlide) btn.classList.add('active');
-        btn.addEventListener('click', () => {
-          clearInterval(carouselInterval);
-          currentSlide = i;
-          updateSlide(currentSlide);
-          startCarousel();
-        });
-        dotsContainer.appendChild(btn);
-      });
-    }
-
-    function startCarousel() {
-      clearInterval(carouselInterval);
-      carouselInterval = setInterval(() => {
-        currentSlide = (currentSlide + 1) % slides.length;
-        updateSlide(currentSlide);
-      }, 15000);
-    }
-
-    createDots();
-    updateSlide(currentSlide);
-    startCarousel();
-  }
-
-
-  /**
-   * ======================
-   * 4. Interactive Cards
+   * 3. Interactive Cards
    * ======================
    */
   const interactiveCards = document.querySelectorAll('.platform-card, .testimonial-card');
@@ -165,7 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /**
    * ======================
-   * 5. FAQ Accordion
+   * 4. FAQ Accordion
    * ======================
    */
   const faqItems = document.querySelectorAll('.faq-item');
@@ -199,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   /**
    * ======================
-   * 6. Scroll Animations + CountUp Stats
+   * 5. Scroll Animations + CountUp Stats
    * ======================
    */
   const animatedElements = document.querySelectorAll('[data-appear], [data-appear-left], [data-appear-right], [data-appear-stagger]');
@@ -265,177 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /**
  * ======================
- * 7. Workflow Tabs
- * ======================
- */
-document.addEventListener('DOMContentLoaded', () => {
-  const tabs = document.querySelectorAll('.workflow-tab');
-  const contentCard = document.querySelector('.workflow-content-card');
-  const visualImg = document.querySelector('.workflow-visual img');
-  const contentTitle = document.querySelector('.workflow-content-title');
-  const contentSubtitle = document.querySelector('.workflow-content-subtitle');
-  const contentDesc = document.querySelector('.workflow-content-desc');
-  const arrowBtn = document.querySelector('.workflow-arrow-btn');
-
-  if (!tabs.length || !contentCard) return;
-
-  const tabContent = {
-    automate: {
-      title: "Automate",
-      subtitle: "Streamline repetitive healthcare tasks with AI precision",
-      desc: "Aldernorth Capital automates appointment reminders, prescription renewals, claims processing, and medical record updates — freeing providers to focus on patients, not paperwork. Each workflow adapts to your team’s needs and improves over time.",
-      image: "../../assets/images/workflow-automate.png"
-    },
-    enrich: {
-      title: "Enrich",
-      subtitle: "Turn medical data into actionable insights",
-      desc: "Our AI transforms fragmented records into rich, predictive insights. From patient risk scores to community health trends, every dataset becomes an engine for better decisions and equitable outcomes.",
-      image: "../../assets/images/workflow-enrich.png"
-    },
-    triage: {
-      title: "Triage",
-      subtitle: "AI-powered triage that prioritizes what matters most",
-      desc: "HRC’s triage engine analyzes urgency, symptoms, and available care capacity in real time — routing each case to the right specialist, at the right time, with zero delays.",
-      image: "../../assets/images/workflow-triage.png"
-    },
-    report: {
-      title: "Report",
-      subtitle: "Instant visibility into performance and compliance",
-      desc: "Generate real-time analytics for patient outcomes, funding transparency, and operational efficiency. Export to regulators or partners with full audit trails and compliance-grade accuracy.",
-      image: "../../assets/images/workflow-report.png"
-    },
-    collaborate: {
-      title: "Collaborate",
-      subtitle: "Unite teams, partners, and patients in one secure network",
-      desc: "Doctors, pharmacists, donors, and employers collaborate seamlessly on HRC — sharing verified data, updates, and impact reports across a unified, encrypted platform.",
-      image: "../../assets/images/workflow-collaborate.png"
-    }
-  };
-
-  tabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      tabs.forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      contentCard.style.opacity = '0';
-      contentCard.style.transform = 'translateY(20px)';
-      setTimeout(() => {
-        const tabKey = tab.dataset.tab;
-        const data = tabContent[tabKey];
-        contentTitle.textContent = data.title;
-        contentSubtitle.textContent = data.subtitle;
-        contentDesc.textContent = data.desc;
-        visualImg.src = data.image;
-        contentCard.style.opacity = '1';
-        contentCard.style.transform = 'translateY(0)';
-      }, 300);
-    });
-  });
-
-  // ✅ Safe check for arrowBtn
-  let currentTab = 0;
-  if (arrowBtn) {
-    arrowBtn.addEventListener('click', () => {
-      currentTab = (currentTab + 1) % tabs.length;
-      tabs[currentTab].click();
-    });
-  }
-});
-
-
-
-/**
- * ======================
- * 8. Modal System (Wing Details)
- * ======================
- */
-document.addEventListener('DOMContentLoaded', () => {
-  const modalOverlay = document.getElementById('wingDetailModal');
-  const modalTitle = document.getElementById('modalTitle');
-  const modalDescription = document.getElementById('modalDescription');
-  const closeModalBtn = document.getElementById('closeModal');
-
-  if (!modalOverlay || !modalTitle || !modalDescription) return;
-
-  const wingData = {
-    '/solutions/patients': {
-      title: "AI & Patient Tools",
-      description: `
-        Aldernorth Capital puts advanced healthcare directly in your hands. 
-        Our AI-driven platform helps patients identify potential health concerns early, 
-        track ongoing symptoms, and access remote consultations — all in a secure, easy-to-use space.
-      `
-    },
-    '/charity': {
-      title: "Charity & Donations",
-      description: `
-        Every act of care deserves to make an impact. Through Aldernorth Capital’s verified donation system, 
-        your giving directly supports patients, clinics, and emergency programs — 
-        without intermediaries or hidden fees.
-      `
-    },
-    '/investment': {
-      title: "X-Yield Pools",
-      description: `
-        Aldernorth Capital transforms healthcare investment into measurable impact.  
-        Our tokenized investment pools allow individuals and institutions to fund verified medical innovations 
-        and infrastructure — while earning transparent ROI.
-      `
-    },
-    '/trust-fund': {
-      title: "Trust Funds",
-      description: `
-        Aldernorth Capital’s Trust Funds help families, patients, and employers plan ahead for health.  
-        Secure, automated, and compliant — healthcare peace of mind.
-      `
-    },
-    '/infrastructure': {
-      title: "Mount X-Grid",
-      description: `
-        Healthcare access starts with infrastructure. Co-fund clinics, labs, 
-        and telehealth centers in the communities that need them most.
-      `
-    }
-  };
-
-  function openModal(data) {
-    modalTitle.textContent = data.title;
-    modalDescription.innerHTML = data.description.trim();
-    modalOverlay.classList.remove('hidden');
-    modalOverlay.classList.add('active');
-    document.body.style.overflow = 'hidden';
-  }
-
-  function closeModal() {
-    modalOverlay.classList.remove('active');
-    setTimeout(() => modalOverlay.classList.add('hidden'), 300);
-    document.body.style.overflow = '';
-  }
-
-  const wingModalButtons = document.querySelectorAll('.wing-card-btn');
-  wingModalButtons.forEach(button => {
-    button.addEventListener('click', (e) => {
-      e.preventDefault();
-      const href = button.getAttribute('href');
-      const data = wingData[href];
-      if (data) openModal(data);
-      else console.warn(`No data found for ${href}`);
-    });
-  });
-
-  // ✅ Safe checks
-  if (closeModalBtn) {
-    closeModalBtn.addEventListener('click', closeModal);
-    modalOverlay.addEventListener('click', (e) => {
-      if (e.target === modalOverlay) closeModal();
-    });
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && modalOverlay.classList.contains('active')) closeModal();
-    });
-  }
-});
-/**
- * ======================
- * 9. Smartsupp Live Chat Integration
+ * 6. Smartsupp Live Chat Integration
  * ======================
  */
 (function() {
