@@ -23,7 +23,7 @@ $user_role = $_SESSION['role'] ?? 'user';
 
 ?>
 <?php
-  $page_title = "X-Yield | Aldernorth Capital";
+  $page_title = "Invest | Aldernorth Capital";
   include __DIR__ . "/_partials/head.php";
 ?>
 
@@ -46,7 +46,7 @@ $user_role = $_SESSION['role'] ?? 'user';
                 <!-- section-content-right -->
                 <div class="section-content-right">
                     <!-- header-dashboard -->
-                    <?php $page_heading = "X-Yield"; include __DIR__ . "/_partials/topbar.php"; ?>
+                    <?php $page_heading = "Invest"; include __DIR__ . "/_partials/topbar.php"; ?>
                     <!-- main-content -->
                     <div class="main-content">
                         <!-- main-content-wrap -->
@@ -63,7 +63,7 @@ $user_role = $_SESSION['role'] ?? 'user';
                                           <div class="wallet-hero-top">
                                             <div class="title-box flex items-center gap-2">
                                               <i class="ph ph-chart-line-up"></i>
-                                              <span class="f12-medium text-White">Active X-Yields (USD)</span>
+                                              <span class="f12-medium text-White">Capital invested (USD)</span>
                                             </div>
                                             <span class="box-status bg-Green f12-medium flex items-center gap-2">
                                               <i class="ph ph-shield-check"></i> Active
@@ -78,12 +78,20 @@ $user_role = $_SESSION['role'] ?? 'user';
                                           </div>
                                           <div class="wallet-hero-substats">
                                             <div class="wallet-substat">
-                                              <div class="f12-regular">Ongoing plans</div>
+                                              <div class="f12-regular">Active positions</div>
                                               <div class="f14-bold text-White" id="card-ongoing-plans">0</div>
                                             </div>
                                             <div class="wallet-substat">
-                                              <div class="f12-regular">Next maturity</div>
-                                              <div class="f14-bold text-White" id="card-next-maturity">&mdash;</div>
+                                              <div class="f12-regular">Next payout</div>
+                                              <div class="f14-bold text-White" id="card-next-payout-amount">$0.00</div>
+                                            </div>
+                                            <div class="wallet-substat">
+                                              <div class="f12-regular">Due</div>
+                                              <div class="f14-bold text-White" id="card-next-payout-date">&mdash;</div>
+                                            </div>
+                                            <div class="wallet-substat">
+                                              <div class="f12-regular">Portfolio value</div>
+                                              <div class="f14-bold text-White" id="card-portfolio-value">$0.00</div>
                                             </div>
                                           </div>
                                           <div class="wallet-hero-actions">
@@ -95,12 +103,12 @@ $user_role = $_SESSION['role'] ?? 'user';
                                       </div>
                                     </div>
 
-                                    <!-- X-Yield Section -->
+                                    <!-- Invest form -->
                                     <div class="row mb-32">
                                         <div class="col-lg-7 col-md-12">
                                                         <div class="wg-box investment-form">
                                                             <div class="title mb-16">
-                                                            <div class="label-01">Start Your X-Yield</div>
+                                                            <div class="label-01">Start a position</div>
                                                             </div>
 
                                                             <div class="content">
@@ -112,8 +120,20 @@ $user_role = $_SESSION['role'] ?? 'user';
                                                                 </select>
                                                                 </div>
 
+                                                                <div class="mb-20" id="cadence-block">
+                                                                <label class="f14-regular text-Black mb-8">Payout rhythm</label>
+                                                                <div class="cadence-toggle" role="group" aria-label="Filter plans by payout cadence">
+                                                                    <button type="button" class="cadence-toggle__btn active" data-cadence="weekly">
+                                                                        <i class="ph ph-calendar-dots"></i> Weekly
+                                                                    </button>
+                                                                    <button type="button" class="cadence-toggle__btn" data-cadence="monthly">
+                                                                        <i class="ph ph-calendar-check"></i> Monthly
+                                                                    </button>
+                                                                </div>
+                                                                </div>
+
                                                                 <div class="mb-20 position-relative">
-                                                                <label class="f14-regular text-Black mb-8">X-Yield Amount (USD)</label>
+                                                                <label class="f14-regular text-Black mb-8">Amount to invest (USD)</label>
                                                                 <div class="input-group">
                                                                     <span class="input-icon">$</span>
                                                                     <input class="wallet-input form-control" type="number" placeholder="Enter amount" min="1" id="investment-amount">
@@ -135,9 +155,38 @@ $user_role = $_SESSION['role'] ?? 'user';
                                                                     <input class="form-control readonly-input" type="text" id="term-duration" readonly>
                                                                 </div>
                                                                 <div class="col-md-6">
-                                                                    <label class="f14-regular text-Black mb-8">Expected ROI</label>
+                                                                    <label class="f14-regular text-Black mb-8">Rate per period</label>
                                                                     <input class="form-control readonly-input" type="text" id="expected-roi" readonly>
                                                                 </div>
+                                                                </div>
+
+                                                                <!-- Live projection, computed by api/backend/invest.php?action=preview
+                                                                     so it always matches what the cron will actually credit. -->
+                                                                <div class="invest-preview" id="invest-preview" hidden>
+                                                                    <div class="invest-preview__row">
+                                                                        <span>You receive</span>
+                                                                        <strong id="prev-per-payout">$0.00</strong>
+                                                                    </div>
+                                                                    <div class="invest-preview__row">
+                                                                        <span>Number of payouts</span>
+                                                                        <strong id="prev-payouts">0</strong>
+                                                                    </div>
+                                                                    <div class="invest-preview__row">
+                                                                        <span>First payout</span>
+                                                                        <strong id="prev-first">&mdash;</strong>
+                                                                    </div>
+                                                                    <div class="invest-preview__row">
+                                                                        <span>Total payouts</span>
+                                                                        <strong id="prev-total-roi">$0.00</strong>
+                                                                    </div>
+                                                                    <div class="invest-preview__row invest-preview__row--total">
+                                                                        <span>Principal returned <?= '' ?>+ payouts</span>
+                                                                        <strong id="prev-total-return">$0.00</strong>
+                                                                    </div>
+                                                                    <p class="invest-preview__note">
+                                                                        Payouts are credited to your wallet each period and are withdrawable
+                                                                        immediately. Your principal is returned in full at maturity.
+                                                                    </p>
                                                                 </div>
 
                                                                 <button type="submit" class="tf-button style-default w-full f14-bold bg-Green text-White hover:bg-Primary transition-colors duration-300" id="invest-btn" disabled>
@@ -161,7 +210,7 @@ $user_role = $_SESSION['role'] ?? 'user';
                                                         <span class="pdp-badge" id="pdp-risk" style="display:none;"></span>
                                                     </div>
                                                     <div class="pdp-roi" id="pdp-roi">—</div>
-                                                    <div class="pdp-roi-label" id="pdp-roi-label">Expected ROI</div>
+                                                    <div class="pdp-roi-label" id="pdp-roi-label">Rate per payout period</div>
                                                     <ul class="pdp-meta" id="pdp-meta"></ul>
                                                     <p class="pdp-summary" id="pdp-summary"></p>
                                                 </div>
@@ -169,12 +218,12 @@ $user_role = $_SESSION['role'] ?? 'user';
                                         </div>
                                     </div>
 
-                                    <!-- Active X-Yields Table -->
+                                    <!-- Active positions table -->
                                     <div class="row mb-32">
                                         <div class="col-12">
                                             <div class="wg-box active-investments">
                                             <div class="title mb-16 flex justify-between items-center">
-                                                <div class="label-01 text-Primary">Active X-Yields</div>
+                                                <div class="label-01 text-Primary">Your positions</div>
                                                 <div class="view-all">
                                                 <a href="#" class="f12-regular text-Primary hover:underline flex items-center">
                                                     View All
@@ -195,7 +244,7 @@ $user_role = $_SESSION['role'] ?? 'user';
                                                         <th>Date Started</th>
                                                     </tr></thead>
                                                     <tbody id="active-investments-table-body">
-                                                        <!-- JS (loadActiveX-Yields) will populate rows here -->
+                                                        <!-- JS (loadActivePositions) will populate rows here -->
                                                     </tbody>
                                                 </table>
                                                 </div>

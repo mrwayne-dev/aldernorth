@@ -59,9 +59,8 @@ body.anc-dash {
 }
 
 /* --- LIGHT THEME -------------------------------------------------
-   Same variable names, light values. Note --Primary stays orange but
-   --anc-on-accent flips to white, because in light mode orange fills
-   sit against a white page and need light text on them. */
+   Same variable names, light values. --Primary stays the brand orange
+   in both themes; only the surfaces and ink flip. */
 :root[data-theme="light"] body.anc-dash {
   --White:        #ffffff;
   --Primary:      #FF6D29;
@@ -77,7 +76,9 @@ body.anc-dash {
   --LightGray:    rgba(22, 19, 22, 0.08);
   --Green:        #15803D;
 
-  --anc-on-accent: #FFFFFF;
+  /* --anc-on-accent deliberately stays dark: the orange fill is identical in
+     both themes, and #161316 on #FF6D29 is 6.6:1 where white is only 2.8:1. */
+  --anc-on-accent: #161316;
   --anc-border:    rgba(22, 19, 22, 0.10);
   --anc-accent-red:#C24608;
 }
@@ -140,11 +141,8 @@ body.anc-dash .wallet-main {
 }
 
 /* Secondary wallet cards → white with warm border + ink text */
-body.anc-dash .wallet-donations,
 body.anc-dash .wallet-investments,
-body.anc-dash .wallet-holdlock,
 body.anc-dash .wallet-aum,
-body.anc-dash .wallet-xlock,
 body.anc-dash .wallet-green,
 body.anc-dash .wallet-accent,
 body.anc-dash .wallet-purple {
@@ -154,11 +152,8 @@ body.anc-dash .wallet-purple {
 }
 
 /* Card icons: muted on light cards, white on the dark main card */
-body.anc-dash .wallet-donations .ph,
 body.anc-dash .wallet-investments .ph,
-body.anc-dash .wallet-holdlock .ph,
 body.anc-dash .wallet-aum .ph,
-body.anc-dash .wallet-xlock .ph,
 body.anc-dash .wallet-green .ph,
 body.anc-dash .wallet-accent .ph,
 body.anc-dash .wallet-purple .ph {
@@ -797,3 +792,97 @@ body.anc-dash .theme-toggle:focus-visible {
   outline: 2px solid var(--Primary);
   outline-offset: 2px;
 }
+
+
+/* =================================================================
+ * 17. INVEST PAGE — cadence toggle + live projection panel
+ * ================================================================= */
+body.anc-dash .cadence-toggle {
+  display: inline-flex;
+  width: 100%;
+  padding: 4px;
+  gap: 4px;
+  border: 1px solid var(--anc-border);
+  border-radius: var(--anc-radius-pill);
+  background: var(--Surface-Alt);
+}
+
+body.anc-dash .cadence-toggle__btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border: 0;
+  border-radius: var(--anc-radius-pill);
+  background: transparent;
+  color: var(--GrayDark);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+body.anc-dash .cadence-toggle__btn:hover {
+  color: var(--Black);
+}
+
+body.anc-dash .cadence-toggle__btn.active {
+  background: var(--Primary);
+  color: var(--anc-on-accent);
+}
+
+body.anc-dash .cadence-toggle__btn:focus-visible {
+  outline: 2px solid var(--Primary);
+  outline-offset: 2px;
+}
+
+/* --- Projection panel --- */
+body.anc-dash .invest-preview {
+  margin-bottom: 20px;
+  padding: 16px 18px;
+  border: 1px solid var(--anc-border);
+  border-radius: var(--anc-radius-card);
+  background: var(--Surface-Alt);
+}
+
+body.anc-dash .invest-preview__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 14px;
+}
+
+body.anc-dash .invest-preview__row span {
+  color: var(--GrayDark);
+}
+
+body.anc-dash .invest-preview__row strong {
+  color: var(--Black);
+  font-weight: 600;
+  text-align: right;
+}
+
+body.anc-dash .invest-preview__row--total {
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--anc-border);
+}
+
+body.anc-dash .invest-preview__row--total strong {
+  color: var(--Primary);
+  font-size: 18px;
+}
+
+body.anc-dash .invest-preview__note {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--Gray);
+}
+
+body.anc-dash .plan-card { cursor: pointer; }
+body.anc-dash .plan-card .plan-header i { color: var(--Primary); font-size: 18px; }

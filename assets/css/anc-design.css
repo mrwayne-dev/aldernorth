@@ -138,9 +138,9 @@
  * Only colour tokens are redeclared — every component rule in this
  * file reads from var(), so the whole system flips from here.
  *
- * Note --color-accent-text: #FF6D29 on white is ~2.9:1 and fails
+ * Note --color-accent-text: #FF6D29 on white is ~2.8:1 and fails
  * WCAG AA for text. In light mode, accent-as-text darkens to
- * #C24608 (~4.6:1) while fills/icons keep the true brand orange.
+ * #C24608 (5.0:1) while fills/icons keep the true brand orange.
  * ================================================================= */
 :root[data-theme="light"] .anc-redesign {
   --color-bg-page:          #FFFFFF;
@@ -155,7 +155,9 @@
   --color-ink-body:         #241E1F;
   --color-ink-muted:        #6B615C;
   --color-ink-white:        #FFFFFF;
-  --color-ink-on-accent:    #FFFFFF;
+  /* Stays dark: the accent fill is the same orange in both themes, and
+     #161316 on #FF6D29 is 6.6:1 where white is only 2.8:1. */
+  --color-ink-on-accent:    #161316;
 
   --color-accent:           #FF6D29;
   --color-accent-hover:     #E85D18;

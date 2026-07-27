@@ -1,6 +1,10 @@
 /* =======================================================
-   investment.js — Final Dynamic Version (DB + Cards)
-   Aldernorth Capital XYields Frontend Logic
+   invest.js — Aldernorth Capital invest page
+
+   One product: a lump sum into a plan that pays out weekly or
+   monthly. The cadence toggle filters the plan list; the preview
+   panel is computed server-side (action: 'preview') so the figures
+   shown always match what investment_cron.php will credit.
    ======================================================= */
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -15,7 +19,21 @@ document.addEventListener('DOMContentLoaded', function () {
   const cardActive = document.getElementById('card-active-investments');
   const cardROI = document.getElementById('card-total-roi');
   const cardOngoing = document.getElementById('card-ongoing-plans');
-  const cardNextMaturity = document.getElementById('card-next-maturity');
+  const cardNextPayoutAmt = document.getElementById('card-next-payout-amount');
+  const cardNextPayoutDate = document.getElementById('card-next-payout-date');
+  const cardPortfolio = document.getElementById('card-portfolio-value');
+
+  // Preview panel
+  const previewBox = document.getElementById('invest-preview');
+  const prevPerPayout = document.getElementById('prev-per-payout');
+  const prevPayouts = document.getElementById('prev-payouts');
+  const prevFirst = document.getElementById('prev-first');
+  const prevTotalRoi = document.getElementById('prev-total-roi');
+  const prevTotalReturn = document.getElementById('prev-total-return');
+
+  // Which cadence the plan list is filtered to. Weekly is the default
+  // because it has the lowest minimum.
+  let activeCadence = 'weekly';
 
   const activeTableBody = document.getElementById('active-investments-table-body');
   const maturedTableBody = document.querySelector('.unlock-plans tbody');
@@ -24,8 +42,81 @@ document.addEventListener('DOMContentLoaded', function () {
   // === INITIAL LOAD ===
   loadSummary();
   loadPlans();
-  loadActiveXYields();
-  loadMaturedXYields();
+  loadActivePositions();
+  loadMaturedPositions();
+  wireCadenceToggle();
+  wirePreview();
+
+  // === CADENCE TOGGLE ===
+  function wireCadenceToggle() {
+    const buttons = document.querySelectorAll('.cadence-toggle__btn');
+    buttons.forEach(btn => {
+      btn.addEventListener('click', function () {
+        const cadence = this.getAttribute('data-cadence');
+        if (cadence === activeCadence) return;
+        activeCadence = cadence;
+        buttons.forEach(b => b.classList.toggle('active', b === this));
+        // Reset the form: a plan from the other cadence must not stay selected.
+        if (planSelect) planSelect.value = '';
+        updatePlanDetails();
+        loadPlans();
+      });
+    });
+  }
+
+  // === LIVE PREVIEW ===
+  // Debounced so typing an amount does not fire a request per keystroke.
+  let previewTimer = null;
+  function wirePreview() {
+    const amountEl = document.getElementById('investment-amount');
+    if (!amountEl) return;
+    amountEl.addEventListener('input', function () {
+      clearTimeout(previewTimer);
+      previewTimer = setTimeout(refreshPreview, 300);
+    });
+  }
+
+  async function refreshPreview() {
+    const amountEl = document.getElementById('investment-amount');
+    const planId = parseInt(planSelect?.value || 0, 10);
+    const amount = parseFloat(amountEl?.value || 0);
+
+    if (!planId || !amount || amount <= 0) {
+      if (previewBox) previewBox.hidden = true;
+      return;
+    }
+
+    const res = await fetchApi('/api/backend/invest.php', {
+      action: 'preview', plan_id: planId, amount: amount
+    });
+
+    if (res.status !== 'success' || !previewBox) {
+      if (previewBox) previewBox.hidden = true;
+      return;
+    }
+
+    const pv = res.data.preview;
+    const period = pv.cadence === 'monthly' ? 'month' : 'week';
+    if (prevPerPayout) prevPerPayout.textContent = money(pv.per_payout) + ' / ' + period;
+    if (prevPayouts) prevPayouts.textContent = pv.payouts_total;
+    if (prevFirst) prevFirst.textContent = formatDate(pv.first_payout_date);
+    if (prevTotalRoi) prevTotalRoi.textContent = money(pv.total_roi) + ' (' + pv.effective_percent + '%)';
+    if (prevTotalReturn) prevTotalReturn.textContent = money(pv.total_return);
+
+    previewBox.hidden = false;
+    // The server is the authority on whether the amount is allowed.
+    if (investBtn) investBtn.disabled = !pv.in_range;
+  }
+
+  function money(n) {
+    return '$' + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function formatDate(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso + 'T00:00:00');
+    return isNaN(d) ? iso : d.toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: 'numeric' });
+  }
 
   // === PLAN DETAILS UPDATE ===
   window.updatePlanDetails = function () {
@@ -40,14 +131,16 @@ document.addEventListener('DOMContentLoaded', function () {
       amountEl.removeAttribute('min');
       amountEl.removeAttribute('max');
       investBtn.disabled = true;
+      if (previewBox) previewBox.hidden = true;
       window.ancRenderPlanPanel && window.ancRenderPlanPanel(null);
       return;
     }
 
-    const cached = window.__hrc_plans?.find(p => p.id === id);
+    const cached = window.__anc_plans?.find(p => p.id === id);
     if (cached) {
-      termDuration.value = cached.duration_text || cached.term || (cached.duration_days + ' days');
-      expectedRoi.value = (cached.roi_percent != null) ? (cached.roi_percent + '%') : '';
+      const period = cached.cadence === 'monthly' ? 'month' : 'week';
+      termDuration.value = termLabel(cached.duration_days);
+      expectedRoi.value = cached.roi_percent + '% per ' + period;
 
       if (cached.min && cached.max) {
         amountEl.min = cached.min;
@@ -58,17 +151,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
       window.ancRenderPlanPanel && window.ancRenderPlanPanel({
         name: cached.title,
-        roi: (cached.roi_percent != null) ? (cached.roi_percent + '%') : '—',
-        roiLabel: 'Expected ROI',
+        roi: cached.roi_percent + '% per ' + period,
+        roiLabel: 'Rate per payout period',
         risk: cached.risk,
         meta: [
           ['Term', termDuration.value],
-          ['Min – Max', (cached.min && cached.max) ? `$${(+cached.min).toLocaleString()} – $${(+cached.max).toLocaleString()}` : ''],
-          ['Payout', cached.payout_option],
-          ['Income source', cached.income],
+          ['Payouts', `${cached.payouts_total} x ${cached.roi_percent}%`],
+          ['Total return', cached.total_percent + '%'],
+          ['Min - Max', (cached.min && cached.max) ? `$${(+cached.min).toLocaleString()} - $${(+cached.max).toLocaleString()}` : ''],
         ],
-        summary: cached.description,
+        summary: cached.summary || cached.description,
       });
+
+      refreshPreview();
       return;
     }
 
@@ -104,7 +199,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
       }
 
-      const selectedPlan = window.__hrc_plans?.find(p => p.id === planId);
+      const selectedPlan = window.__anc_plans?.find(p => p.id === planId);
       if (selectedPlan && selectedPlan.min && selectedPlan.max) {
         const min = parseFloat(selectedPlan.min);
         const max = parseFloat(selectedPlan.max);
@@ -116,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
       }
 
-      const res = await fetchApi('/api/backend/investment.php', {
+      const res = await fetchApi('/api/backend/invest.php', {
         action: 'start_investment',
         plan_id: planId,
         amount: amount
@@ -126,8 +221,8 @@ document.addEventListener('DOMContentLoaded', function () {
       if (res.status === 'success') {
         showToast('X-Yield started successfully.', 'success');
         loadSummary();
-        loadActiveXYields();
-        loadMaturedXYields();
+        loadActivePositions();
+        loadMaturedPositions();
         amountEl.value = '';
         planSelect.selectedIndex = 0;
         updatePlanDetails();
@@ -141,7 +236,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // === SUMMARY CARDS ===
   async function loadSummary() {
     toggleLoader(true);
-    const res = await fetchApi('/api/backend/investment.php', { action: 'get_summary' });
+    const res = await fetchApi('/api/backend/invest.php', { action: 'get_summary' });
     toggleLoader(false);
 
     if (res.status === 'success') {
@@ -151,17 +246,19 @@ document.addEventListener('DOMContentLoaded', function () {
       if (cardActive) cardActive.textContent = '$' + (summary.active_investments_value ?? 0).toFixed(2);
       if (cardROI) cardROI.textContent = '$' + (summary.total_roi ?? 0).toFixed(2);
       if (cardOngoing) cardOngoing.textContent = summary.ongoing_plans_count ?? 0;
-      if (cardNextMaturity) cardNextMaturity.textContent = summary.next_maturity ?? '—';
+      if (cardNextPayoutAmt) cardNextPayoutAmt.textContent = money(summary.next_payout_amount ?? 0);
+      if (cardNextPayoutDate) cardNextPayoutDate.textContent = summary.next_payout_date ?? '—';
+      if (cardPortfolio) cardPortfolio.textContent = money(summary.portfolio_value ?? 0);
       if (walletBalanceEl) walletBalanceEl.textContent = '$' + (wallet.balance ?? 0).toFixed(2);
     }
   }
 
   // === LOAD PLANS ===
   async function loadPlans() {
-    const res = await fetchApi('/api/backend/investment.php', { action: 'get_plans' });
+    const res = await fetchApi('/api/backend/invest.php', { action: 'get_plans', cadence: activeCadence });
     if (res.status === 'success') {
       const plans = res.data?.plans || [];
-      window.__hrc_plans = plans;
+      window.__anc_plans = plans;
 
       // Populate SELECT
       if (planSelect) {
@@ -172,52 +269,44 @@ document.addEventListener('DOMContentLoaded', function () {
         plans.forEach(p => {
           const opt = document.createElement('option');
           opt.value = p.id;
-          opt.textContent = p.title || p.plan_name || ('Plan ' + p.id);
-          const termText = (p.duration_days >= 365)
-            ? Math.round(p.duration_days / 365) + ' year(s)'
-            : Math.round((p.duration_days || 0) / 30) + ' months';
-          opt.setAttribute('data-term', termText);
-          opt.setAttribute('data-roi', (p.roi_percent != null) ? (p.roi_percent + '%') : '');
+          opt.textContent = `${p.title} — ${p.roi_percent}% per ${p.cadence === 'monthly' ? 'month' : 'week'}`;
+          opt.setAttribute('data-term', termLabel(p.duration_days));
+          opt.setAttribute('data-roi', p.roi_percent + '% per ' + (p.cadence === 'monthly' ? 'month' : 'week'));
           planSelect.appendChild(opt);
         });
 
         planSelect.addEventListener('change', updatePlanDetails);
       }
 
-// Render Dynamic Cards (Full Styled Version)
+// Render Dynamic Cards
 if (plansGrid) {
   plansGrid.innerHTML = '';
   plans.forEach(p => {
     const min = parseFloat(p.min).toLocaleString();
     const max = parseFloat(p.max).toLocaleString();
-    const amountRange = `$${min} – $${max}`;
-
-    const termText = (p.duration_days >= 365)
-      ? Math.round(p.duration_days / 365) + ' years'
-      : Math.round((p.duration_days || 0) / 30) + ' months';
-
-    const roi = p.roi_percent ? (p.roi_percent + '%') : '';
+    const period = p.cadence === 'monthly' ? 'month' : 'week';
 
     const card = document.createElement('div');
-    card.className = 'col-lg-3 col-md-6';
+    card.className = 'col-lg-4 col-md-6';
     card.innerHTML = `
-      <div class="plan-card">
+      <div class="plan-card" onclick="selectPlanFromCard(${p.id})">
         <div class="plan-header flex justify-between items-center mb-12">
           <div class="flex items-center gap-2">
-            <h6 class="plan-title">${p.title}</h6>
+            <i class="ph ${escapeHtml(p.icon || 'ph-chart-line-up')}"></i>
+            <h6 class="plan-title">${escapeHtml(p.title)}</h6>
           </div>
+          <span class="box-status bg-Primary f12-medium">${escapeHtml(p.cadence)}</span>
         </div>
 
-        <p class="f12-regular text-Gray mb-12">${p.description}</p>
-        <p class="f12-regular text-Black mb-16">${p.details}</p>
+        <p class="f12-regular text-Gray mb-12">${escapeHtml(p.description)}</p>
 
         <table class="plan-features">
-          <tr><td>X-Yield Range</td><td>${amountRange}</td></tr>
-          <tr><td>Term</td><td>${termText}</td></tr>
-          <tr><td>ROI</td><td class="text-Green fw-bold">${roi}</td></tr>
-          <tr><td>Risk Level</td><td class="text-${p.color} fw-bold">${p.risk}</td></tr>
-          <tr><td>Income Source</td><td>${p.income}</td></tr>
-          <tr><td>Payout Option</td><td>${p.payout_option}</td></tr>
+          <tr><td>Rate</td><td class="text-Green fw-bold">${p.roi_percent}% / ${period}</td></tr>
+          <tr><td>Payouts</td><td>${p.payouts_total} x ${p.roi_percent}%</td></tr>
+          <tr><td>Total return</td><td class="fw-bold">${p.total_percent}%</td></tr>
+          <tr><td>Term</td><td>${escapeHtml(termLabel(p.duration_days))}</td></tr>
+          <tr><td>Amount</td><td>$${min} – $${max}</td></tr>
+          <tr><td>Risk</td><td>${escapeHtml(p.risk)}</td></tr>
         </table>
       </div>
     `;
@@ -225,16 +314,15 @@ if (plansGrid) {
   });
 }
 
-
     } else {
       console.warn('Failed to load plans', res);
     }
   }
 
   // === LOAD ACTIVE INVESTMENTS ===
-  async function loadActiveXYields() {
+  async function loadActivePositions() {
     toggleLoader(true);
-    const res = await fetchApi('/api/backend/investment.php', { action: 'get_active' });
+    const res = await fetchApi('/api/backend/invest.php', { action: 'get_active' });
     toggleLoader(false);
 
     if (res.status === 'success') {
@@ -259,9 +347,9 @@ if (plansGrid) {
   }
 
   // === LOAD MATURED INVESTMENTS ===
-  async function loadMaturedXYields() {
+  async function loadMaturedPositions() {
     if (!maturedTableBody) return;
-    const res = await fetchApi('/api/backend/investment.php', { action: 'get_matured' });
+    const res = await fetchApi('/api/backend/invest.php', { action: 'get_matured' });
     if (res.status === 'success') {
       const matured = res.data?.matured || [];
       maturedTableBody.innerHTML = '';
@@ -292,14 +380,14 @@ if (plansGrid) {
   window.initiateUnlock = async function (investmentId) {
     if (!confirm('Unlock this investment?')) return;
     toggleLoader(true);
-    const res = await fetchApi('/api/backend/investment.php', { action: 'unlock_investment', investment_id: investmentId });
+    const res = await fetchApi('/api/backend/invest.php', { action: 'unlock_investment', investment_id: investmentId });
     toggleLoader(false);
 
     if (res.status === 'success') {
       showToast('X-Yield unlocked successfully. Wallet credited.', 'success');
       loadSummary();
-      loadActiveXYields();
-      loadMaturedXYields();
+      loadActivePositions();
+      loadMaturedPositions();
     } else {
       showToast(res.message || 'Failed to unlock investment.', 'error');
     }
@@ -315,6 +403,16 @@ if (plansGrid) {
   };
 
   // === UTILITIES ===
+  // Term formatting, shared by the select, the cards and the detail panel.
+  function termLabel(days) {
+    days = parseInt(days || 0, 10);
+    if (days <= 0) return '—';
+    if (days % 365 === 0) return (days / 365) + ' year' + (days / 365 > 1 ? 's' : '');
+    if (days % 30 === 0) return (days / 30) + ' month' + (days / 30 > 1 ? 's' : '');
+    if (days % 7 === 0) return (days / 7) + ' week' + (days / 7 > 1 ? 's' : '');
+    return days + ' days';
+  }
+
   function escapeHtml(str) {
     if (!str) return '';
     return String(str).replace(/[&<>"'`=\/]/g, function (s) {
@@ -333,7 +431,7 @@ if (plansGrid) {
 
   // Expose refresh functions globally
   window.hrc_loadSummary = loadSummary;
-  window.hrc_loadActiveXYields = loadActiveXYields;
-  window.hrc_loadMaturedXYields = loadMaturedXYields;
+  window.hrc_loadActivePositions = loadActivePositions;
+  window.hrc_loadMaturedPositions = loadMaturedPositions;
   window.hrc_loadPlans = loadPlans;
 });
