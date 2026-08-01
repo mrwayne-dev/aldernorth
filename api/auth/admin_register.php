@@ -74,19 +74,38 @@ try {
     $hashed = ancHashPassword($password);
     $name = $username;
 
+    // Role assigned at registration.
+    //
+    // Was hardcoded 'manager', which made a fresh install unusable: the two
+    // ANC_ROLE_OWNER screens (deposit addresses, wallet balances) were locked
+    // to everybody, no screen in the console edits admins.role, and the only
+    // way out was scripts/set_admin_role.php over SSH.
+    //
+    // Registration is gated on ADMIN_INVITE_CODE, so anyone who reaches this
+    // line already holds the shared secret out of .env - the invite code, not
+    // the role column, is what decides who may become an admin at all.
+    //
+    // Consequence worth stating plainly: everyone with that code now gets full
+    // control of the deposit addresses members send funds to. Rotate
+    // ADMIN_INVITE_CODE in .env if it is ever shared beyond the operators, and
+    // use scripts/set_admin_role.php to drop an account to manager or support.
+    $role = 'super_admin';
+
     // Insert into admins table
     $stmt = $pdo->prepare("
         INSERT INTO admins (name, full_name, email, password, role, status, created_at)
-        VALUES (?, ?, ?, ?, 'manager', 'active', NOW())
+        VALUES (?, ?, ?, ?, ?, 'active', NOW())
     ");
-    $stmt->execute([$name, $name, $email, $hashed]);
+    $stmt->execute([$name, $name, $email, $hashed, $role]);
     $admin_id = $pdo->lastInsertId();
 
     // Set session
     $_SESSION['admin_id'] = $admin_id;
     $_SESSION['admin_email'] = $email;
     $_SESSION['admin_name'] = $name;
-    $_SESSION['admin_role'] = 'manager';
+    // Display only - every gate re-reads the role from the database on each
+    // request (ancAdminRole), so a stale session copy can never grant access.
+    $_SESSION['admin_role'] = $role;
     $_SESSION['admin_logged_in'] = true;
 
     // Send welcome email
@@ -98,7 +117,7 @@ try {
         'variables' => [
             'admin_name'  => $name,
             'admin_email' => $email,
-            'admin_role'  => 'manager',
+            'admin_role'  => $role,
         ],
     ]);
 
