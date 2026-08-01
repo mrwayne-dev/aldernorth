@@ -171,11 +171,24 @@ Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains
 # in many places and there is no equivalent hash mechanism for style
 # attributes. That is a much weaker vector than inline script.
 #
+# style-src MUST also carry the Smartsupp origins. When the allowlist was first
+# widened, script-src, connect-src, frame-src and font-src were updated and
+# style-src was missed - so every Smartsupp script loaded with a 200 while
+# widget-v3.smartsuppcdn.com/assets/style-*.css was blocked. The chat then
+# failed to render: empty container on production, an unstyled stub locally.
+#
+# That went unnoticed because the check used a `securitypolicyviolation`
+# listener on the top-level document, and the widget loads its stylesheet
+# inside its own IFRAME - a separate document whose violation events never
+# reach a parent listener. Browser-level Log.entryAdded is what surfaced it.
+# Any future CSP change involving the widget must be verified that way, not
+# with a document-level event listener.
+#
 # Third-party allowlist: Smartsupp (live chat) only. Fonts (Switzer), icons
 # (Phosphor) and chart.js are all self-hosted under /assets, so no external
 # style, font or script CDN is permitted -- a CDN outage cannot blank the UI,
 # and there is no third-party origin that can inject styles or glyphs.
-Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-1pFctdsLLOhYgvFf+O2wjDqjh98XAio5J1fSuWpmqSc=' 'sha256-kH7VANvlch4E3hPUcWAmuaqyqfOyjHPaEGVJ+/0DDEg=' 'sha256-MwjucJvHF9YRelOzyGi44QJtHQ41GBFEGQ7vfuYRJvI=' 'sha256-HYKzXIWfy/dNWgXhwg2F1lNvzUtJJGra2K48wxeGsyY=' https://*.smartsupp.com https://*.smartsuppchat.com https://*.smartsuppcdn.com; style-src 'self' 'unsafe-inline'; font-src 'self' data: https://*.smartsupp.com https://*.smartsuppchat.com https://*.smartsuppcdn.com; img-src 'self' data: https:; connect-src 'self' https://*.smartsupp.com https://*.smartsuppchat.com https://*.smartsuppcdn.com wss://*.smartsupp.com wss://*.smartsuppchat.com; frame-src 'self' https://*.smartsupp.com https://*.smartsuppchat.com https://*.smartsuppcdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests;"
+Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-1pFctdsLLOhYgvFf+O2wjDqjh98XAio5J1fSuWpmqSc=' 'sha256-kH7VANvlch4E3hPUcWAmuaqyqfOyjHPaEGVJ+/0DDEg=' 'sha256-MwjucJvHF9YRelOzyGi44QJtHQ41GBFEGQ7vfuYRJvI=' 'sha256-HYKzXIWfy/dNWgXhwg2F1lNvzUtJJGra2K48wxeGsyY=' https://*.smartsupp.com https://*.smartsuppchat.com https://*.smartsuppcdn.com; style-src 'self' 'unsafe-inline' https://*.smartsupp.com https://*.smartsuppchat.com https://*.smartsuppcdn.com; font-src 'self' data: https://*.smartsupp.com https://*.smartsuppchat.com https://*.smartsuppcdn.com; img-src 'self' data: https:; connect-src 'self' https://*.smartsupp.com https://*.smartsuppchat.com https://*.smartsuppcdn.com wss://*.smartsupp.com wss://*.smartsuppchat.com; frame-src 'self' https://*.smartsupp.com https://*.smartsuppchat.com https://*.smartsuppcdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests;"
 # Strip the PHP version banner (info disclosure). The "Server: LiteSpeed" banner
 # must be removed in the LiteSpeed admin (Server Signature = off).
 Header always unset X-Powered-By
