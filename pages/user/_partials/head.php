@@ -84,4 +84,10 @@ $page_description = $page_description ?? 'Your Aldernorth Capital dashboard: wal
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png">
     <meta name="apple-mobile-web-app-title" content="Aldernorth Capital">
     <link rel="manifest" href="/assets/favicon/site.webmanifest">
+
+    <?php // Smartsupp live chat - same file the marketing site loads, so a
+          // member keeps the same chat session moving between the two.
+          // main.js carried this before and is never loaded on the dashboard,
+          // which is why the widget was missing here. ?>
+    <script src="<?= anc_asset('/assets/js/smartsupp.js') ?>" defer></script>
 </head>

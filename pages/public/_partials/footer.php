@@ -43,4 +43,12 @@
   </div>
 </footer>
 
+<?php // Smartsupp attribution. Was on index.php only; moved here so every
+      // marketing page carries it, since the widget itself is loaded on all of
+      // them. Renders only when JavaScript is off - with JS on, the chat
+      // bubble carries the branding instead. ?>
+<noscript>
+  Powered by <a href="https://www.smartsupp.com" target="_blank" rel="noopener noreferrer">Smartsupp</a>
+</noscript>
+
 <?php // Navbar scroll toggle + mobile menu now live in assets/js/main.js. ?>

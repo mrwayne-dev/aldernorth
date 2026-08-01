@@ -501,9 +501,6 @@ include __DIR__ . '/_partials/head.php';
 }
 </script>
 
-<noscript>
-  Powered by <a href="https://www.smartsupp.com" target="_blank" rel="noopener noreferrer">Smartsupp</a>
-</noscript>
 
 
 </body>

@@ -2781,6 +2781,33 @@ body.anc-dash .anc-topbar-logo__light {
   }
 }
 
+/* Smartsupp chat bubble vs the mobile dock.
+ *
+ * The vendor pins its widget to `position: fixed; bottom: 24px; right: 12px`
+ * with `z-index: 10000000`. Below 1200px the dock owns the bottom 65px of the
+ * viewport at z-index 60 - so the bubble landed ON TOP of the Profile item,
+ * covering a primary navigation target with something that always wins the
+ * stacking order. Measured overlap was 41px.
+ *
+ * Shifted with margin-bottom rather than overriding `bottom`, for two reasons:
+ * the vendor sets `bottom` inline (so overriding needs !important and breaks
+ * the moment they change the value), and the container holds BOTH the bubble
+ * and the greeting panel at different offsets - forcing a single `bottom`
+ * would stack them on each other. A margin moves every child by the same
+ * amount and preserves their spacing.
+ *
+ * The offset tracks the dock's own env(safe-area-inset-bottom), so it stays
+ * correct above an iPhone home indicator instead of assuming a flat 65px.
+ *
+ * Scoped to body.anc-dash: the marketing site has no dock and keeps the
+ * vendor's default placement.
+ */
+@media (max-width: 1200px) {
+  body.anc-dash #smartsupp-widget-container > div {
+    margin-bottom: calc(65px + env(safe-area-inset-bottom));
+  }
+}
+
 @media (max-width: 1200px) {
   body.anc-dash .anc-dock {
     display: flex;

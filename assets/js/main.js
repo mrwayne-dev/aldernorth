@@ -201,30 +201,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /**
  * ======================
- * 6. Smartsupp Live Chat Integration
+ * 6. Smartsupp Live Chat
  * ======================
+ * Moved to assets/js/smartsupp.js, which is loaded by the public and member
+ * head partials so the widget appears on the dashboard too - main.js is a
+ * marketing-site file and is never loaded there.
+ *
+ * The copy that lived here also used a stale key (acee1c8f...) and omitted
+ * the vendor's command-queue stub. Both fixed in the new file.
  */
-(function() {
-  try {
-    // Prevent duplicate loading
-    if (window.smartsupp) return;
-
-    window._smartsupp = window._smartsupp || {};
-    window._smartsupp.key = 'acee1c8fc66bb651454e92b288dd5ddf2d428cc2';
-
-    // Create Smartsupp script dynamically
-    const s = document.createElement('script');
-    s.type = 'text/javascript';
-    s.charset = 'utf-8';
-    s.async = true;
-    s.src = 'https://www.smartsuppchat.com/loader.js?';
-    
-    // Append to head safely
-    const firstScript = document.getElementsByTagName('script')[0];
-    firstScript.parentNode.insertBefore(s, firstScript);
-
-    console.log('✅ Smartsupp chat loaded');
-  } catch (err) {
-    console.error('❌ Smartsupp failed to load:', err);
-  }
-})();

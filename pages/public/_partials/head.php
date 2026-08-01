@@ -71,4 +71,10 @@ $page_robots      = $page_robots      ?? 'index, follow';
   <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png">
   <meta name="apple-mobile-web-app-title" content="Aldernorth Capital">
   <link rel="manifest" href="/assets/favicon/site.webmanifest">
+
+  <?php // Smartsupp live chat. Deferred so it never blocks first paint - the
+        // widget is support tooling, not content. External file rather than the
+        // vendor's inline snippet so it is covered by CSP script-src 'self';
+        // see the header of assets/js/smartsupp.js. ?>
+  <script src="<?= anc_asset('/assets/js/smartsupp.js') ?>" defer></script>
 </head>
