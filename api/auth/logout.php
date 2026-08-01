@@ -1,6 +1,6 @@
 <?php
 // ========================================
-// USER LOGOUT — Aldernorth Capital
+// USER LOGOUT - Aldernorth Capital
 // ========================================
 
 ini_set('display_errors', 0);
@@ -12,11 +12,15 @@ require_once __DIR__ . '/../../config/constants.php';
 require_once __DIR__ . '/../backend/email.php';
 
 if (session_status() === PHP_SESSION_NONE) {
-    session_start([
-        'cookie_httponly' => true,
-        'cookie_secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
-        'cookie_samesite' => 'Strict',
-    ]);
+    require_once __DIR__ . '/../../api/utilities/security.php';
+    // Hardened + proxy-aware: use_strict_mode, and a cookie_secure that
+    // survives a TLS-terminating proxy (the inline options this replaced
+    // tested $_SERVER['HTTPS'] === 'on', which is unset behind one).
+    ancSessionStart();
+
+    // CSRF. Safe methods return immediately; anything else must present the
+    // session token as X-CSRF-Token (assets/js/api.js sends it on every POST).
+    ancCsrfEnforce();
 }
 
 ob_clean();

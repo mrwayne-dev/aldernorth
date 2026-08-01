@@ -7,7 +7,7 @@ $page_heading = $page_heading ?? 'Dashboard';
 $user_name = $user_name ?? 'User';
 
 // Backfill avatar into the session for sessions created before profile_picture
-// was added to login — so existing users see their photo without re-logging in.
+// was added to login - so existing users see their photo without re-logging in.
 if (!isset($_SESSION['profile_picture']) && !empty($_SESSION['user_id'])) {
     try {
         require_once __DIR__ . '/../../../config/database.php';
@@ -27,7 +27,15 @@ $topbar_avatar = htmlspecialchars($_SESSION['profile_picture'] ?? '/assets/image
 <div class="header-dashboard">
     <div class="wrap">
         <div class="header-left">
-            <div class="button-show-hide"><i class="icon-menu"></i></div>
+            <?php // The hamburger is hidden below 1200px (the dock owns mobile nav
+                  // there), so the top-left slot would otherwise be empty. Two <img>
+                  // toggled by CSS, matching the public navbar - no JS, no flash. ?>
+            <a href="/dashboard" class="anc-topbar-logo" aria-label="Aldernorth Capital">
+                <img class="anc-topbar-logo__dark" src="/assets/images/logo/anc-mark-orange.png" width="128" height="128" alt="">
+                <img class="anc-topbar-logo__light" src="/assets/images/logo/anc-mark-ink.png" width="128" height="128" alt="">
+                <span class="anc-topbar-logo__name">Aldernorth Capital</span>
+            </a>
+            <div class="button-show-hide"><i class="ph ph-list"></i></div>
             <h6><?= htmlspecialchars($page_heading) ?></h6>
         </div>
         <div class="header-grid">
@@ -39,7 +47,7 @@ $topbar_avatar = htmlspecialchars($_SESSION['profile_picture'] ?? '/assets/image
                 <div class="dropdown">
                     <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton3" data-bs-toggle="dropdown" aria-expanded="false">
                         <span class="header-user wg-user">
-                            <span class="image"><img id="topbar-avatar" src="<?= $topbar_avatar ?>" alt="" onerror="this.src='/assets/images/avatar/default.png';"></span>
+                            <span class="image"><img id="topbar-avatar" src="<?= $topbar_avatar ?>" alt="" data-fallback-src="/assets/images/avatar/default.png"></span>
                             <span class="content flex flex-column">
                                 <span class="label-02 text-Black name" id="topbar-username"><?= htmlspecialchars($user_name) ?></span>
                                 <span class="f14-regular text-Gray">User</span>
@@ -49,7 +57,7 @@ $topbar_avatar = htmlspecialchars($_SESSION['profile_picture'] ?? '/assets/image
                     <ul class="dropdown-menu dropdown-menu-end has-content" aria-labelledby="dropdownMenuButton3">
                         <li><a href="/dashboard.profile" class="user-item"><div class="body-title-2">Profile</div></a></li>
                         <li><a href="/dashboard.transactions" class="user-item"><div class="body-title-2">Transactions</div></a></li>
-                        <li><a href="#" id="logout-btn" class="user-item"><div class="body-title-2">Log out</div></a></li>
+                        <li><a href="#" id="logout-btn" class="user-item" data-logout-url="/dashboard.logout"><div class="body-title-2">Log out</div></a></li>
                     </ul>
                 </div>
             </div>

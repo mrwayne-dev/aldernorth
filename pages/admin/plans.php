@@ -1,10 +1,9 @@
 <?php
-session_start([
-    'cookie_lifetime' => 86400,
-    'cookie_httponly' => true,
-    'cookie_secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
-    'cookie_samesite' => 'Strict',
-]);
+require_once __DIR__ . '/../../api/utilities/security.php';
+// Hardened + proxy-aware: use_strict_mode, and a cookie_secure that
+// survives a TLS-terminating proxy (the inline options this replaced
+// tested $_SERVER['HTTPS'] === 'on', which is unset behind one).
+ancSessionStart();
 if (!isset($_SESSION['admin_id'])) {
     header('Location: /admin.login');
     exit;
@@ -26,6 +25,7 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
 
             <!-- Sidebar -->
             <?php $active = "plans"; include __DIR__ . "/_partials/sidebar.php"; ?>
+            <?php include __DIR__ . "/_partials/dock.php"; ?>
             <!-- /Sidebar -->
 
             <!-- Main Content -->
@@ -81,18 +81,22 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
                                         </button>
                                     </div>
 
-                                    <div class="table-list-transaction">
-                                        <div class="list-transaction-head title-sort bg-Primary">
-                                            <div class="f12-bold text-White">Plan Name</div>
-                                            <div class="f12-bold text-White">Term</div>
-                                            <div class="f12-bold text-White">ROI Range</div>
-                                            <div class="f12-bold text-White">Risk Level</div>
-                                            <div class="f12-bold text-White">Status</div>
-                                            <div class="f12-bold text-White">Actions</div>
-                                        </div>
-                                        <table class="list-transaction-content content-sort w-100">
+                                    <?php // See the note on the users table: the div-grid header
+                                          // and the table body were sized independently. ?>
+                                    <div class="anc-scroll-table">
+                                        <table class="anc-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Plan Name</th>
+                                                    <th>Term</th>
+                                                    <th>ROI</th>
+                                                    <th>Risk Level</th>
+                                                    <th>Status</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
                                             <tbody id="plans-table-body">
-                                                <!-- JS populates -->
+                                                <tr><td class="anc-empty" colspan="6">Loading plans...</td></tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -101,23 +105,29 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
                                 <!-- 4. ACTIVE INVESTMENTS TABLE -->
                                 <div class="mb-32">
                                     <h5 class="label-01 mb-16">All active positions</h5>
-                                    <div class="table-list-transaction">
-                                        <div class="list-transaction-head title-sort bg-Primary">
-                                            <div class="f12-bold text-White">User</div>
-                                            <div class="f12-bold text-White">Plan</div>
-                                            <div class="f12-bold text-White">Amount</div>
-                                            <div class="f12-bold text-White">ROI</div>
-                                            <div class="f12-bold text-White">Status</div>
-                                            <div class="f12-bold text-White">Start Date</div>
-                                            <div class="f12-bold text-White">End Date</div>
-                                        </div>
-                                        <table class="list-transaction-content content-sort w-100">
+                                    <?php // 8 columns. The old div-grid CSS only defined widths for
+                                          // nth-child(1)-(7), so the Actions column sized itself
+                                          // independently in the header and the body. ?>
+                                    <div class="anc-scroll-table">
+                                        <table class="anc-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Member</th>
+                                                    <th>Plan</th>
+                                                    <th>Amount</th>
+                                                    <th>ROI</th>
+                                                    <th>Status</th>
+                                                    <th>Start Date</th>
+                                                    <th>End Date</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
                                             <tbody id="active-investments-body">
-                                                <!-- JS populates -->
+                                                <tr><td class="anc-empty" colspan="8">Loading active investments...</td></tr>
                                             </tbody>
                                         </table>
                                     </div>
-                                    <div id="active-pagination" class="pagination mt-3 flex gap-2 justify-center"></div>
+                                    <div id="active-pagination"></div>
                                 </div>
 
                             </div>
@@ -128,123 +138,295 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
 
                 <!-- MODALS -->
 
-                <!-- Add/Edit Plan Modal -->
-                <div class="modal" id="plan-modal">
-                    <div class="modal-overlay"></div>
-                    <div class="modal-content" style="max-width: 600px;">
-                        <div class="modal-header">
-                            <h2 id="plan-modal-title">Add New Plan</h2>
-                            <button class="button-close-modal">&times;</button>
-                        </div>
+                <?php // Add/Edit Plan. Rebuilt on .anc-field; the inline
+                      // `style="max-width:600px"` is replaced by .anc-modal--wide,
+                      // which is guarded by min-width:576px so it cannot pin a
+                      // desktop width onto the phone bottom sheet. ?>
+                <div class="modal anc-modal--wide anc-modal--compact" id="plan-modal" role="dialog" aria-modal="true" aria-hidden="true">
+                    <div class="modal-overlay" data-modal-close></div>
+                    <div class="modal-content" tabindex="-1" aria-labelledby="plan-modal-title">
+                        <header class="modal-header">
+                            <div>
+                                <h2 id="plan-modal-title">Add New Plan</h2>
+                                <p class="modal-header__sub">Active plans are selectable by members immediately.</p>
+                            </div>
+                            <button type="button" class="modal-close button-close-modal" data-modal-close aria-label="Close dialog">&times;</button>
+                        </header>
                         <div class="modal-body">
-                            <form id="plan-form">
-                                <input type="hidden" id="plan-id">
-                                <div class="form-group mb-3">
-                                    <label>Plan Name <span class="text-Red">*</span></label>
-                                    <input type="text" class="form-control" id="plan-name" required>
+                            <form id="plan-form" autocomplete="off">
+                                <input type="hidden" id="plan-id" value="">
+
+                                <div class="anc-field">
+                                    <div class="anc-field__top">
+                                        <label class="anc-field__label" for="plan-name">Plan name</label>
+                                        <span class="anc-field__hint">Required</span>
+                                    </div>
+                                    <div class="anc-field__row">
+                                        <input type="text" class="anc-field__input" id="plan-name" maxlength="120" required>
+                                    </div>
                                 </div>
+
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <div class="form-group mb-3">
-                                            <label>Min Amount (USD)</label>
-                                            <input type="number" step="0.01" class="form-control" id="plan-min">
+                                        <div class="anc-field">
+                                            <div class="anc-field__top">
+                                                <label class="anc-field__label" for="plan-min">Min amount</label>
+                                                <span class="anc-field__hint">USD</span>
+                                            </div>
+                                            <div class="anc-field__row">
+                                                <span class="anc-field__chip">$</span>
+                                                <input type="number" step="0.01" min="0" class="anc-field__input anc-field__input--num" id="plan-min" placeholder="250">
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <div class="form-group mb-3">
-                                            <label>Max Amount (USD)</label>
-                                            <input type="number" step="0.01" class="form-control" id="plan-max">
+                                        <div class="anc-field">
+                                            <div class="anc-field__top">
+                                                <label class="anc-field__label" for="plan-max">Max amount</label>
+                                                <span class="anc-field__hint">USD</span>
+                                            </div>
+                                            <div class="anc-field__row">
+                                                <span class="anc-field__chip">$</span>
+                                                <input type="number" step="0.01" min="0" class="anc-field__input anc-field__input--num" id="plan-max" placeholder="25000">
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
+
+                                <?php // A plan has ONE roi_percent, charged per payout period, and a
+                                      // cadence that defines how long that period is. The Min/Max ROI
+                                      // pair that used to sit here matched no column and always failed
+                                      // the backend validator. ?>
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <div class="form-group mb-3">
-                                            <label>Min ROI (%)</label>
-                                            <input type="number" step="0.01" class="form-control" id="plan-roi-min" required>
+                                        <div class="anc-field">
+                                            <div class="anc-field__top">
+                                                <label class="anc-field__label" for="plan-cadence">Payout cadence</label>
+                                                <span class="anc-field__hint">Required</span>
+                                            </div>
+                                            <div class="anc-field__row">
+                                                <select class="anc-field__input" id="plan-cadence" required>
+                                                    <option value="weekly">Weekly</option>
+                                                    <option value="monthly" selected>Monthly</option>
+                                                </select>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <div class="form-group mb-3">
-                                            <label>Max ROI (%)</label>
-                                            <input type="number" step="0.01" class="form-control" id="plan-roi-max" required>
+                                        <div class="anc-field">
+                                            <div class="anc-field__top">
+                                                <label class="anc-field__label" for="plan-roi">ROI per payout</label>
+                                                <span class="anc-field__hint">Required</span>
+                                            </div>
+                                            <div class="anc-field__row">
+                                                <input type="number" step="0.01" min="0.01" class="anc-field__input anc-field__input--num" id="plan-roi" placeholder="1.1" required>
+                                                <span class="anc-field__chip">%</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="form-group mb-3">
-                                    <label>Term Duration (days)</label>
-                                    <input type="number" class="form-control" id="plan-duration" required>
+
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="anc-field">
+                                            <div class="anc-field__top">
+                                                <label class="anc-field__label" for="plan-duration">Term duration</label>
+                                                <span class="anc-field__hint">Days</span>
+                                            </div>
+                                            <div class="anc-field__row">
+                                                <input type="number" min="1" max="3650" class="anc-field__input anc-field__input--num" id="plan-duration" placeholder="90" required>
+                                            </div>
+                                            <p class="anc-field__note">At least one payout period: 7 days weekly, 30 monthly.</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="anc-field">
+                                            <div class="anc-field__top">
+                                                <label class="anc-field__label" for="plan-risk">Risk level</label>
+                                            </div>
+                                            <div class="anc-field__row">
+                                                <select class="anc-field__input" id="plan-risk">
+                                                    <option value="low">Low</option>
+                                                    <option value="medium">Medium</option>
+                                                    <option value="high">High</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="form-group mb-3">
-                                    <label>Risk Level</label>
-                                    <select class="form-control" id="plan-risk">
-                                        <option value="low">Low</option>
-                                        <option value="medium">Medium</option>
-                                        <option value="high">High</option>
-                                    </select>
-                                </div>
-                                <div class="form-group mb-3">
-                                    <label>Status</label>
-                                    <select class="form-control" id="plan-status">
-                                        <option value="active">Active</option>
-                                        <option value="hidden">Hidden</option>
-                                    </select>
-                                </div>
-                                <div class="d-flex justify-content-end gap-2">
-                                    <button type="button" class="button-close-modal tf-button bg-GrayLight text-Black">Cancel</button>
-                                    <button type="submit" class="modal-confirm-btn">Save Plan</button>
+
+                                <div class="anc-field">
+                                    <div class="anc-field__top">
+                                        <label class="anc-field__label" for="plan-status">Status</label>
+                                    </div>
+                                    <div class="anc-field__row">
+                                        <select class="anc-field__input" id="plan-status">
+                                            <option value="active">Active</option>
+                                            <option value="hidden">Hidden</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </form>
+                        </div>
+
+                        <div class="modal-footer-actions">
+                            <button type="button" class="button-close-modal tf-button" data-modal-close>Cancel</button>
+                            <button type="submit" form="plan-form" class="modal-confirm-btn">Save plan</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Edit position modal -->
-                <div class="modal" id="edit-investment-modal">
-                    <div class="modal-overlay"></div>
-                    <div class="modal-content">
+                <?php // Closing a position moves real money, so it goes through a
+                      // confirm step rather than firing on one click. Same shape as
+                      // the deposit/withdrawal dialogs. ?>
+                <div class="modal anc-modal--danger" id="close-investment-modal" role="dialog" aria-modal="true" aria-hidden="true">
+                    <div class="modal-overlay" data-modal-close></div>
+                    <div class="modal-content" tabindex="-1" aria-labelledby="close-investment-title">
                         <div class="modal-header">
-                            <h2>Edit position</h2>
-                            <button class="button-close-modal">&times;</button>
+                            <div>
+                                <h2 id="close-investment-title">Close this position?</h2>
+                                <p class="modal-header__sub" id="close-investment-sub"></p>
+                            </div>
+                            <button type="button" class="modal-close button-close-modal" data-modal-close aria-label="Close dialog">&times;</button>
                         </div>
                         <div class="modal-body">
-                            <form id="edit-investment-form">
-                                <input type="hidden" id="inv-id">
-                                <div class="form-group mb-3">
-                                    <label>User</label>
-                                    <input type="text" class="form-control" id="inv-user" disabled>
+                            <ul class="anc-summary">
+                                <li class="anc-summary__row">
+                                    <span class="k"><i class="ph ph-user"></i> Member</span>
+                                    <span class="v" id="close-inv-user"></span>
+                                </li>
+                                <li class="anc-summary__row">
+                                    <span class="k"><i class="ph ph-chart-line-up"></i> Plan</span>
+                                    <span class="v" id="close-inv-plan"></span>
+                                </li>
+                                <li class="anc-summary__row anc-summary__row--total">
+                                    <span class="k" id="close-inv-label">Returns to wallet</span>
+                                    <span class="v" id="close-inv-amount"></span>
+                                </li>
+                            </ul>
+                            <p class="note" id="close-inv-note"></p>
+                            <div class="modal-actions">
+                                <button type="button" class="button-close-modal tf-button" data-modal-close>Keep it open</button>
+                                <button type="button" class="modal-confirm-btn" id="close-investment-btn">Close position</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <?php /* Edit position - intent-based.
+                         Was three raw fields (amount, roi_percent, status). The cron
+                         reads payouts_made, payouts_total, next_payout_date and
+                         maturity_date together, and several combinations silently
+                         corrupt the schedule: a past next_payout_date fires immediate
+                         catch-up payouts, and a maturity_date before the final payout
+                         loses the member one. So the admin picks an INTENT and the
+                         API derives the columns. See api/admin/plans.php. */ ?>
+                <div class="modal anc-modal--wide anc-modal--compact" id="edit-investment-modal" role="dialog" aria-modal="true" aria-hidden="true">
+                    <div class="modal-overlay" data-modal-close></div>
+                    <div class="modal-content" tabindex="-1" aria-labelledby="edit-investment-title">
+                        <header class="modal-header">
+                            <div>
+                                <h2 id="edit-investment-title">Manage position</h2>
+                                <p class="modal-header__sub" id="inv-subtitle">&nbsp;</p>
+                            </div>
+                            <button type="button" class="modal-close button-close-modal" data-modal-close aria-label="Close dialog">&times;</button>
+                        </header>
+
+                        <div class="modal-body">
+                            <input type="hidden" id="inv-id" value="">
+
+                            <ul class="anc-summary">
+                                <li class="anc-summary__row">
+                                    <span class="k"><i class="ph ph-user"></i> Member</span>
+                                    <span class="v" id="inv-user"></span>
+                                </li>
+                                <li class="anc-summary__row">
+                                    <span class="k"><i class="ph ph-chart-line-up"></i> Plan</span>
+                                    <span class="v" id="inv-plan"></span>
+                                </li>
+                                <li class="anc-summary__row">
+                                    <span class="k">Progress</span>
+                                    <span class="v" id="inv-progress"></span>
+                                </li>
+                                <li class="anc-summary__row">
+                                    <span class="k">Next payout</span>
+                                    <span class="v" id="inv-next"></span>
+                                </li>
+                                <li class="anc-summary__row">
+                                    <span class="k">Matures</span>
+                                    <span class="v" id="inv-maturity"></span>
+                                </li>
+                                <li class="anc-summary__row anc-summary__row--total">
+                                    <span class="k">Earned so far</span>
+                                    <span class="v" id="inv-earned"></span>
+                                </li>
+                            </ul>
+
+                            <?php // Rate is the one schedule field safe to edit directly:
+                                  // the cron re-reads it each run, so it only affects
+                                  // future periods. ?>
+                            <div class="anc-field">
+                                <div class="anc-field__top">
+                                    <label class="anc-field__label" for="inv-roi">Rate per payout</label>
+                                    <span class="anc-field__hint" id="inv-per-payout"></span>
                                 </div>
-                                <div class="form-group mb-3">
-                                    <label>Plan</label>
-                                    <input type="text" class="form-control" id="inv-plan" disabled>
+                                <div class="anc-field__row">
+                                    <input type="number" step="0.01" min="0" max="999.99" class="anc-field__input anc-field__input--num" id="inv-roi">
+                                    <span class="anc-field__chip">%</span>
+                                    <button type="button" class="tf-button f12-bold" id="inv-save-rate">Save</button>
                                 </div>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-3">
-                                            <label>Amount (USD)</label>
-                                            <input type="number" step="0.01" class="form-control" id="inv-amount">
+                                <p class="anc-field__note">Applies from the next scheduled payout. Nothing already paid changes.</p>
+                            </div>
+
+                            <details class="anc-disclosure" id="inv-actions">
+                                <summary>
+                                    Actions
+                                    <span class="anc-disclosure__count">bonus &middot; term &middot; close</span>
+                                </summary>
+                                <div class="anc-disclosure__body">
+
+                                    <div class="anc-field">
+                                        <div class="anc-field__top">
+                                            <label class="anc-field__label" for="inv-bonus">Add a bonus payout</label>
+                                            <span class="anc-field__hint">USD</span>
                                         </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-3">
-                                            <label>ROI (%)</label>
-                                            <input type="number" step="0.01" class="form-control" id="inv-roi">
+                                        <div class="anc-field__row">
+                                            <span class="anc-field__chip">$</span>
+                                            <input type="number" step="0.01" min="0.01" class="anc-field__input anc-field__input--num" id="inv-bonus" placeholder="25.00">
+                                            <button type="button" class="tf-button f12-bold bg-Accent text-Black" id="inv-add-bonus">Credit</button>
                                         </div>
+                                        <p class="anc-field__note">Credits the wallet now and logs a payout on the member's activity.</p>
                                     </div>
+
+                                    <div class="anc-field">
+                                        <div class="anc-field__top">
+                                            <label class="anc-field__label" for="inv-payouts-total">Total payouts</label>
+                                            <span class="anc-field__hint" id="inv-term-hint"></span>
+                                        </div>
+                                        <div class="anc-field__row">
+                                            <input type="number" step="1" min="1" max="520" class="anc-field__input anc-field__input--num" id="inv-payouts-total">
+                                            <button type="button" class="tf-button f12-bold bg-Accent text-Black" id="inv-save-term">Apply</button>
+                                        </div>
+                                        <p class="anc-field__note">The maturity date moves with it, so the last payout and the principal release stay on the same day.</p>
+                                    </div>
+
+                                    <div class="anc-field">
+                                        <div class="anc-field__top">
+                                            <span class="anc-field__label">Close this position</span>
+                                        </div>
+                                        <div class="anc-field__row">
+                                            <button type="button" class="tf-button f12-bold" id="inv-settle">Settle now</button>
+                                            <button type="button" class="tf-button f12-bold bg-Red text-White" id="inv-cancel">Cancel &amp; refund</button>
+                                        </div>
+                                        <p class="anc-field__note"><strong>Settle</strong> releases the principal and closes the position. <strong>Cancel</strong> refunds the principal and unwinds the position.</p>
+                                    </div>
+
                                 </div>
-                                <div class="form-group mb-3">
-                                    <label>Status</label>
-                                    <select class="form-control" id="inv-status">
-                                        <option value="active">Active</option>
-                                        <option value="completed">Completed</option>
-                                        <option value="cancelled">Cancelled</option>
-                                    </select>
-                                </div>
-                                <div class="d-flex justify-content-end gap-2">
-                                    <button type="button" class="button-close-modal tf-button bg-GrayLight text-Black">Cancel</button>
-                                    <button type="submit" class="modal-confirm-btn">Save Changes</button>
-                                </div>
-                            </form>
+                            </details>
+                        </div>
+
+                        <div class="modal-footer-actions">
+                            <button type="button" class="button-close-modal tf-button" data-modal-close>Done</button>
                         </div>
                     </div>
                 </div>
@@ -266,8 +448,9 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
 <script src="<?= anc_asset('../../assets/js/jquery.min.js') ?>"></script>
 <script src="<?= anc_asset('../../assets/js/bootstrap.min.js') ?>"></script>
 <script src="<?= anc_asset('../../assets/js/bootstrap-select.min.js') ?>" defer></script>
+<script src="<?= anc_asset('../../assets/js/anc-pagination.js') ?>" defer></script>
 <script src="<?= anc_asset('../../assets/js/admin/admin.js') ?>" defer></script>
-<script src="<?= anc_asset('../../assets/js/admin/funds.js') ?>" defer></script>
+<script src="<?= anc_asset('../../assets/js/admin/plans.js') ?>" defer></script>
 <script src="/assets/js/chart.min.js"></script>
 </body>
 </html>

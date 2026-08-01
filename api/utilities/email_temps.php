@@ -1,6 +1,6 @@
 <?php
 // ========================================
-// EMAIL TEMPLATES — Aldernorth Capital (Optimized and Consistent)
+// EMAIL TEMPLATES - Aldernorth Capital (Optimized and Consistent)
 // ========================================
 /**
  * Returns all email templates used in the system.
@@ -12,8 +12,11 @@
  */
 function getEmailTemplates() {
     $year = date('Y');
-    // IMPORTANT: Update this URL to your actual logo path accessible via the web
-    $logoUrl = 'https://aldernorthcapital.com/assets/images/logo/aldernorth-white.png';
+    // Absolute URL, because mail clients have no page to resolve a relative
+    // path against. The masthead band is brand ink, so this is the ORANGE mark;
+    // it is a 72px PNG (2x the 36px render) rather than the 2000px master, so
+    // the mail stays small enough that Gmail does not clip it.
+    $logoUrl = 'https://aldernorthcapital.com/assets/images/logo/anc-mark-email.png';
     $appName = 'Aldernorth Capital';
     $supportEmail = 'support@aldernorthcapital.com'; // Define support email for easy updates
     $websiteUrl = 'https://aldernorthcapital.com/'; // Define main website URL
@@ -24,20 +27,46 @@ function getEmailTemplates() {
     // survive Outlook's renderer. Brand orange carries the identity instead.
     $colors = [
         'primary'           => '#C24608',   // Brand orange, darkened for AA on white
-        'primary_light'     => '#FFFFFF',   // Email outer body — white
-        'surface'           => '#FFFFFF',   // Email card surface — white
+        'primary_light'     => '#FFFFFF',   // Email outer body - white
+        'surface'           => '#FFFFFF',   // Email card surface - white
         'background'        => '#FAF6F4',   // Warm neutral for data blocks
-        'text'              => '#161316',   // Body text — brand ink
+        'text'              => '#161316',   // Body text - brand ink
         'muted'             => '#6B615C',   // Muted text
-        'border'            => 'rgba(22, 19, 22, 0.10)', // Hairline border
+        // Opaque hex, NOT rgba(). Outlook desktop renders through Word, which
+        // does not support rgba() and drops the whole declaration - so every
+        // hairline in the email (card outline, data blocks, footer divider)
+        // silently vanished there. #E8E4E2 is the flattened equivalent of
+        // rgba(22,19,22,0.10) over the white card, so it looks identical in
+        // clients that DO support alpha.
+        'border'            => '#E8E4E2',   // Hairline border
         'success'           => '#15803D',   // Success green
         'danger'            => '#B91C1C',   // True red, reserved for security alerts
         'warning_bg'        => '#FEF3C7',   // Warning block background (warm light)
         'warning_border'    => '#F59E0B',   // Warning block border (amber)
         'highlight_text'    => '#161316',   // Contrast text color
-        'header_bg'         => '#161316',   // Masthead — brand ink
+        'header_bg'         => '#161316',   // Masthead - brand ink
         'accent'            => '#FF6D29',   // True brand orange for fills/rules
     ];
+
+    // The font stack, defined once.
+    //
+    // READ THIS BEFORE EDITING ANY style ATTRIBUTE BELOW. In a PHP DOUBLE-quoted
+    // string, \' is not an escape sequence - PHP has no such escape, so the
+    // backslash AND the quote both survive into the output verbatim. Three
+    // attributes here were written as
+    //     style='... font-family: \'Segoe UI\', Tahoma ...'
+    // which reached the client as a single-quoted attribute containing a raw
+    // single quote. The parser closes the attribute at that quote, so email
+    // sanitizers threw the whole style declaration away - and with it the body
+    // cell's 32px 28px padding (content hugged the card border) and the CTA
+    // link's padding/colour/text-decoration (the button arrived as underlined
+    // text inside a bare orange box).
+    //
+    // The fix, used everywhere the stack appears: a DOUBLE-quoted HTML attribute
+    // (escaped \" for PHP) wrapping SINGLE-quoted CSS strings. No quote
+    // character ever collides with its own delimiter. Same pattern the <body>
+    // tag and the masthead already use.
+    $font = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
 
     // --- Reusable HTML Blocks ---
 
@@ -47,23 +76,49 @@ function getEmailTemplates() {
     // 2. Consistent Alert Block for Security/Cancellation/Warning
     $alertBlockStyle = "background-color: {$colors['background']}; border-left: 4px solid {{color}}; padding: 14px 18px; margin: 20px 0; border-radius: 0 6px 6px 0;";
 
-    // Header structure — ANC red brand band
+    // Masthead - brand ink band carrying the lockup: leaf mark left, company
+    // name right.
+    //
+    // The name is live text, not part of the image, for two reasons. Outlook
+    // and Gmail block remote images by default on first view, so a single
+    // wordmark image left the masthead as an empty box for most first-time
+    // recipients - now the brand still reads. And Word ignores CSS sizing on
+    // images, so the mark carries explicit width/height ATTRIBUTES as well.
+    //
+    // Two <td>s in a nested table rather than an inline-block: Word does not
+    // support inline-block, so the name would have wrapped under the mark.
+    // alt='' on the mark keeps the blocked-image placeholder from repeating the
+    // company name that already sits next to it.
+    //
+    // A <tr>, NOT a standalone <table>. $header and $footer are spliced straight
+    // into the outer .anc-card <table>, and a <table> is not a permitted child
+    // of <table> - the HTML "in table" insertion mode treats a nested <table>
+    // start tag as an implied </table>. So the card closed at the masthead and
+    // every row after it, including the body cell that carries the 32px 28px
+    // padding, was foster-parented out of the table with its <tr>/<td> tags
+    // DISCARDED. There was no cell left to pad, which is why the body copy sat
+    // flush against the card border. The lockup table below is fine - it is
+    // inside a <td>, which is a legal place for a table.
     $header = "
-        <table role='presentation' cellspacing='0' cellpadding='0' border='0' width='100%' style='background:{$colors['header_bg']};'>
             <tr>
-                <td style='padding: 20px 28px; border-bottom: 1px solid {$colors['primary']};'>
-                    <a href='{$websiteUrl}' target='_blank'>
-                        <img src='{$logoUrl}' alt='{$appName} Logo' style='max-width:150px; height:auto; vertical-align:middle; border:0;'>
+                <td style='background:{$colors['header_bg']}; padding: 18px 28px; border-bottom: 1px solid {$colors['primary']};'>
+                    <a href='{$websiteUrl}' target='_blank' style='text-decoration:none;'>
+                        <table role='presentation' cellspacing='0' cellpadding='0' border='0'>
+                            <tr>
+                                <td valign='middle' style='padding-right:10px; line-height:0;'>
+                                    <img src='{$logoUrl}' alt='' width='36' height='36' style='display:block; width:36px; height:36px; border:0; outline:none; text-decoration:none;'>
+                                </td>
+                                <td valign='middle' style=\"font-family:{$font}; font-size:18px; line-height:22px; mso-line-height-rule: exactly; font-weight:600; letter-spacing:-0.2px; color:{$colors['primary_light']}; white-space:nowrap;\">{$appName}</td>
+                            </tr>
+                        </table>
                     </a>
                 </td>
-            </tr>
-        </table>";
+            </tr>";
 
-    // Footer structure
+    // Footer structure. A <tr>, not a <table> - same reason as $header above.
     $footer = "
-        <table role='presentation' cellspacing='0' cellpadding='0' border='0' width='100%' style='background:{$colors['background']};'>
             <tr>
-                <td style='padding: 20px 28px; text-align: center; font-size: 12px; color:{$colors['muted']}; border-top: 1px solid {$colors['border']}'>
+                <td style=\"background:{$colors['background']}; padding: 20px 28px; text-align: center; font-family: {$font}; font-size: 12px; line-height: 18px; mso-line-height-rule: exactly; color:{$colors['muted']}; border-top: 1px solid {$colors['border']};\">
                     <p style='margin: 8px 0;'>&copy; {$year} {$appName}. All rights reserved.</p>
                     <p style='margin: 8px 0; font-size: 11px;'>
                         If you have any questions, feel free to contact us at 
@@ -74,46 +129,96 @@ function getEmailTemplates() {
                         <a href='{$websiteUrl}pages/public/privacy.php' style='color:{$colors['primary']}; text-decoration: none;'>Privacy Policy</a>
                     </p>
                 </td>
-            </tr>
-        </table>";
+            </tr>";
 
-    // Base HTML wrapper with improved structure and responsiveness
+    // --- Shared body pieces -------------------------------------------
+    // Every template used to hand-roll its own heading colour (text / danger /
+    // success / primary, chosen arbitrarily - a routine signup confirmation
+    // rendered in alarm red) and its own CTA colour (three different ones for
+    // the same visual role). These three helpers are the single source now.
+
+    // Section heading. One colour: brand ink. Severity is carried by the alert
+    // block and the copy, not by shouting the headline in red.
+    $h2 = fn($text) => "<h2 style=\"margin: 0 0 16px 0; font-family: {$font}; font-size: 22px; line-height: 1.3; mso-line-height-rule: exactly; font-weight: 600; color: {$colors['text']};\">{$text}</h2>";
+
+    // Call to action. Brand orange with ink text - 6.6:1, where white on the
+    // same orange is 2.8:1. Table-wrapped so Outlook's Word renderer keeps the
+    // padding, which a bare <a> loses.
+    // The <!--[if mso]> block is a VML roundrect that ONLY Outlook desktop
+    // parses; every other client ignores it as a comment and renders the
+    // table. Without it Word drops the border-radius AND collapses the <a>'s
+    // padding, so the button arrived as bare underlined text.
+    $cta = fn($label, $href) => "
+        <div style='text-align:center; margin: 26px 0;'>
+        <!--[if mso]>
+        <v:roundrect xmlns:v='urn:schemas-microsoft-com:vml' xmlns:w='urn:schemas-microsoft-com:office:word'
+                     href='{$href}' style='height:44px;v-text-anchor:middle;width:220px;' arcsize='14%'
+                     stroke='f' fillcolor='{$colors['accent']}'>
+          <w:anchorlock/>
+          <center style=\"color:{$colors['highlight_text']};font-family:'Segoe UI',Tahoma,sans-serif;font-size:15px;font-weight:600;\">{$label}</center>
+        </v:roundrect>
+        <![endif]-->
+        <!--[if !mso]><!-- -->
+        <table role='presentation' cellspacing='0' cellpadding='0' border='0' align='center' style='margin: 0 auto;'>
+            <tr><td align='center' style='background-color: {$colors['accent']}; border-radius: 6px;'>
+                <a href='{$href}' target='_blank' style=\"display: inline-block; padding: 13px 30px; font-family: {$font}; font-size: 15px; font-weight: 600; line-height: 18px; mso-line-height-rule: exactly; color: {$colors['highlight_text']}; text-decoration: none;\">{$label}</a>
+            </td></tr>
+        </table>
+        <!--<![endif]-->
+        </div>";
+
+    // Sign-off. Was a mix of "Best regards" / "Kind regards" / "Warmly" /
+    // "Warm regards" chosen at random per template.
+    $signoff = "<p style='margin: 24px 0 0 0;'>Kind regards,<br><strong>The {$appName} Team</strong></p>";
+
+    // Base HTML wrapper.
+    //
+    // Two bugs lived here. The <body> style attribute was single-quoted and
+    // contained 'Segoe UI', so it terminated at that inner quote and the whole
+    // declaration was silently dropped. And the CSS sat in <head>, which Gmail
+    // strips in several contexts - the .button class defined there was used by
+    // no template at all, since every one repeated the button inline.
+    //
+    // Everything that matters is inline now. The remaining <head> block is
+    // progressive enhancement only: a mobile padding rule, which cannot be
+    // expressed inline.
     $wrap = fn($content) => "
         <!DOCTYPE html>
         <html lang='en'>
         <head>
             <meta charset='UTF-8'>
             <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+            <meta name='x-apple-disable-message-reformatting'>
             <title>" . htmlspecialchars($appName) . " Notification</title>
             <style type='text/css'>
-                /* Basic reset and typography */
-                body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: {$colors['primary_light']}; }
-                a { color: {$colors['primary']}; text-decoration: none; }
-                h2 { color: {$colors['text']}; font-size: 24px; margin-top: 0; }
-                p { margin: 0 0 16px 0; line-height: 1.6; }
-                /* Button styles */
-                .button {
-                    display: inline-block; background-color: {$colors['danger']};
-                    color: white !important; padding: 12px 28px; text-decoration: none; 
-                    border-radius: 6px; font-weight: 600; mso-padding-alt: 0;
-                }
-                .button a {
-                    color: white !important; text-decoration: none; display: block;
-                    padding: 12px 28px;
+                @media only screen and (max-width: 600px) {
+                    .anc-pad { padding: 24px 18px !important; }
+                    .anc-card { border-radius: 0 !important; margin: 0 !important; }
                 }
             </style>
         </head>
-        <body style='margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: {$colors['primary_light']};'>
+        <body style=\"margin:0; padding:0; width:100%; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color:{$colors['primary_light']};\">
+            <!-- Preheader: the preview line inboxes show beside the subject.
+                 Zero-height so it never renders in the opened mail. -->
+            <div style='display:none; max-height:0; overflow:hidden; mso-hide:all; font-size:1px; line-height:1px; color:{$colors['primary_light']};'>{{preheader}}</div>
             <center style='width: 100%; background-color: {$colors['primary_light']};'>
-            <table role='presentation' cellspacing='0' cellpadding='0' border='0' align='center' style='width: 100%; max-width: 600px; background-color: {$colors['surface']}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 20px auto;'>
+            <!--[if mso | IE]>
+            <table role='presentation' width='600' cellspacing='0' cellpadding='0' border='0' align='center'><tr><td>
+            <![endif]-->
+            <!-- Word ignores max-width entirely, so without the 600px table
+                 above the email stretched to the full Outlook window width. -->
+            <table role='presentation' cellspacing='0' cellpadding='0' border='0' align='center' class='anc-card' style='width: 100%; max-width: 600px; background-color: {$colors['surface']}; border: 1px solid {$colors['border']}; border-radius: 8px; overflow: hidden; margin: 20px auto;'>
                 {$header}
                 <tr>
-                    <td style='padding: 32px 28px; line-height: 1.6; color: {$colors['text']};'>
+                    <td class='anc-pad' style=\"padding: 32px 28px; font-family: {$font}; font-size: 15px; line-height: 24px; mso-line-height-rule: exactly; color: {$colors['text']};\">
                         {$content}
                     </td>
                 </tr>
                 {$footer}
             </table>
+            <!--[if mso | IE]>
+            </td></tr></table>
+            <![endif]-->
             </center>
         </body>
         </html>";
@@ -124,8 +229,9 @@ function getEmailTemplates() {
     return [
         'login_alert' => [
             'subject' => '[Security Alert] New Login Detected on Your ' . $appName . ' Account',
+            'preheader' => 'A new sign-in to your account. If this was you, nothing to do.',
             'html' => $wrap("
-                <h2 style='color: {$colors['text']}; margin-top: 0;'>New Login Detected on Your Account</h2>
+                " . $h2("New Login Detected on Your Account") . "
                 <p>Dear {{user_name}},</p>
                 <p>We noticed a recent login to your <strong>{$appName}</strong> account. Please review the details below immediately.</p>
 
@@ -145,17 +251,16 @@ function getEmailTemplates() {
                     <li>Contact our support team at <a href='mailto:{$supportEmail}' style='color:{$colors['primary']};'>{$supportEmail}</a>.</li>
                 </ul>
 
-                <div style='margin: 26px 0; text-align:center;'>
-                    <a href='{$websiteUrl}forgotpassword' style='display:inline-block; background-color: {$colors['danger']}; color: white; padding: 12px 28px; text-decoration: none; border-radius: 6px; font-weight: 600;' target='_blank'>Reset Password</a>
-                    </div>
+                " . $cta("Reset Password", "{$websiteUrl}forgotpassword") . "
 
-                <p style='margin-top:24px;'>Kind regards,<br><strong>The {$appName} Security Team</strong></p>
+                " . $signoff . "
             "),
         ],
         'admin_login_alert' => [
             'subject' => '[Admin Security Alert] New Login to Your ' . $appName . ' Admin Account',
+            'preheader' => 'An administrator signed in to the panel.',
             'html' => $wrap("
-                <h2 style='color: {$colors['danger']}; margin-top:0;'>Admin Login Detected</h2>
+                " . $h2("Admin Login Detected") . "
                 <p>Dear {{admin_name}},</p>
                 <p>A new login to your <strong>{$appName}</strong> <em>admin account</em> was detected.</p>
 
@@ -175,17 +280,16 @@ function getEmailTemplates() {
                     <li>Contact our Security Team if the login is unfamiliar.</li>
                 </ul>
 
-                <div style='margin: 26px 0; text-align:center;'>
-                    <a href='{$adminUrl}' style='display:inline-block; background-color: {$colors['primary']}; color: white; padding: 12px 28px; text-decoration: none; border-radius: 6px; font-weight: 600;' target='_blank'>Go to Admin Dashboard</a>
-                </div>
+                " . $cta("Go to Admin Dashboard", "{$adminUrl}") . "
 
-                <p style='margin-top:24px;'>Kind regards,<br><strong>{$appName} Security Team</strong></p>
+                " . $signoff . "
             "),
         ],
         'admin_user_login_notification' => [
             'subject' => '[User Login Alert] A User Has Just Logged In',
+            'preheader' => 'A member signed in to their account.',
             'html' => $wrap("
-                <h2 style='color: {$colors['primary']}; margin-top:0;'>User Login Detected</h2>
+                " . $h2("User Login Detected") . "
                 <p>Hello Admin,</p>
                 <p>A user just logged into their {$appName} account. This notification is for your records.</p>
 
@@ -198,13 +302,14 @@ function getEmailTemplates() {
                     <p style='margin: 6px 0;'><strong>Location:</strong> {{location}}</p>
                 </div>
 
-                <p style='margin-top:24px;'>Best regards,<br><strong>{$appName} Security System</strong></p>
+                " . $signoff . "
             "),
         ],
         'welcome_user' => [
             'subject' => 'Welcome to ' . $appName . '!',
+            'preheader' => 'Your account is verified and ready to fund.',
             'html' => $wrap("
-                <h2 style='color: {$colors['success']}; margin-top: 0;'>Welcome Aboard!</h2>
+                " . $h2("Welcome Aboard!") . "
                 <p>Dear {{user_name}},</p>
                 <p>Congratulations on joining the <strong>{$appName}</strong> community! We are thrilled to have you as a member.</p>
                 <p>Your account has been successfully created, and your personalized digital wallet is now active and ready for you to explore.</p>
@@ -212,20 +317,21 @@ function getEmailTemplates() {
                 <h3 style='font-size: 18px; color: {$colors['primary']}; margin-top: 30px; margin-bottom: 12px;'>What You Can Do Next:</h3>
                 <ul style='padding-left: 20px;'>
                     <li><strong>Deposit Funds:</strong> Easily add money to your wallet using various secure methods.</li>
-                    <li><strong>Make Donations:</strong> Contribute to meaningful causes and support those in need.</li>
+                    <li><strong>Track everything:</strong> Follow each payout as it lands and support those in need.</li>
                     <li><strong>Explore Investments:</strong> Discover opportunities to grow your funds while contributing positively.</li>
                 </ul>
                 <p>We believe that together, we can create a healthier and more caring world. Your journey with us starts now!</p>
                 
                 <p style='margin-top: 24px;'>If you have any questions or need assistance, our friendly support team is always here for you at <a href='mailto:{$supportEmail}' style='color:{$colors['primary']};'>{$supportEmail}</a>.</p>
                 
-                <p>Warmly,<br><strong>The {$appName} Team</strong></p>
+                " . $signoff . "
             "),
         ],
         'welcome_admin' => [
-            'subject' => 'Welcome — Your ' . $appName . ' Admin Account is Ready',
+            'subject' => 'Your ' . $appName . ' admin account is ready',
+            'preheader' => 'Your administrator account is live.',
             'html' => $wrap("
-                <h2 style='color: {$colors['primary']}; margin-top:0;'>Welcome to the Admin Team</h2>
+                " . $h2("Welcome to the Admin Team") . "
                 <p>Hi {{admin_name}},</p>
                 <p>Your administrator account for <strong>{$appName}</strong> has been created successfully.</p>
 
@@ -242,13 +348,14 @@ function getEmailTemplates() {
 
                 <p>If you did not request this account, please contact <a href='mailto:{$supportEmail}' style='color:{$colors['primary']};'>{$supportEmail}</a> immediately.</p>
 
-                <p style='margin-top:24px;'>Kind regards,<br><strong>The {$appName} Team</strong></p>
+                " . $signoff . "
             ")
         ],
         'deposit_initiated' => [
             'subject' => 'Deposit Request Received!',
+            'preheader' => 'We have your deposit request and are waiting on the transfer.',
             'html' => $wrap("
-                <h2 style='color: {$colors['text']}; margin-top: 0;'>Deposit Request Confirmed</h2>
+                " . $h2("Deposit Request Confirmed") . "
                 <p>Hi {{user_name}},</p>
                 <p>Thank you for choosing {$appName} to add funds to your wallet. We have successfully received your deposit request.</p>
                 
@@ -261,13 +368,14 @@ function getEmailTemplates() {
                 <p>Our team is currently reviewing your request. You will receive an email shortly with specific instructions and payment details (e.g., bank details or wallet address) based on your chosen method.</p>
                 <p>Please follow the instructions carefully to complete your deposit. The funds will be added to your wallet once payment is confirmed.</p>
                 
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
+                " . $signoff . "
             "),
         ],
         'admin_deposit_notification' => [
             'subject' => 'New Deposit Request!',
+            'preheader' => 'A deposit is waiting for review.',
             'html' => $wrap("
-                <h2 style='color: {$colors['primary']}; margin-top: 0;'>New Deposit Request Awaiting Action</h2>
+                " . $h2("New Deposit Request Awaiting Action") . "
                 <p>Hello Admin,</p>
                 <p>A new deposit request has been submitted by a user and requires your attention.</p>
                 
@@ -281,13 +389,14 @@ function getEmailTemplates() {
                 
                 <p>Please log in to the admin dashboard to review this request and provide the necessary payment details to the user.</p>
                 
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
+                " . $signoff . "
             "),
         ],
         'deposit_details_provided' => [
             'subject' => 'Deposit Instructions Ready!',
+            'preheader' => 'Your transfer details are ready - here is where to send it.',
             'html' => $wrap("
-                <h2 style='color: {$colors['text']}; margin-top: 0;'>Deposit Instructions Ready</h2>
+                " . $h2("Deposit Instructions Ready") . "
                 <p>Hi {{user_name}},</p>
                 <p>Great news! The payment details for your deposit request (Reference: <strong>{{reference}}</strong>) are now ready. Please proceed with your deposit of <strong>\${{amount}}</strong> using the information below.</p>
                 
@@ -298,15 +407,16 @@ function getEmailTemplates() {
                 <p><strong>Important:</strong> Please ensure the amount sent matches exactly \${{amount}} and use the provided details precisely. Any mismatch may cause delays.</p>
                 <p>After sending the payment, please return to your wallet dashboard and click the 'I Have Paid' button for this transaction to notify us so we can quickly confirm your deposit.</p>
                 
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
+                " . $signoff . "
             "),
         ],
         'deposit_confirmed' => [
             'subject' => 'Success! Your Deposit Has Been Approved and Credited!',
+            'preheader' => 'Your deposit has cleared and your wallet is credited.',
             'html' => $wrap("
-                <h2 style='color: {$colors['success']}; margin-top: 0;'>Deposit Approved & Credited</h2>
+                " . $h2("Deposit Approved & Credited") . "
                 <p>Hi {{user_name}},</p>
-                <p>Great news! Your deposit request with the reference <strong>{{reference}}</strong> has been **approved** and the funds have now been safely added to your {$appName} wallet.</p>
+                <p>Great news! Your deposit request with the reference <strong>{{reference}}</strong> has been <strong>approved</strong> and the funds have now been safely added to your {$appName} wallet.</p>
 
                 <div style='{$dataBlockStyle}; text-align: center; border-left: 4px solid {$colors['success']};'>
                     <p style='margin: 0; font-size: 16px; color: {$colors['text']};'>
@@ -316,16 +426,17 @@ function getEmailTemplates() {
 
                 <p>You can now use your wallet balance to make donations, explore investment plans, or participate in other rewarding programs within {$appName}.</p>
                 
-                <p style='margin-top: 24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
+                " . $signoff . "
             "),
         ],
 
         'deposit_cancelled' => [
             'subject' => 'Your Deposit Request Has Been Cancelled',
+            'preheader' => 'We could not complete your deposit request.',
             'html' => $wrap("
-                <h2 style='color: {$colors['danger']}; margin-top: 0;'>Deposit Request Cancelled</h2>
+                " . $h2("Deposit Request Cancelled") . "
                 <p>Hi {{user_name}},</p>
-                <p>We regret to inform you that your pending deposit request (Reference: <strong>{{reference}}</strong>) for <strong>\${{amount}}</strong> has been **cancelled** by our team.</p>
+                <p>We regret to inform you that your pending deposit request (Reference: <strong>{{reference}}</strong>) for <strong>\${{amount}}</strong> has been <strong>cancelled</strong> by our team.</p>
 
                 " . str_replace(['{{color}}', '{{content}}'], [$colors['danger'], "
                     <p style='margin: 0; color: {$colors['text']};'><strong>Reason for Cancellation:</strong> {{reason}}</p>
@@ -333,15 +444,16 @@ function getEmailTemplates() {
                 
                 <p>This may occur when payment cannot be verified or requested details are incomplete. If you believe this decision was made in error or need clarification, please contact our support team at <a href='mailto:{$supportEmail}' style='color:{$colors['primary']};'>{$supportEmail}</a>.</p>
                 
-                <p style='margin-top: 24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
+                " . $signoff . "
             "),
         ],
         'admin_payment_confirmed' => [
             'subject' => 'User Confirmed Payment for Deposit!',
+            'preheader' => 'A member marked a deposit as paid.',
             'html' => $wrap("
-                <h2 style='color: {$colors['warning_border']}; margin-top: 0;'>User Payment Confirmed</h2>
+                " . $h2("User Payment Confirmed") . "
                 <p>Hello Admin,</p>
-                <p>A user has marked a pending deposit as paid in their dashboard. **Manual verification is required.**</p>
+                <p>A user has marked a pending deposit as paid in their dashboard. <strong>Manual verification is required.</strong></p>
                 
                 <div style='{$dataBlockStyle}'>
                     <p style='margin: 6px 0;'><strong>User Name:</strong> {{user_name}}</p>
@@ -354,13 +466,14 @@ function getEmailTemplates() {
                 
                 <p>Please log in to the admin panel to verify the payment manually and finalize the deposit process.</p>
                 
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
+                " . $signoff . "
             "),
         ],
         'withdrawal_initiated' => [
             'subject' => 'Withdrawal Request Submitted!',
+            'preheader' => 'Your withdrawal request is in the queue.',
             'html' => $wrap("
-                <h2 style='color: {$colors['text']}; margin-top: 0;'>Withdrawal Request Received</h2>
+                " . $h2("Withdrawal Request Received") . "
                 <p>Hi {{user_name}},</p>
                 <p>Your request to withdraw funds from your {$appName} wallet has been successfully submitted. The details are below:</p>
                 
@@ -372,13 +485,14 @@ function getEmailTemplates() {
                 
                 <p>Your wallet balance has been temporarily adjusted to reflect this pending request. You will receive an email notification as soon as the status of your withdrawal changes (approved or declined).</p>
                 
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
+                " . $signoff . "
             "),
         ],
-'admin_withdrawal_notification' => [
+        'admin_withdrawal_notification' => [
             'subject' => 'New Withdrawal Request!',
+            'preheader' => 'A withdrawal is waiting for review.',
             'html' => $wrap("
-                <h2 style='color: {$colors['primary']}; margin-top: 0;'>New Withdrawal Request Awaiting Review</h2>
+                " . $h2("New Withdrawal Request Awaiting Review") . "
                 <p>Hello Admin,</p>
                 <p>A user has submitted a new withdrawal request that requires your review and action. The details are below:</p>
                 
@@ -393,15 +507,16 @@ function getEmailTemplates() {
                 
                 <p>Please log in to the admin panel to review the details and either approve or decline this request according to our policies.</p>
                 
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
+                " . $signoff . "
             "),
         ],
         'withdrawal_approved' => [
             'subject' => 'Great News! Your Withdrawal Has Been Approved!',
+            'preheader' => 'Your withdrawal is approved and on its way.',
             'html' => $wrap("
-                <h2 style='color: {$colors['success']}; margin-top: 0;'>Withdrawal Approved!</h2>
+                " . $h2("Withdrawal Approved!") . "
                 <p>Hi {{user_name}},</p>
-                <p>We are pleased to inform you that your withdrawal request (Reference: <strong>{{reference}}</strong>) has been successfully reviewed and **approved** by our team.</p>
+                <p>We are pleased to inform you that your withdrawal request (Reference: <strong>{{reference}}</strong>) has been successfully reviewed and <strong>approved</strong> by our team.</p>
                 
                 <div style='{$dataBlockStyle}; text-align: center; border-left: 4px solid {$colors['success']};'>
                     <p style='margin: 0; font-size: 16px; color: {$colors['text']};'>
@@ -409,17 +524,18 @@ function getEmailTemplates() {
                     </p>
                 </div>
                 
-                <p>The funds of \${{amount}} will be transferred to your designated account (via **{{method}}**) within the next 1-3 business days. Please allow for standard processing time.</p>
+                <p>The funds of \${{amount}} will be transferred to your designated account (via <strong>{{method}}</strong>) within the next 1-3 business days. Please allow for standard processing time.</p>
                 
-                <p style='margin-top: 24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
+                " . $signoff . "
             "),
         ],
         'withdrawal_declined' => [
             'subject' => 'Withdrawal Request Declined',
+            'preheader' => 'We could not complete your withdrawal request.',
             'html' => $wrap("
-                <h2 style='color: {$colors['danger']}; margin-top: 0;'>Withdrawal Request Status Update</h2>
+                " . $h2("Withdrawal Request Status Update") . "
                 <p>Hi {{user_name}},</p>
-                <p>We regret to inform you that your withdrawal request for \${{amount}} (Reference: <strong>{{reference}}</strong>) has been **declined**.</p>
+                <p>We regret to inform you that your withdrawal request for \${{amount}} (Reference: <strong>{{reference}}</strong>) has been <strong>declined</strong>.</p>
                 <p>The funds associated with this request have been returned to your {$appName} wallet balance. You can access them immediately.</p>
                 
                 " . str_replace(['{{color}}', '{{content}}'], [$colors['danger'], "
@@ -428,14 +544,15 @@ function getEmailTemplates() {
                 
                 <p>If you need further clarification, please contact our support team at <a href='mailto:{$supportEmail}' style='color:{$colors['primary']};'>{$supportEmail}</a>.</p>
                 
-                <p style='margin-top: 24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
+                " . $signoff . "
             "),
         ],
         // ========================== INVESTMENT EMAILS ==========================
         'investment_confirmed' => [
             'subject' => 'Your Investment Has Been Started Successfully',
+            'preheader' => 'Your position is open and the payout schedule has started.',
             'html' => $wrap("
-                <h2 style='color: {$colors['success']}; margin-top: 0;'>Investment Confirmed</h2>
+                " . $h2("Investment Confirmed") . "
                 <p>Hi {{user_name}},</p>
                 <p>Your investment in <strong>{{plan_name}}</strong> has been successfully initiated.</p>
                 <div style='{$dataBlockStyle}'>
@@ -451,14 +568,15 @@ function getEmailTemplates() {
                 withdraw immediately. Your original \${{amount}} is returned in full on
                 the maturity date, on top of every payout you have already received.</p>
                 <p>Thank you for trusting <strong>{$appName}</strong> with your investment. You can monitor its progress anytime in your dashboard.</p>
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
+                " . $signoff . "
             "),
         ],
 
         'investment_payout' => [
             'subject' => 'Your scheduled payout has been credited',
+            'preheader' => 'A scheduled payout just landed in your wallet.',
             'html' => $wrap("
-                <h2 style='color: {$colors['success']}; margin-top: 0;'>Payout Credited</h2>
+                " . $h2("Payout Credited") . "
                 <p>Hi {{user_name}},</p>
                 <p>A scheduled payout from <strong>{{plan_name}}</strong> has just landed in your wallet.</p>
                 <div style='{$dataBlockStyle}'>
@@ -470,17 +588,16 @@ function getEmailTemplates() {
                 </div>
                 <p>The funds are available to withdraw now, or you can leave them in your
                 wallet to put towards another plan.</p>
-                <p style='text-align:center; margin: 26px 0;'>
-                    <a href='{$websiteUrl}dashboard.invest' style='display:inline-block; background-color: {$colors['accent']}; color: #161316; padding: 12px 28px; text-decoration: none; border-radius: 6px; font-weight: 600;' target='_blank'>View your positions</a>
-                </p>
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
+                " . $cta("View your positions", "{$websiteUrl}dashboard.invest") . "
+                " . $signoff . "
             "),
         ],
 
         'admin_investment_notification' => [
             'subject' => 'New Investment Started on ' . $appName,
+            'preheader' => 'A member opened a new position.',
             'html' => $wrap("
-                <h2 style='color: {$colors['primary']}; margin-top: 0;'>New Investment Alert</h2>
+                " . $h2("New Investment Alert") . "
                 <p>Hello Admin,</p>
                 <p>A new investment has been started by <strong>{{user_name}}</strong> ({{user_email}}).</p>
                 <div style='{$dataBlockStyle}'>
@@ -489,31 +606,21 @@ function getEmailTemplates() {
                     <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
                 </div>
                 <p>Please log in to the admin dashboard to review this investment.</p>
-                <p style='margin-top:24px;'>— <strong>{$appName} System</strong></p>
+                <p style='margin-top:24px;'><strong>{$appName} System</strong></p>
             "),
         ],
 
         // ========================== X-WEEKLY EMAILS ==========================
-        'weekly_investment_update' => [
-            'subject' => 'Weekly ROI Update — ' . $appName . ' Investment',
-            'html' => $wrap("
-                <h2 style='color: {$colors['primary']}; margin-top: 0;'>Your Weekly ROI Update</h2>
-                <p>Hi {{user_name}},</p>
-                <p>Great news! Your investment in <strong>{{plan_name}}</strong> has earned <strong>\${{weekly_roi}}</strong> this week.</p>
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Total ROI So Far:</strong> \${{total_roi}}</p>
-                    <p style='margin: 6px 0;'><strong>Next Maturity Date:</strong> {{next_maturity}}</p>
-                </div>
-                <p>Your investment continues to grow steadily. You can view your full performance report on your {$appName} dashboard.</p>
-                <p>Keep investing and growing with confidence!</p>
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
-            "),
-        ],
-
+        // 11 templates were removed here: trustfund_*, maintenance_* and
+        // donation_* were written for a previous product (the maintenance ones
+        // still described 'healthcare system maintenance' and 'vital medical
+        // equipment'), and weekly_investment_update was never sent by anything.
+        // None had a call site anywhere in the repo. ~470 dead lines.
         'investment_matured' => [
-            'subject' => 'Your investment has matured — principal released',
+            'subject' => 'Your investment has matured and your principal is released',
+            'preheader' => 'Your position reached maturity and the principal is back.',
             'html' => $wrap("
-                <h2 style='color: {$colors['success']}; margin-top: 0;'>Investment Matured</h2>
+                " . $h2("Investment Matured") . "
                 <p>Hi {{user_name}},</p>
                 <p>Your <strong>{{plan_name}}</strong> position has reached its maturity date and
                 your original capital has been released back to your wallet.</p>
@@ -525,196 +632,34 @@ function getEmailTemplates() {
                 </div>
                 <p>Your payouts were credited period by period throughout the term, so this
                 final transfer is the principal only.</p>
-                <p style='text-align:center; margin: 26px 0;'>
-                    <a href='{$websiteUrl}dashboard.invest' style='display:inline-block; background-color: {$colors['accent']}; color: #161316; padding: 12px 28px; text-decoration: none; border-radius: 6px; font-weight: 600;' target='_blank'>Start another plan</a>
-                </p>
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
+                " . $cta("Start another plan", "{$websiteUrl}dashboard.invest") . "
+                " . $signoff . "
             "),
         ],
         // ===============================
         // 📧 HOLDLOCK EMAIL TEMPLATES
         // ===============================
 
-        'trustfund_started' => [
-            'subject' => 'Your TrustFund Plan Has Been Activated',
-            'html' => $wrap("
-                <h2 style='color: {$colors['success']}; margin-top: 0;'>TrustFund Plan Activated</h2>
-                <p>Hi {{user_name}},</p>
-                <p>Your <strong>{{plan_name}}</strong> TrustFund has been successfully activated on {$appName}.</p>
-
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Amount:</strong> \${{amount}}</p>
-                    <p style='margin: 6px 0;'><strong>ROI:</strong> {{roi_percent}}%</p>
-                    <p style='margin: 6px 0;'><strong>Maturity Date:</strong> {{maturity_date}}</p>
-                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
-                </div>
-
-                <p>Your funds are now securely held and will start generating ROI immediately. You’ll receive updates as your plan progresses or reaches maturity.</p>
-
-                <p style='margin-top:24px;'>Warm regards,<br><strong>The {$appName} TrustFund Team</strong></p>
-            "),
-        ],
-
-        'admin_trustfund_notification' => [
-            'subject' => 'New TrustFund Plan Started on ' . $appName,
-            'html' => $wrap("
-                <h2 style='color: {$colors['primary']}; margin-top: 0;'>New TrustFund Plan Alert</h2>
-                <p>Hello Admin,</p>
-                <p>A new TrustFund plan has been initiated by a user.</p>
-
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>User Name:</strong> {{user_name}}</p>
-                    <p style='margin: 6px 0;'><strong>User Email:</strong> {{user_email}}</p>
-                    <p style='margin: 6px 0;'><strong>Plan:</strong> {{plan_name}}</p>
-                    <p style='margin: 6px 0;'><strong>Amount:</strong> \${{amount}}</p>
-                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
-                </div>
-
-                <p>This is an automated alert to notify you of a new TrustFund activation.</p>
-                <p style='margin-top:24px;'>— <strong>{$appName} System</strong></p>
-            "),
-        ],
-
-        'trustfund_unlocked_early' => [
-            'subject' => 'Early Unlock Processed for Your TrustFund Plan',
-            'html' => $wrap("
-                <h2 style='color: {$colors['danger']}; margin-top: 0;'>TrustFund Early Unlock Processed</h2>
-                <p>Hi {{user_name}},</p>
-                <p>Your <strong>{{plan_name}}</strong> TrustFund was unlocked early as requested.</p>
-
-                <div style='{$dataBlockStyle}; border-left: 4px solid {$colors['danger']};'>
-                    <p style='margin: 6px 0;'><strong>ROI Earned:</strong> \${{roi_earned}}</p>
-                    <p style='margin: 6px 0;'><strong>Penalty Applied:</strong> \${{penalty}}</p>
-                    <p style='margin: 6px 0;'><strong>Total Payout:</strong> \${{payout}}</p>
-                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
-                </div>
-
-                <p>Your payout has been credited to your wallet. Please note that early unlocks carry a penalty deduction as stated in your plan terms.</p>
-
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
-            "),
-        ],
-
-        'trustfund_matured' => [
-            'subject' => 'Your TrustFund Plan Has Matured — Funds Credited!',
-            'html' => $wrap("
-                <h2 style='color: {$colors['success']}; margin-top: 0;'>TrustFund Plan Matured</h2>
-                <p>Congratulations {{user_name}},</p>
-                <p>Your <strong>{{plan_name}}</strong> TrustFund has successfully matured, and your funds have been credited to your wallet.</p>
-
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Principal:</strong> \${{amount}}</p>
-                    <p style='margin: 6px 0;'><strong>ROI Earned:</strong> \${{roi_earned}}</p>
-                    <p style='margin: 6px 0;'><strong>Total Payout:</strong> \${{payout}}</p>
-                    <p style='margin: 6px 0;'><strong>Maturity Date:</strong> {{maturity_date}}</p>
-                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
-                </div>
-
-                <p>Your funds are now available in your {$appName} wallet for reinvestment or withdrawal. We are delighted to celebrate this milestone with you!</p>
-                <p style='margin-top:24px;'>Warm regards,<br><strong>The {$appName} TrustFund Team</strong></p>
-            "),
-        ],
-        // ===============================
-        // 📧 INFRASTRUCTURE EMAIL TEMPLATES
-        // ===============================
-
-        'maintenance_started' => [
-            'subject' => 'Your Maintenance & Development Plan Has Been Activated',
-            'html' => $wrap("
-                <h2 style='color: {$colors['success']}; margin-top: 0;'>Maintenance Plan Activated</h2>
-                <p>Hi {{user_name}},</p>
-                <p>Your participation in the <strong>{{plan_name}}</strong> maintenance and development plan has been successfully started on {$appName}.</p>
-
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Amount:</strong> \${{amount}}</p>
-                    <p style='margin: 6px 0;'><strong>ROI:</strong> {{roi_percent}}%</p>
-                    <p style='margin: 6px 0;'><strong>Maturity Date:</strong> {{maturity_date}}</p>
-                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
-                </div>
-
-                <p>Your funds are now allocated towards healthcare system maintenance and sustainability. This plan helps keep vital medical equipment functional while generating consistent returns for you.</p>
-
-                <p style='margin-top:24px;'>Warm regards,<br><strong>The {$appName} Maintenance Team</strong></p>
-            "),
-        ],
-
-        'admin_maintenance_notification' => [
-            'subject' => 'New Maintenance Development Plan Activated',
-            'html' => $wrap("
-                <h2 style='color: {$colors['primary']}; margin-top: 0;'>New Maintenance Investment Alert</h2>
-                <p>Hello Admin,</p>
-                <p>A user has activated a new Maintenance & Development plan on {$appName}.</p>
-
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>User Name:</strong> {{user_name}}</p>
-                    <p style='margin: 6px 0;'><strong>User Email:</strong> {{user_email}}</p>
-                    <p style='margin: 6px 0;'><strong>Plan:</strong> {{plan_name}}</p>
-                    <p style='margin: 6px 0;'><strong>Amount:</strong> \${{amount}}</p>
-                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
-                </div>
-
-                <p>This notification confirms a new maintenance development contribution. You may verify and track the plan progress via the admin dashboard.</p>
-                <p style='margin-top:24px;'>— <strong>{$appName} System</strong></p>
-            "),
-        ],
-
-        'maintenance_matured' => [
-            'subject' => 'Your Maintenance Development Plan Has Matured — Funds Credited!',
-            'html' => $wrap("
-                <h2 style='color: {$colors['success']}; margin-top: 0;'>Maintenance Plan Matured</h2>
-                <p>Congratulations {{user_name}},</p>
-                <p>Your <strong>{{plan_name}}</strong> maintenance plan has successfully matured, and your total payout has been credited to your wallet.</p>
-
-                <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Principal:</strong> \${{amount}}</p>
-                    <p style='margin: 6px 0;'><strong>ROI Earned:</strong> \${{roi_earned}}</p>
-                    <p style='margin: 6px 0;'><strong>Total Payout:</strong> \${{total_payout}}</p>
-                    <p style='margin: 6px 0;'><strong>Maturity Date:</strong> {{maturity_date}}</p>
-                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
-                </div>
-
-                <p>Your contribution helped sustain essential healthcare facilities while earning meaningful returns. Thank you for your impact through <strong>{$appName}</strong>.</p>
-
-                <p style='margin-top:24px;'>Warm regards,<br><strong>The {$appName} Maintenance Team</strong></p>
-            "),
-        ],
-
-        'maintenance_unlocked_early' => [
-            'subject' => 'Early Unlock Processed for Your Maintenance Plan',
-            'html' => $wrap("
-                <h2 style='color: {$colors['danger']}; margin-top: 0;'>Early Unlock Processed</h2>
-                <p>Hi {{user_name}},</p>
-                <p>Your <strong>{{plan_name}}</strong> maintenance plan has been unlocked early as requested.</p>
-
-                <div style='{$dataBlockStyle}; border-left: 4px solid {$colors['danger']};'>
-                    <p style='margin: 6px 0;'><strong>ROI Earned:</strong> \${{roi_earned}}</p>
-                    <p style='margin: 6px 0;'><strong>Total Payout:</strong> \${{total_payout}}</p>
-                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
-                </div>
-
-                <p>Your funds have been released to your wallet. Please note that early unlocks may include ROI adjustments as per your plan terms.</p>
-
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
-            "),
-        ],
         'admin_broadcast' => [
             // Subject will be dynamically set by admin input
+            'preheader' => 'A message from the Aldernorth Capital team.',
             'subject' => '{{subject_line}}', 
             'html' => $wrap("
-                <h2 style='color: {$colors['primary']}; margin-top: 0;'>{{subject_line}}</h2>
+                " . $h2("{{subject_line}}") . "
                 <p>Dear {{user_name}},</p>
                 <div style='background-color: {$colors['background']}; padding: 18px; margin: 20px 0; border-radius: 8px; border: 1px solid {$colors['border']};'>
                     {{message_body}}
                 </div>
                 <p>This is a direct message from the Aldernorth Capital Administration team.</p>
                 <p>If you have questions, reply to this email or contact <a href='mailto:{$supportEmail}' style='color:{$colors['primary']};'>{$supportEmail}</a>.</p>
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Administration</strong></p>
+                " . $signoff . "
             "),
         ],
         'password_reset' => [
             'subject' => 'Password Reset Request - Your OTP Code for ' . $appName,
+            'preheader' => 'Your password reset code, valid for 10 minutes.',
             'html' => $wrap("
-                <h2 style='color: {$colors['danger']}; margin-top: 0;'>Password Reset Requested</h2>
+                " . $h2("Password Reset Requested") . "
                 <p>Hi {{user_name}},</p>
                 <p>We received a request to reset the password for your <strong>{$appName}</strong> account associated with this email address.</p>
                 <p>To proceed with resetting your password, please use the following One-Time Password (OTP) code:</p>
@@ -725,13 +670,14 @@ function getEmailTemplates() {
                 </div>
                 <p style='text-align: center;'><strong>This code is valid for 10 minutes.</strong></p>
                 <p>If you did not request this password reset, you can safely ignore this email. Do not share this code with anyone.</p>
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Security Team</strong></p>
+                " . $signoff . "
             "),
         ],
         'email_verification' => [
-            'subject' => 'Verify your email — your ' . $appName . ' code',
+            'subject' => 'Verify your email with your ' . $appName . ' code',
+            'preheader' => 'Your verification code, valid for 10 minutes.',
             'html' => $wrap("
-                <h2 style='color: {$colors['danger']}; margin-top: 0;'>Confirm Your Email Address</h2>
+                " . $h2("Confirm Your Email Address") . "
                 <p>Hi {{user_name}},</p>
                 <p>Thanks for signing up with <strong>{$appName}</strong>. To activate your account, please enter the verification code below:</p>
                 <div style='text-align: center; margin: 20px 0;'>
@@ -741,13 +687,14 @@ function getEmailTemplates() {
                 </div>
                 <p style='text-align: center;'><strong>This code is valid for 10 minutes.</strong></p>
                 <p>If you did not create a {$appName} account, you can safely ignore this email. Do not share this code with anyone.</p>
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Security Team</strong></p>
+                " . $signoff . "
             "),
         ],
         'password_reset_success' => [
             'subject' => 'Success! Your ' . $appName . ' Password Has Been Changed!',
+            'preheader' => 'Your password was changed. If this was not you, act now.',
             'html' => $wrap("
-                <h2 style='color: {$colors['success']}; margin-top: 0;'>Password Successfully Reset</h2>
+                " . $h2("Password Successfully Reset") . "
                 <p>Hi {{user_name}},</p>
                 <p>This is a confirmation that the password for your <strong>{$appName}</strong> account has been successfully changed.</p>
                 <div style='{$dataBlockStyle}; text-align: center; border-left: 4px solid {$colors['success']};'>
@@ -761,13 +708,14 @@ function getEmailTemplates() {
                 "], "<div style='{$alertBlockStyle}'>{{content}}</div>") . "
 
                 <p>We recommend using a strong, unique password.</p>
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Security Team</strong></p>
+                " . $signoff . "
             "),
         ],
         'logout_notification' => [
             'subject' => 'You Have Successfully Logged Out of Your ' . $appName . ' Account',
+            'preheader' => 'You signed out of your account.',
             'html' => $wrap("
-                <h2 style='color: {$colors['text']}; margin-top: 0;'>Logout Confirmation</h2>
+                " . $h2("Logout Confirmation") . "
                 <p>Hi {{user_name}},</p>
                 <p>This email confirms that you have successfully logged out of your <strong>{$appName}</strong> account.</p>
                 
@@ -778,47 +726,178 @@ function getEmailTemplates() {
                 
                 <p>For your security, we recommend that you always log out when using shared or public devices. Please ensure that you are accessing {$appName} through our official website: <a href='{$websiteUrl}' style='color:{$colors['primary']};'>{$websiteUrl}</a>.</p>
                 
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
+                " . $signoff . "
             "),
         ],
-        'donation_confirmed' => [
-            'subject' => 'Donation Confirmation! Thank You for Supporting Us',
+        'admin_logout_notification' => [
+            'subject' => 'Admin Session Ended - ' . $appName . ' Console',
+            'preheader' => 'You signed out of the admin panel.',
             'html' => $wrap("
-                <h2 style='color: {$colors['success']}; margin-top: 0;'>Thank You, {{user_name}}!</h2>
-                <p>Hi {{user_name}},</p>
-                <p>We’ve received your generous donation of <strong>\${{amount}}</strong> to **{{charity_name}}**.</p>
-                <p>Your support helps us continue making a difference in lives across the world.</p>
+                " . $h2("Administrator Sign-Out") . "
+                <p>Hi {{admin_name}},</p>
+                <p>Your administrator session on the <strong>{$appName}</strong> console has ended.</p>
+
                 <div style='{$dataBlockStyle}'>
-                    <p style='margin: 6px 0;'><strong>Transaction Reference:</strong> {{reference}}</p>
+                    <p style='margin: 6px 0;'><strong>Signed Out At:</strong> {{logout_time}}</p>
+                    <p style='margin: 6px 0;'><strong>IP Address:</strong> {{ip_address}}</p>
+                    <p style='margin: 6px 0;'><strong>Session Status:</strong> Ended Securely</p>
                 </div>
-                <p>For your records, you can view all your donations in your {$appName} dashboard.</p>
-                <p style='margin-top:24px;'>Thank you for being a part of our mission to create positive impact.</p>
-                <p>Best regards,<br><strong>The {$appName} Team</strong></p>
+
+                " . str_replace(['{{color}}', '{{content}}'], [$colors['danger'],
+                    "If you did not sign out at this time, secure your account immediately and contact the platform owner. Administrator access controls member funds."],
+                    "<div style='{$alertBlockStyle}'>{{content}}</div>") . "
+
+                <p>Console: <a href='{$adminUrl}' style='color:{$colors['primary']};'>{$adminUrl}</a></p>
+
+                " . $signoff . "
             "),
         ],
-        'admin_donation_notification' => [
-            'subject' => 'New Donation Received on ' . $appName . '!',
+        // --- Account security -----------------------------------------
+        // These two fired for nobody before. A session hijacker could change
+        // the account email and password with the real owner never being told.
+        'account_email_changed' => [
+            'subject' => 'Your ' . $appName . ' email address was changed',
+            'preheader' => 'The email address on your account was changed. If this was not you, act now.',
             'html' => $wrap("
-                <h2 style='color: {$colors['primary']}; margin-top: 0;'>New Donation Received</h2>
-                <p>Hello Admin,</p>
-                <p>{{user_name}} ({{user_email}}) just donated **\${{amount}}** to **{{charity_name}}**.</p>
+                " . $h2("Your email address was changed") . "
+                <p>Hi {{user_name}},</p>
+                <p>The email address on your <strong>{$appName}</strong> account was just changed.
+                This message has been sent to both the old and the new address.</p>
+                <div style='{$dataBlockStyle}'>
+                    <p style='margin: 6px 0;'><strong>Previous address:</strong> {{old_email}}</p>
+                    <p style='margin: 6px 0;'><strong>New address:</strong> {{new_email}}</p>
+                    <p style='margin: 6px 0;'><strong>When:</strong> {{change_time}}</p>
+                </div>
+                <div style='" . str_replace('{{color}}', $colors['danger'], $alertBlockStyle) . "'>
+                    <p style='margin: 0;'><strong>If you did not make this change</strong>, contact us at
+                    <a href='mailto:{$supportEmail}' style='color:{$colors['primary']};'>{$supportEmail}</a>
+                    immediately and reset your password.</p>
+                </div>
+                " . $cta("Reset your password", "{$websiteUrl}forgotpassword") . "
+                " . $signoff . "
+            "),
+        ],
+
+        'account_password_changed' => [
+            'subject' => 'Your ' . $appName . ' password was changed',
+            'preheader' => 'Your password was changed. If this was not you, act now.',
+            'html' => $wrap("
+                " . $h2("Your password was changed") . "
+                <p>Hi {{user_name}},</p>
+                <p>The password on your <strong>{$appName}</strong> account was just changed
+                from the profile page.</p>
+                <div style='{$dataBlockStyle}'>
+                    <p style='margin: 6px 0;'><strong>Account:</strong> {{user_email}}</p>
+                    <p style='margin: 6px 0;'><strong>When:</strong> {{change_time}}</p>
+                    <p style='margin: 6px 0;'><strong>IP address:</strong> {{ip}}</p>
+                </div>
+                <div style='" . str_replace('{{color}}', $colors['danger'], $alertBlockStyle) . "'>
+                    <p style='margin: 0;'><strong>If you did not make this change</strong>, reset your
+                    password now and contact
+                    <a href='mailto:{$supportEmail}' style='color:{$colors['primary']};'>{$supportEmail}</a>.</p>
+                </div>
+                " . $cta("Reset your password", "{$websiteUrl}forgotpassword") . "
+                " . $signoff . "
+            "),
+        ],
+
+        // A crypto deposit that underpays, fails or expires used to update the
+        // transaction row and tell nobody at all.
+        'deposit_failed' => [
+            'subject' => 'Your deposit could not be completed - ' . $appName,
+            'preheader' => 'Your crypto deposit did not complete. Nothing has been charged.',
+            'html' => $wrap("
+                " . $h2("Your deposit could not be completed") . "
+                <p>Hi {{user_name}},</p>
+                <p>The crypto payment for the deposit below did not complete, so your wallet
+                has not been credited.</p>
+                <div style='{$dataBlockStyle}'>
+                    <p style='margin: 6px 0;'><strong>Amount:</strong> \${{amount}}</p>
+                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
+                    <p style='margin: 6px 0;'><strong>Reason:</strong> {{failure_reason}}</p>
+                </div>
+                <p>If funds did leave your wallet, reply to this email with the transaction
+                hash and we will trace it. Otherwise you can simply start a new deposit.</p>
+                " . $cta("Start a new deposit", "{$websiteUrl}dashboard.wallet") . "
+                " . $signoff . "
+            "),
+        ],
+
+        // Member receipt for the "I Have Paid" button. Until now only the
+        // admin was notified, so the member pressed a button, got a toast, and
+        // received nothing they could point at later.
+        'deposit_marked_paid' => [
+            'subject' => 'We are checking your transfer - ' . $appName,
+            'preheader' => 'Thanks for confirming. We are verifying your transfer now.',
+            'html' => $wrap("
+                " . $h2("We are checking your transfer") . "
+                <p>Hi {{user_name}},</p>
+                <p>Thanks for letting us know you have sent the transfer. Our team is
+                verifying it now, and your wallet will be credited as soon as it clears.</p>
+                <div style='{$dataBlockStyle}'>
+                    <p style='margin: 6px 0;'><strong>Amount:</strong> \${{amount}}</p>
+                    <p style='margin: 6px 0;'><strong>Method:</strong> {{method}}</p>
+                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
+                    <p style='margin: 6px 0;'><strong>Transaction hash:</strong> {{tx_hash}}</p>
+                </div>
+                <p>Most transfers are confirmed within a few hours. You will get another
+                email the moment the funds land. Nothing further is needed from you.</p>
+                " . $cta("View your wallet", "{$websiteUrl}dashboard.wallet") . "
+                " . $signoff . "
+            "),
+        ],
+
+        // --- Contact form (public marketing site) ---------------------
+        'contact_received' => [
+            'subject' => 'We received your message - ' . $appName,
+            'preheader' => 'Thanks for getting in touch. We usually reply within two working hours.',
+            'html' => $wrap("
+                " . $h2("Thanks for getting in touch") . "
+                <p>Hi {{user_name}},</p>
+                <p>We have your message and someone from the team will read it shortly.
+                Our typical response time is under two working hours on weekdays.</p>
                 <div style='{$dataBlockStyle}'>
                     <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
+                    <p style='margin: 6px 0;'><strong>Subject:</strong> {{subject}}</p>
+                    <p style='margin: 6px 0;'><strong>Type:</strong> {{message_type}}</p>
                 </div>
-                <p>Please log in to the admin dashboard to review the full details and process accordingly.</p>
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
+                <p>There is nothing else you need to do - we will reply to this address.
+                If your message was urgent, you can also reach us at
+                <a href='mailto:{$supportEmail}' style='color:{$colors['primary']};'>{$supportEmail}</a>.</p>
+                " . $signoff . "
             "),
         ],
-        // Default fallback
+
+        'admin_contact_notification' => [
+            'subject' => 'New contact message: {{subject}}',
+            'preheader' => 'A new message arrived through the website contact form.',
+            'html' => $wrap("
+                " . $h2("New contact message") . "
+                <p>A message came in through the website contact form. Reply directly to
+                this email to answer the sender.</p>
+                <div style='{$dataBlockStyle}'>
+                    <p style='margin: 6px 0;'><strong>From:</strong> {{sender_name}} &lt;{{sender_email}}&gt;</p>
+                    <p style='margin: 6px 0;'><strong>Type:</strong> {{message_type}}</p>
+                    <p style='margin: 6px 0;'><strong>Subject:</strong> {{subject}}</p>
+                    <p style='margin: 6px 0;'><strong>Reference:</strong> {{reference}}</p>
+                    <p style='margin: 6px 0;'><strong>Attachment:</strong> {{attachment}}</p>
+                </div>
+                <p style='margin: 18px 0 6px 0;'><strong>Message</strong></p>
+                <div style='{$dataBlockStyle}'>{{message_body}}</div>
+                " . $signoff . "
+            "),
+        ],
+
         'generic' => [
             'subject' => $appName . " Notification",
+            'preheader' => 'You have a new notification from Aldernorth Capital.',
             'html' => $wrap("
-                <h2 style='color: {$colors['text']}; margin-top: 0;'>Notification</h2>
+                " . $h2("Notification") . "
                 <p>Dear {{user_name}},</p>
                 <p>You have a new notification from <strong>{$appName}</strong>.</p>
                 <p>Please log in to your account to view the full details.</p>
                 <p>If you have any concerns, feel free to contact our support team.</p>
-                <p style='margin-top:24px;'>Best regards,<br><strong>The {$appName} Team</strong></p>
+                " . $signoff . "
             "),
         ],
     ];

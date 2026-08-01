@@ -1,5 +1,5 @@
 /* =======================================================
-   invest.js — Aldernorth Capital invest page
+   invest.js - Aldernorth Capital invest page
 
    One product: a lump sum into a plan that pays out weekly or
    monthly. The cadence toggle filters the plan list; the preview
@@ -269,7 +269,7 @@ document.addEventListener('DOMContentLoaded', function () {
         plans.forEach(p => {
           const opt = document.createElement('option');
           opt.value = p.id;
-          opt.textContent = `${p.title} — ${p.roi_percent}% per ${p.cadence === 'monthly' ? 'month' : 'week'}`;
+          opt.textContent = `${p.title} at ${p.roi_percent}% per ${p.cadence === 'monthly' ? 'month' : 'week'}`;
           opt.setAttribute('data-term', termLabel(p.duration_days));
           opt.setAttribute('data-roi', p.roi_percent + '% per ' + (p.cadence === 'monthly' ? 'month' : 'week'));
           planSelect.appendChild(opt);

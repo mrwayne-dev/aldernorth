@@ -9,7 +9,15 @@ $admin_name = $admin_name ?? 'Administrator';
 <div class="header-dashboard">
     <div class="wrap">
         <div class="header-left">
-            <div class="button-show-hide"><i class="icon-menu"></i></div>
+            <?php // The hamburger is hidden below 1200px (the dock owns mobile nav
+                  // there), so the top-left slot would otherwise be empty. Two <img>
+                  // toggled by CSS, matching the public navbar - no JS, no flash. ?>
+            <a href="/admin.dashboard" class="anc-topbar-logo" aria-label="Aldernorth Capital">
+                <img class="anc-topbar-logo__dark" src="/assets/images/logo/anc-mark-orange.png" width="128" height="128" alt="">
+                <img class="anc-topbar-logo__light" src="/assets/images/logo/anc-mark-ink.png" width="128" height="128" alt="">
+                <span class="anc-topbar-logo__name">Aldernorth Capital</span>
+            </a>
+            <div class="button-show-hide"><i class="ph ph-list"></i></div>
             <h6><?= htmlspecialchars($page_heading) ?></h6>
         </div>
         <div class="header-grid">
@@ -29,8 +37,9 @@ $admin_name = $admin_name ?? 'Administrator';
                         </span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end has-content" aria-labelledby="dropdownMenuButton3">
-                        <li><a href="/admin/profile" class="user-item"><div class="body-title-2">Profile</div></a></li>
-                        <li><a href="#" id="logout-btn" class="user-item"><div class="body-title-2">Log out</div></a></li>
+                        <?php // No admin profile page exists yet, and /admin/profile has no
+                              // rewrite rule, so the link that used to sit here 404'd. ?>
+                        <li><a href="#" id="logout-btn" class="user-item" data-logout-url="/admin.logout"><div class="body-title-2">Log out</div></a></li>
                     </ul>
                 </div>
             </div>

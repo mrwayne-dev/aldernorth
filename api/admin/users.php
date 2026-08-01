@@ -1,8 +1,16 @@
 <?php
 // D:\mrwayne\web_dev\aldernorth\api\admin\users.php
 
+require_once __DIR__ . '/../../api/utilities/security.php';
 // Ensure only authenticated admins can access this script
-session_start();
+// Hardened + proxy-aware session cookie (HttpOnly, Secure, SameSite=Strict,
+// use_strict_mode). A bare session_start() inherited this box's ini defaults,
+// which set NONE of those - see api/utilities/security.php.
+ancSessionStart();
+
+// CSRF. Safe methods return immediately; anything else must present the
+// session token as X-CSRF-Token (assets/js/api.js sends it on every POST).
+ancCsrfEnforce();
 // Use the session check from the more robust admin files
 if (!isset($_SESSION['admin_id'])) {
     http_response_code(401);
@@ -14,6 +22,12 @@ require_once '../../config/database.php';
 require_once '../backend/email.php'; 
 
 $pdo = getPDO();
+
+// Role gate: this endpoint edits member records.
+// Only isset($_SESSION['admin_id']) was checked before, so a `support`
+// admin had exactly the same power here as the owner. Read from the DB,
+// fails closed. See ancRequireAdminRole() in api/utilities/security.php.
+ancRequireAdminRole($pdo, ANC_ROLE_OPERATOR);
 
 // --- Helper Functions ---
 

@@ -1,9 +1,9 @@
-# Titan X Holdings — Developer Specification
+# Titan X Holdings - Developer Specification
 
 > **Document Type:** Technical Specification  
 > **Audience:** Developers building or extending the Titan X Holdings platform  
 > **Source Project:** HealthRunCare (HRC) → VoltEdge Capital (VEC) → Titan X Holdings (TXH)  
-> **Version:** 2.0 — Investment-focused scope with new features  
+> **Version:** 2.0 - Investment-focused scope with new features  
 
 ---
 
@@ -22,9 +22,9 @@ This spec supersedes the VoltEdge Capital developer spec. Key scope changes:
 - `GridVentures` → **X-Grid** (`xgrid`)
 
 **New products (net-new builds):**
-- **X-Weekly** — weekly auto-invest program (`xweekly`)
-- **X-Shares** — Tesla + Meta stock ownership module (`xshares`)
-- **X-Rewards** — Tesla product catalogue at 40% discount (`xrewards`)
+- **X-Weekly** - weekly auto-invest program (`xweekly`)
+- **X-Shares** - Tesla + Meta stock ownership module (`xshares`)
+- **X-Rewards** - Tesla product catalogue at 40% discount (`xrewards`)
 
 **Brand:**
 - Company: `Titan X Holdings`
@@ -47,7 +47,7 @@ define('CURRENCY',     'USD');
 define('TIMEZONE',     'America/New_York');
 define('OTP_EXPIRY_MINUTES', 10);
 define('MAX_WITHDRAWAL_ATTEMPTS', 3);
-// Remove SIMULATION_MODE from constants — move to env.php per environment
+// Remove SIMULATION_MODE from constants - move to env.php per environment
 ```
 
 ### 1.2 `config/env.php`
@@ -94,7 +94,7 @@ Remove the corresponding `total_donations` column from `wallets` if not needed f
 
 No structural table renames required. The table names (`investments`, `investment_plans`, `holdlock`, `holdlock_plans`, `infrastructure`, `infrastructure_plans`, `infrastructure_contributions`) remain as-is internally. Only user-facing display labels change.
 
-### 2.4 New tables — X-Weekly
+### 2.4 New tables - X-Weekly
 
 ```sql
 CREATE TABLE xweekly_programs (
@@ -126,7 +126,7 @@ CREATE TABLE xweekly_plans (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
 
-### 2.5 New tables — X-Shares
+### 2.5 New tables - X-Shares
 
 ```sql
 CREATE TABLE xshares_assets (
@@ -164,7 +164,7 @@ CREATE TABLE xshares_holdings (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
 
-### 2.6 New tables — X-Rewards
+### 2.6 New tables - X-Rewards
 
 ```sql
 CREATE TABLE xrewards_products (
@@ -200,7 +200,7 @@ CREATE TABLE xrewards_orders (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ```
 
-### 2.7 `wallets` table — new columns
+### 2.7 `wallets` table - new columns
 
 Add columns to track the two new earning products:
 
@@ -344,7 +344,7 @@ assets/js/admin/impact.js
 
 | Old | New |
 |-----|-----|
-| `pages/public/investment.php` | *(unchanged — X-Yield maps to `/investment`)* |
+| `pages/public/investment.php` | *(unchanged - X-Yield maps to `/investment`)* |
 | `pages/public/gridventures.php` | `pages/public/xgrid.php` |
 | `pages/public/powerlock.php` | `pages/public/xlock.php` |
 | `pages/user/investment.php` | *(unchanged)* |
@@ -510,7 +510,7 @@ Investor display ID (dashboard card): `TXH-INV-XXXX` (padded from user id).
 
 ---
 
-## 8. Email Templates — New Additions
+## 8. Email Templates - New Additions
 
 Add the following template keys to `api/utilities/email_temps.php`:
 
@@ -599,7 +599,7 @@ Also update the dashboard wallet breakdown to display `xweekly_invested` and `xs
 
 ---
 
-## 11. Admin Panel — New Modules
+## 11. Admin Panel - New Modules
 
 ### 11.1 `api/admin/rewards.php`
 
@@ -634,7 +634,7 @@ Also update the dashboard wallet breakdown to display `xweekly_invested` and `xs
 
 ---
 
-## 12. Dashboard `wallet.php` — `user_impacts` Table
+## 12. Dashboard `wallet.php` - `user_impacts` Table
 
 The `user_impacts` table tracked healthcare-specific metrics (`people_helped`, `communities_helped`, etc.). For Titan X Holdings:
 
@@ -696,7 +696,7 @@ Light-mode emails (white background):
 ## 14. Post-Build Checklist
 
 **Brand:**
-- [ ] `config/constants.php` updated — APP_NAME, APP_SHORT, APP_URL
+- [ ] `config/constants.php` updated - APP_NAME, APP_SHORT, APP_URL
 - [ ] `.htaccess` TXH_ENV variable updated
 - [ ] All `HRC-` / `VEC-` references replaced with `TXH-`
 - [ ] Logo, favicon, OG image replaced
@@ -709,9 +709,9 @@ Light-mode emails (white background):
 - [ ] Nav items removed from dashboard and admin sidebar
 
 **Retained products:**
-- [ ] X-Yield (`/investment`) — unchanged, verified working
-- [ ] X-Lock — files renamed, routes updated, JS endpoints updated
-- [ ] X-Grid — files renamed, routes updated, JS endpoints updated
+- [ ] X-Yield (`/investment`) - unchanged, verified working
+- [ ] X-Lock - files renamed, routes updated, JS endpoints updated
+- [ ] X-Grid - files renamed, routes updated, JS endpoints updated
 
 **New products:**
 - [ ] `xweekly_programs` + `xweekly_plans` tables created
@@ -755,8 +755,8 @@ Light-mode emails (white background):
 | Holding | A user's active instance of any investment product |
 | Maturity | End of a holding's term; principal + ROI credited to wallet |
 | Wallet | Single money account per user; all products debit/credit it |
-| IPN | Instant Payment Notification — NOWPayments signed webhook |
+| IPN | Instant Payment Notification - NOWPayments signed webhook |
 
 ---
 
-*This document is authoritative for the Titan X Holdings build. Where the code and this spec diverge after implementation, the code is authoritative — update this document as the platform evolves.*
+*This document is authoritative for the Titan X Holdings build. Where the code and this spec diverge after implementation, the code is authoritative - update this document as the platform evolves.*

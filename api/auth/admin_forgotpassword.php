@@ -1,6 +1,6 @@
 <?php
 // ========================================
-// ADMIN FORGOT PASSWORD — Aldernorth Capital
+// ADMIN FORGOT PASSWORD - Aldernorth Capital
 // ========================================
 
 ini_set('display_errors', 0);
@@ -10,9 +10,17 @@ ob_start();
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/constants.php';
 require_once __DIR__ . '/../backend/email.php';
+require_once __DIR__ . '/../utilities/security.php';   // rate limiting
 
 ob_clean();
 header('Content-Type: application/json; charset=utf-8');
+
+// These four never opened a session - they authenticate with an emailed OTP,
+// not a cookie. CSRF verification is session-bound though (the token lives in
+// $_SESSION), and the visitor already holds a session from the page that
+// rendered the form, so the session is resumed here purely to read it back.
+ancSessionStart();
+ancCsrfEnforce();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['status' => 'error', 'message' => 'Invalid request']);
@@ -35,13 +43,25 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
 try {
     $pdo = getPDO();
 
+    // Throttle before doing any work. Scope 'reset' is independent of
+    // the login buckets, so abuse here cannot lock anyone out of signing in.
+    ancEnforceRateLimit($pdo, 'reset', $email);
+    ancRecordAttempt($pdo, 'reset', ancClientIp());
+
     // --- Verify Admin ---
     $stmt = $pdo->prepare("SELECT id, full_name FROM admins WHERE email = :email LIMIT 1");
     $stmt->execute(['email' => $email]);
     $admin = $stmt->fetch(PDO::FETCH_ASSOC);
 
+    // Identical response whether the account exists or not - see the note in
+    // forgotpassword.php. "No admin found with that email" was an enumeration
+    // oracle, and a worse one here: it confirmed ADMIN accounts specifically.
     if (!$admin) {
-        echo json_encode(['status' => 'error', 'message' => 'No admin found with that email']);
+        echo json_encode([
+            'status'  => 'success',
+            'message' => 'If that email has an account, a reset code is on its way.',
+            'data'    => new stdClass(),
+        ]);
         exit;
     }
 
@@ -51,7 +71,11 @@ try {
     $lastReset = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($lastReset && (time() - strtotime($lastReset['created_at'])) < 120) {
-        echo json_encode(['status' => 'error', 'message' => 'Please wait before requesting another OTP.']);
+        echo json_encode([
+            'status'  => 'success',
+            'message' => 'If that email has an account, a reset code is on its way.',
+            'data'    => new stdClass(),
+        ]);
         exit;
     }
 
@@ -59,17 +83,12 @@ try {
     $otp = random_int(100000, 999999);
     $expiry = date('Y-m-d H:i:s', strtotime('+10 minutes'));
 
-    // --- Ensure admin_password_resets table ---
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS admin_password_resets (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            admin_id INT NOT NULL,
-            otp VARCHAR(10) NOT NULL,
-            expires_at DATETIME NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE CASCADE
-        ) ENGINE=InnoDB;
-    ");
+    // The runtime CREATE TABLE that used to sit here was the ONLY definition of
+    // admin_password_resets anywhere - it was absent from
+    // dbschema/aldernorth_create.sql, so on a fresh deploy this table appeared
+    // only when the first admin reset was attempted, and without otp_attempts.
+    // It is now in the schema and in
+    // dbschema/migrations/2026_07_31_auth_hardening.sql.
 
     // --- Clean up old OTPs ---
     $pdo->prepare("DELETE FROM admin_password_resets WHERE admin_id = :aid")->execute(['aid' => $admin['id']]);
@@ -90,8 +109,10 @@ try {
 
     echo json_encode([
         'status' => 'success',
-        'message' => 'OTP sent to your admin email.',
-        'data' => ['user_id' => $admin['id']]
+        'message' => 'If that email has an account, a reset code is on its way.',
+        // user_id is no longer returned - the reset step looks the account up
+        // by email. See the note in forgotpassword.php.
+        'data' => new stdClass()
     ]);
 
 } catch (Exception $e) {

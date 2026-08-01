@@ -7,7 +7,7 @@
  *
  * THEMING: dark is the default. `<html data-theme="light">` flips
  * the palette; the toggle lives in assets/js/theme.js. Only the
- * colour tokens below change between themes — every component rule
+ * colour tokens below change between themes - every component rule
  * further down reads from var(), so nothing else needs a light
  * variant.
  * ================================================================= */
@@ -16,11 +16,20 @@
    No @import here: the CSP allows no font CDN. */
 
 /* =================================================================
- * DESIGN TOKENS — scoped to .anc-redesign so legacy pages untouched
+ * DESIGN TOKENS - scoped to .anc-redesign so legacy pages untouched
  * Brand palette:
  *   #FF6D29 orange · #453027 brown · #161316 ink
  *   #BABABA gray   · #FFFFFF white
  * ================================================================= */
+/* main.css:88 and :96 read the page font from these two names but nothing ever
+   declared them, so `font-family` was invalid at computed-value time and fell
+   back to inherit - which is why the preloaded Switzer woff2 was reported as
+   unused. Declared on :root so a bare `body` selector resolves them. */
+:root {
+  --anc-font-body:    'Switzer', 'Host Grotesk', system-ui, -apple-system, sans-serif;
+  --anc-font-display: 'Switzer', 'Host Grotesk', system-ui, -apple-system, sans-serif;
+}
+
 .anc-redesign {
   /* --- Brand constants (identical in both themes) ---------------- */
   --brand-orange:           #FF6D29;
@@ -29,13 +38,16 @@
   --brand-ink:              #161316;
   --brand-gray:             #BABABA;
 
-  /* --- Colour: surfaces (DARK — default) ------------------------ */
+  /* --- Colour: surfaces (DARK - default) ------------------------ */
   --color-bg-page:          #161316;
   --color-bg-dark:          #0F0D0F;
   --color-bg-dark-40:       rgba(15, 13, 15, 0.40);
   --color-surface-warm:     #1E1A1B;
   --color-surface-warm-alt: #241E1F;
   --color-surface-card:     #1E1A1B;
+  /* Cards that sit ON a warm section need to be lighter than it, or the only
+     thing defining them is a hairline at ~1.1:1. Matches --color-surface-warm-alt. */
+  --color-surface-card-raised: #241E1F;
   --color-surface-raised:   #453027;
 
   /* --- Colour: ink ---------------------------------------------- */
@@ -90,7 +102,7 @@
   --tracking-h2:       -1px;
   --tracking-eyebrow:  0.5px;
 
-  /* Weights — Crestmark uses 400 / 500 / 600 only */
+  /* Weights - Crestmark uses 400 / 500 / 600 only */
   --fw-regular: 400;
   --fw-medium:  500;
   --fw-semibold: 600;
@@ -127,7 +139,7 @@
   --dur-base:   240ms;
   --dur-slow:   400ms;
 
-  /* No shadows in spec — depth via contrast only. */
+  /* No shadows in spec - depth via contrast only. */
   --shadow-none: none;
 }
 
@@ -135,7 +147,7 @@
 /* =================================================================
  * LIGHT THEME OVERRIDES
  *
- * Only colour tokens are redeclared — every component rule in this
+ * Only colour tokens are redeclared - every component rule in this
  * file reads from var(), so the whole system flips from here.
  *
  * Note --color-accent-text: #FF6D29 on white is ~2.8:1 and fails
@@ -149,6 +161,7 @@
   --color-surface-warm:     #FAF8F7;
   --color-surface-warm-alt: #F5F1EF;
   --color-surface-card:     #FFFFFF;
+  --color-surface-card-raised: #FFFFFF;
   --color-surface-raised:   #F2ECE9;
 
   --color-ink-primary:      #161316;
@@ -176,7 +189,7 @@
 
 
 /* =================================================================
- * GLOBAL BASE — body, headings, links
+ * GLOBAL BASE - body, headings, links
  * ================================================================= */
 .anc-redesign {
   font-family: var(--font-body);
@@ -189,6 +202,52 @@
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   margin: 0;
+}
+
+/* =================================================================
+ * MOTION - theme flip + page transitions
+ *
+ * Flipping data-theme rewrites the tokens above. Without this the page
+ * and all its text snap instantly while the components that carry their
+ * own transition lag behind, which reads as tearing.
+ * ================================================================= */
+.anc-redesign,
+.anc-redesign .section,
+.anc-redesign .plan-card,
+.anc-redesign .card-feature,
+.anc-redesign .form-card,
+.anc-redesign .footer {
+  transition: background-color var(--dur-base) var(--ease-out),
+              border-color var(--dur-base) var(--ease-out),
+              color var(--dur-base) var(--ease-out);
+}
+
+/* Cross-document view transitions: Chrome/Edge and Safari 18+ crossfade
+   between navigations, Firefox ignores the at-rule entirely. */
+@view-transition {
+  navigation: auto;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--dur-base);
+  animation-timing-function: var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anc-redesign,
+  .anc-redesign .section,
+  .anc-redesign .plan-card,
+  .anc-redesign .card-feature,
+  .anc-redesign .form-card,
+  .anc-redesign .footer {
+    transition: none;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
 }
 
 .anc-redesign *,
@@ -261,7 +320,7 @@
 
 
 /* =================================================================
- * LAYOUT PRIMITIVES — container + section
+ * LAYOUT PRIMITIVES - container + section
  * ================================================================= */
 .anc-redesign .container {
   max-width: var(--container-max);
@@ -299,7 +358,7 @@
 
 /* =================================================================
  * RESPONSIVE
- * Crestmark spec uses a fixed-width transform:scale() — we use real
+ * Crestmark spec uses a fixed-width transform:scale() - we use real
  * breakpoints per the spec's rebuild guidance (Section H).
  * ================================================================= */
 @media (max-width: 768px) {
@@ -352,7 +411,7 @@
   outline-offset: 2px;
 }
 
-/* Primary CTA — dark pill (used everywhere except nav) */
+/* Primary CTA - dark pill (used everywhere except nav) */
 .anc-redesign .btn--primary {
   background: var(--color-accent);
   color: var(--color-ink-on-accent);
@@ -361,7 +420,7 @@
   background: var(--color-accent-hover);
 }
 
-/* Nav CTA — white pill */
+/* Nav CTA - white pill */
 .anc-redesign .btn--nav {
   background: var(--color-accent);
   color: var(--color-ink-on-accent);
@@ -370,7 +429,7 @@
   background: var(--color-accent-hover);
 }
 
-/* Ghost — for dark-bg secondary actions (404, hero secondary) */
+/* Ghost - for dark-bg secondary actions (404, hero secondary) */
 .anc-redesign .btn--ghost {
   background: transparent;
   color: var(--color-ink-white);
@@ -380,7 +439,7 @@
   background: rgba(255, 255, 255, 0.08);
 }
 
-/* Form-style submit (D.14) — rectangular, muted */
+/* Form-style submit (D.14) - rectangular, muted */
 .anc-redesign .btn--submit {
   background: var(--color-ink-muted);
   color: var(--color-ink-white);
@@ -462,8 +521,15 @@
 
 
 /* --- Card: Icon-Top Feature (D.5) --------------------------------- */
+/* Raised fill + the stronger hairline. See the note on --color-surface-card-raised:
+   in the dark theme --color-surface-warm and --color-surface-card are the SAME
+   value (#1E1A1B), so a card with neither a raised fill nor a border is literally
+   invisible on a .section--warm. This component had it worse than most - its
+   background token was identical to the warm section's, so it was flat in BOTH
+   themes. Same pattern as .plan-card. */
 .anc-redesign .card-feature {
-  background: var(--color-surface-warm);
+  background: var(--color-surface-card-raised);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-card);
   padding: var(--space-5);
   display: flex;
@@ -551,8 +617,10 @@
 
 
 /* --- Card: Stat Counter (D.7) ------------------------------------- */
+/* Sits on .section--warm on the home page - see the .card-feature note. */
 .anc-redesign .card-stat {
-  background: var(--color-surface-card);
+  background: var(--color-surface-card-raised);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-card);
   padding: var(--space-6);
   display: flex;
@@ -682,8 +750,11 @@
   gap: var(--space-3);
 }
 
+/* Sits on .section--warm - see the .card-feature note. The border lives on the
+   item, not the trigger, so it wraps the answer too when the item is open. */
 .anc-redesign .accordion__item {
-  background: var(--color-surface-card);
+  background: var(--color-surface-card-raised);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-card);
   overflow: hidden;
 }
@@ -702,9 +773,17 @@
   line-height: var(--lh-body);
   font-weight: var(--fw-regular);
   color: var(--color-ink-primary);
-  background: var(--color-surface-card);
+  /* Transparent so the item's raised fill shows through - two stacked opaque
+     fills would hide the item's border-radius at the corners. */
+  background: transparent;
   border: none;
   cursor: pointer;
+}
+
+/* Separate the question from its answer once open. Without this the open item
+   is one undifferentiated slab. */
+.anc-redesign .accordion__item[open] .accordion__trigger {
+  border-bottom: 1px solid var(--color-border);
 }
 
 .anc-redesign .accordion__icon {
@@ -712,7 +791,7 @@
   height: 26px;
   border-radius: var(--radius-circle);
   background: var(--color-ink-primary);
-  color: var(--color-ink-white);
+  color: var(--color-bg-page);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -720,11 +799,17 @@
   position: relative;
 }
 
+/* The strokes must be the INVERSE of the circle fill.
+   The circle is --color-ink-primary, which inverts (#FFFFFF dark / #161316 light).
+   These used --color-ink-white, which is literal #FFFFFF in BOTH themes - so in
+   dark mode it was white-on-white and the +/x glyph was completely invisible,
+   leaving a bare white dot that never appeared to change on open/close.
+   --color-bg-page is the exact inverse of --color-ink-primary in both themes. */
 .anc-redesign .accordion__icon::before,
 .anc-redesign .accordion__icon::after {
   content: '';
   position: absolute;
-  background: var(--color-ink-white);
+  background: var(--color-bg-page);
   border-radius: 1px;
 }
 .anc-redesign .accordion__icon::before { width: 10px; height: 2px; }
@@ -733,7 +818,7 @@
 
 .anc-redesign .accordion__item[open] .accordion__icon::after,
 .anc-redesign .accordion__trigger[aria-expanded="true"] .accordion__icon::after {
-  transform: rotate(90deg);  /* + becomes × visually (— + crossed bar) */
+  transform: rotate(90deg);  /* + becomes × visually (- + crossed bar) */
 }
 
 .anc-redesign .accordion__body {
@@ -746,6 +831,9 @@
 
 /* --- Navbar (D.12) ------------------------------------------------ */
 .anc-redesign .navbar {
+  /* display is declared explicitly: main.css used to hide .navbar outright
+     below 992px, which blanked the whole public header on phones. */
+  display: block;
   position: sticky;
   top: 0;
   z-index: 100;
@@ -760,18 +848,36 @@
               backdrop-filter var(--dur-base) var(--ease-out);
 }
 
-/* When scrolled past hero — toggled by JS adding .is-scrolled */
+/* When scrolled past hero - toggled by JS adding .is-scrolled */
 .anc-redesign .navbar.is-scrolled {
   background: var(--color-bg-page);
   backdrop-filter: none;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid var(--color-border);
 }
 
 /* When page has no hero behind (about, contact, etc.), solid from start */
 .anc-redesign .navbar--solid {
   background: var(--color-bg-page);
   backdrop-filter: none;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Mobile menu open. Two things have to happen here:
+   1. backdrop-filter must go. It makes the navbar a containing block for
+      position:fixed descendants, which collapsed the overlay's `inset: 0`
+      down to the 66px bar instead of the viewport.
+   2. the translucent hero scrim must go solid, so the bar reads as part of
+      the overlay rather than a dark stripe across a light-theme menu.
+   Needs .navbar twice to outrank .navbar.is-scrolled above. */
+.anc-redesign .navbar.navbar--open {
+  background: var(--color-bg-page);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-bottom-color: transparent;
+}
+
+.anc-redesign .navbar.navbar--open .navbar__brand {
+  color: var(--color-ink-primary);
 }
 
 .anc-redesign .navbar__inner {
@@ -797,12 +903,29 @@
   color: var(--color-ink-primary);
 }
 
+/* The mark is a square leaf icon, not the old 1714x308 wordmark strip, so it
+   needs more height to read at the same optical weight beside the name. */
 .anc-redesign .navbar__brand img {
-  height: 26px;
+  height: 30px;
   width: auto;
 }
 
-/* Wordmark swaps with whatever is actually BEHIND it, which depends on
+/* Company name as live text rather than baked into the image: it inherits the
+   colour from .navbar__brand, which already tracks nav state and theme, so it
+   can never end up invisible the way a second hardcoded image could. */
+/* px, not rem: main.css sets `html { font-size: 10px }`, so a rem value here
+   lands at ~2/3 the intended size. The whole type scale is px for this reason. */
+.anc-redesign .navbar__wordmark {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1;
+  white-space: nowrap;
+  color: inherit;
+}
+
+/* Mark swaps with whatever is actually BEHIND it, which depends on
    both the nav state and the theme:
      - over a hero (default state) the nav is a dark scrim -> white mark
      - scrolled/solid, the nav is --color-bg-page, which is dark in the
@@ -848,13 +971,35 @@
   /* dark pill on dark nav doesn't pop; nav uses white pill (D.4) */
 }
 
+/* Set by main.js while the mobile overlay is open. */
+body.anc-redesign.has-nav-open {
+  overflow: hidden;
+}
+
+/* Mobile-only CTA that lives inside the overlay; the desktop CTA is
+   .navbar__cta over in .navbar__actions. */
+.anc-redesign .navbar__links-cta {
+  display: none;
+}
+
 .anc-redesign .navbar__toggle {
   display: none;
   width: 40px;
   height: 40px;
   align-items: center;
   justify-content: center;
-  color: inherit;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  /* Sits on the dark hero scrim by default, so white; tracks the theme once
+     the nav goes solid. Matches the .navbar__link treatment below. */
+  color: var(--color-ink-white);
+}
+
+.anc-redesign .navbar.is-scrolled .navbar__toggle,
+.anc-redesign .navbar--solid .navbar__toggle {
+  color: var(--color-ink-primary);
 }
 
 .anc-redesign .navbar__toggle svg {
@@ -862,20 +1007,131 @@
   height: 24px;
 }
 
+.anc-redesign .navbar__toggle svg line {
+  transform-box: view-box;
+  transform-origin: center;
+  transition: transform var(--dur-fast) var(--ease-out),
+              opacity var(--dur-fast) var(--ease-out);
+}
+
+/* Hamburger folds into an X while the overlay is open. */
+.anc-redesign .navbar--open .navbar__toggle svg line:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+.anc-redesign .navbar--open .navbar__toggle svg line:nth-child(2) {
+  opacity: 0;
+}
+.anc-redesign .navbar--open .navbar__toggle svg line:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
+}
+
 @media (max-width: 768px) {
-  .anc-redesign .navbar__links,
+  .anc-redesign .navbar__toggle {
+    display: inline-flex;
+  }
+
+  /* Desktop pill is replaced by the full-width button inside the overlay. */
   .anc-redesign .navbar__cta {
     display: none;
   }
-  .anc-redesign .navbar__toggle {
-    display: inline-flex;
+
+  /* The link list becomes the full-screen menu. z-index is below the nav's
+     own 100 on purpose, so the brand, theme toggle and close button stay
+     above it and stay clickable; the top padding clears the 66px bar. */
+  .anc-redesign .navbar__links {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: var(--space-1);
+    padding: 90px var(--container-px-sm) var(--space-10);
+    background: var(--color-bg-page);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-8px);
+    transition: opacity var(--dur-base) var(--ease-out),
+                transform var(--dur-base) var(--ease-out),
+                visibility var(--dur-base) linear;
+  }
+
+  .anc-redesign .navbar--open .navbar__links {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+  }
+
+  /* The overlay is --color-bg-page, not the hero scrim, so links must track
+     the theme rather than staying white. Extra .navbar in the selector beats
+     the .is-scrolled / --solid link colours above. */
+  .anc-redesign .navbar .navbar__links .navbar__link {
+    display: block;
+    padding: var(--space-4) var(--space-3);
+    font-size: 24px;
+    line-height: 32px;
+    font-weight: var(--fw-medium);
+    color: var(--color-ink-primary);
+    border-radius: var(--radius-input);
+    transition: background var(--dur-fast) var(--ease-out);
+  }
+
+  .anc-redesign .navbar .navbar__links .navbar__link:hover,
+  .anc-redesign .navbar .navbar__links .navbar__link:focus-visible {
+    background: var(--color-accent-soft);
+    opacity: 1;
+  }
+
+  .anc-redesign .navbar__links-cta {
+    display: block;
+    margin-top: var(--space-6);
+  }
+
+  .anc-redesign .navbar__links-cta .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Keep the toggle above the overlay it controls. */
+  .anc-redesign .navbar--open .navbar__toggle,
+  .anc-redesign .navbar--open .navbar__brand,
+  .anc-redesign .navbar--open .theme-toggle {
+    position: relative;
+    z-index: 91;
+  }
+
+  /* Overlay fill is --color-bg-page, so the ink wordmark is the readable one
+     in the light theme even when the nav itself is the dark hero scrim. */
+  :root[data-theme="light"] .anc-redesign .navbar--open .navbar__logo--light {
+    display: none;
+  }
+  :root[data-theme="light"] .anc-redesign .navbar--open .navbar__logo--dark {
+    display: block;
+  }
+
+  .anc-redesign .navbar--open .navbar__toggle,
+  .anc-redesign .navbar--open .theme-toggle {
+    color: var(--color-ink-primary);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .anc-redesign .navbar__links,
+  .anc-redesign .navbar__toggle svg line {
+    transition: none;
   }
 }
 
 
 /* --- Forms (D.14 adapted) ----------------------------------------- */
+/* The auth pages put this on .auth-page, whose fill is --color-surface-warm -
+   identical to --color-surface-card in the dark theme, so the card had no edge
+   at all. See the .card-feature note. */
 .anc-redesign .form-card {
-  background: var(--color-surface-card);
+  background: var(--color-surface-card-raised);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-card);
   padding: var(--space-8);
   max-width: 480px;
@@ -925,9 +1181,17 @@
   color: var(--color-ink-body);
 }
 
+/* `border: 1px solid transparent` at rest meant the only thing separating a
+   field from its card was a fill difference - and in the dark theme
+   --color-surface-warm equals the card's fill exactly, so the inputs had no
+   visible edge at all until focused. A real hairline at rest, the ink border
+   still marking focus.
+
+   background-color, not the `background` shorthand: the select rule below sets
+   a caret via background-image, and the shorthand would wipe it. */
 .anc-redesign .form-field__input {
-  background: var(--color-surface-warm);
-  border: 1px solid transparent;
+  background-color: var(--color-surface-warm);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-input);
   padding: 12px 16px;
   height: 48px;
@@ -939,10 +1203,15 @@
               background-color var(--dur-base) var(--ease-out);
 }
 
+.anc-redesign .form-field__input:hover:not(:focus) {
+  border-color: var(--color-ink-muted);
+}
+
 .anc-redesign .form-field__input:focus {
   outline: none;
-  border-color: var(--color-ink-primary);
-  background: var(--color-bg-page);
+  border-color: var(--color-accent);
+  background-color: var(--color-bg-page);
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
 }
 
 .anc-redesign .form-field__input::placeholder {
@@ -955,6 +1224,95 @@
   padding: 12px 16px;
   height: auto;
   line-height: 1.5;
+}
+
+/* --- Select ------------------------------------------------------
+   These had NO styling at all, so both contact selects rendered the OS
+   dropdown arrow - a dark glyph on a dark field in the dark theme. The caret
+   is an inline SVG data URI (no external asset: the CSP blocks CDNs), drawn in
+   currentColor via a `stroke` the token can't reach, so it is duplicated per
+   theme below. */
+.anc-redesign select.form-field__input {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 44px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9' fill='none'%3E%3Cpath d='M1 1L7 7L13 1' stroke='%23BABABA' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+}
+
+:root[data-theme="light"] .anc-redesign select.form-field__input {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9' fill='none'%3E%3Cpath d='M1 1L7 7L13 1' stroke='%236B615C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+/* The native <option> popup is drawn by the UA, which needs to be told which
+   palette to use - this is the only handle CSS has on it. */
+.anc-redesign select.form-field__input option {
+  background-color: var(--color-surface-warm);
+  color: var(--color-ink-body);
+}
+
+/* --- File input --------------------------------------------------
+   Had no CSS anywhere in any stylesheet, so it rendered the raw UA
+   "Choose File / No file chosen" chip - a light-grey native control on a dark
+   card. Both vendor pseudo-elements are needed: Chrome/Edge and Firefox 82+
+   support ::file-selector-button, older WebKit only the -webkit- one. */
+.anc-redesign input[type="file"].form-field__input {
+  height: auto;
+  padding: 8px;
+  cursor: pointer;
+  line-height: 1.5;
+}
+
+.anc-redesign input[type="file"].form-field__input::file-selector-button,
+.anc-redesign input[type="file"].form-field__input::-webkit-file-upload-button {
+  appearance: none;
+  -webkit-appearance: none;
+  margin-right: 12px;
+  padding: 8px 16px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-input);
+  background-color: var(--color-surface-card-raised);
+  color: var(--color-ink-primary);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+  transition: background-color var(--dur-base) var(--ease-out),
+              border-color var(--dur-base) var(--ease-out);
+}
+
+.anc-redesign input[type="file"].form-field__input::file-selector-button:hover,
+.anc-redesign input[type="file"].form-field__input::-webkit-file-upload-button:hover {
+  background-color: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-ink-on-accent);
+}
+
+/* --- Checkbox ----------------------------------------------------
+   Raw <input type="checkbox"> on the auth pages had no styling anywhere, so it
+   rendered the native control on a dark card. accent-color is the one-line
+   answer and is supported everywhere this site targets. */
+.anc-redesign input[type="checkbox"] {
+  accent-color: var(--color-accent);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* --- Two-up field pair -------------------------------------------
+   contact.php had these as inline `display:grid; grid-template-columns:1fr 1fr`
+   with no media query, so they stayed two-up at 320px. */
+.anc-redesign .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+@media (max-width: 640px) {
+  .anc-redesign .form-row { grid-template-columns: 1fr; }
 }
 
 .anc-redesign .form-field__hint {
@@ -1012,6 +1370,45 @@
   display: flex;
   align-items: center;
   padding: var(--space-10) 0;
+}
+
+/* Auth lockup - mark + name, mirroring the navbar and footer. A single
+   hardcoded ink logo was invisible against the dark .form-card, which is
+   exactly what the three admin auth pages were shipping. */
+.anc-redesign .auth-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  color: var(--color-ink-primary);
+  text-decoration: none;
+}
+
+.anc-redesign .auth-wordmark {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1;
+  white-space: nowrap;
+  color: inherit;
+}
+
+.anc-redesign .auth-logo { display: block; height: 32px; width: auto; }
+.anc-redesign .auth-logo--dark { display: none; }
+
+:root[data-theme="light"] .anc-redesign .auth-logo--light { display: none; }
+:root[data-theme="light"] .anc-redesign .auth-logo--dark { display: block; }
+
+/* The admin auth pages have no navbar, so the theme toggle floats. Public auth
+   pages keep theirs in the navbar and never render this. */
+.anc-redesign .auth-theme-toggle {
+  position: fixed;
+  top: var(--space-5);
+  right: var(--space-5);
+  z-index: 20;
+  background: var(--color-surface-card-raised);
+  color: var(--color-ink-primary);
 }
 
 
@@ -1172,34 +1569,44 @@
   opacity: 0.5;
 }
 
+/* Social links were removed, so the copyright is the only child. Centred
+   rather than space-between, which would have pinned it to the left edge. */
 .anc-redesign .footer__credits {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   padding: var(--space-5) 0;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  border-top: 1px solid var(--color-border);
   font-size: var(--text-sm);
   color: var(--color-ink-muted);
+  text-align: center;
 }
 
-.anc-redesign .footer__socials {
+/* Footer lockup - mark + name, mirroring the navbar. The footer sits on
+   --color-bg-page: near-black in dark, white in light. */
+.anc-redesign .footer__brand {
   display: inline-flex;
-  gap: var(--space-4);
   align-items: center;
-}
-
-.anc-redesign .footer__socials a {
+  gap: var(--space-2);
   color: var(--color-ink-primary);
-  display: inline-flex;
+  text-decoration: none;
 }
 
-@media (max-width: 768px) {
-  .anc-redesign .footer__credits {
-    flex-direction: column;
-    gap: var(--space-3);
-    text-align: center;
-  }
+.anc-redesign .footer__wordmark {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1;
+  white-space: nowrap;
+  color: inherit;
 }
+
+.anc-redesign .footer__logo { display: block; height: 32px; width: auto; }
+.anc-redesign .footer__logo--dark { display: none; }
+
+:root[data-theme="light"] .anc-redesign .footer__logo--light { display: none; }
+:root[data-theme="light"] .anc-redesign .footer__logo--dark { display: block; }
 
 
 /* --- Utility: hidden ---------------------------------------------- */
@@ -1245,7 +1652,7 @@
 }
 
 
-/* --- Toast (auth pages) — on-brand dark card + accent bar --------- */
+/* --- Toast (auth pages) - on-brand dark card + accent bar --------- */
 .anc-redesign #toast-container {
   position: fixed;
   top: 24px;
@@ -1304,7 +1711,7 @@
 
 
 /* =================================================================
- * Plan cards (public catalog) — defined plan/pricing cards
+ * Plan cards (public catalog) - defined plan/pricing cards
  * Tokens only; sits on .section--warm / --white.
  * ================================================================= */
 .anc-redesign .plan-card {
@@ -1312,8 +1719,10 @@
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-6);
-  background: var(--color-surface-card);
-  border: 1px solid rgba(26, 26, 26, 0.10);
+  /* Raised fill + the stronger hairline: the card sits on .section--warm,
+     which is the same colour as --color-surface-card in the dark theme. */
+  background: var(--color-surface-card-raised);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-card);
   height: 100%;
 }
@@ -1348,7 +1757,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  border-top: 1px solid rgba(26, 26, 26, 0.08);
+  border-top: 1px solid var(--color-border);
 }
 .anc-redesign .plan-card__meta li {
   display: flex;
@@ -1419,7 +1828,7 @@
 
 
 /* =================================================================
- * THEME TOGGLE — sits beside the nav CTA
+ * THEME TOGGLE - sits beside the nav CTA
  * ================================================================= */
 .anc-redesign .navbar__actions {
   display: flex;
@@ -1460,7 +1869,7 @@
 
 
 /* =================================================================
- * PLAN CARD ADDITIONS — cadence tier chip, per-period note, total
+ * PLAN CARD ADDITIONS - cadence tier chip, per-period note, total
  * ================================================================= */
 .anc-redesign .plan-card__tier {
   display: inline-flex;

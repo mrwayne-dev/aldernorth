@@ -13,23 +13,8 @@
   .header .container {
     gap: 1rem;
   }
-  .navbar {
-    gap: 2rem;
-  }
-  .navbar-list {
-    gap: 0.8rem;
-  }
-  .sign-up {
-    display: none;
-  }
-  .header-right{
-    display: none;
-  }
   .hero-dots{
     display: none;
-  }
-  .navbar.navbar-mobile-active .mobile-only {
-    display: list-item !important;
   }
 
   /* Hero */
@@ -327,21 +312,6 @@
     gap: 1.5rem;
   }
 
-  /* Mobile Menu Adjustments */
-.navbar.navbar-mobile-active .navbar-list {
-  gap: 2.4rem; /* more vertical spacing */
-}
-.navbar.navbar-mobile-active .navbar-link {
-  padding: 1.2rem 1.6rem; /* larger tap area */
-  font-size: 2.2rem; /* more readable */
-  font-weight: 600;
-}
-  .navbar.navbar-mobile-active .sign-up {
-    display: block;
-    width: 100%;
-    margin-top: 1rem;
-    order: 999;
-  }
 }
 
 /* Mobile (max-width: 768px) */
@@ -366,16 +336,6 @@
   }
   .header .container {
     justify-content: space-between;
-  }
-  .navbar-list {
-    gap: 0.5rem;
-  }
-  .navbar-link {
-    padding: 0.4rem 0.8rem;
-    font-size: 1.4rem;
-  }
-  .nav-toggle-btn {
-    order: 2;
   }
 
   /* Hero */
@@ -827,23 +787,6 @@
     padding: 50px 0 !important;
   }
 
-  /* Mobile Menu Adjustments */
-  .navbar.navbar-mobile-active {
-    padding: 4rem 1.5rem;
-  }
-.navbar.navbar-mobile-active .navbar-list {
-  gap: 2rem;
-}
-.navbar.navbar-mobile-active .navbar-link {
-  padding: 1rem 1.4rem;
-  font-size: 2rem;
-  font-weight: 600;
-}
-
-  .navbar.navbar-mobile-active .sign-up {
-    padding: 0.8rem 1.5rem;
-    margin: 1rem 0;
-  }
 }
 
 /* Small Mobile (max-width: 480px) */
@@ -969,21 +912,5 @@
     font-size: 1.6rem;
   }
 
-  /* Mobile Menu Adjustments */
-  .navbar.navbar-mobile-active {
-    padding: 3rem 1rem;
-  }
-.navbar.navbar-mobile-active .navbar-list {
-  gap: 1.8rem;
-}
-.navbar.navbar-mobile-active .navbar-link {
-  padding: 1rem 1.2rem;
-  font-size: 1.8rem;
-  font-weight: 600;
-}
-
-  .navbar.navbar-mobile-active .sign-up {
-    padding: 0.6rem 1.2rem;
-  }
 }
 

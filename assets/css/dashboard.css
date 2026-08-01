@@ -7173,7 +7173,7 @@ select {
 }
 
 /* ===========================================================
-   ACTIVE INVESTMENTS TABLE — FULL RESPONSIVE FIX & REDESIGN
+   ACTIVE INVESTMENTS TABLE - FULL RESPONSIVE FIX & REDESIGN
    =========================================================== */
 
 /* ---------- Override Conflicting Rules ---------- */
@@ -7583,7 +7583,7 @@ select {
   }
 }
 /* ===========================================================
-   MY LOCKED PLANS TABLE — MATCHES ACTIVE INVESTMENTS
+   MY LOCKED PLANS TABLE - MATCHES ACTIVE INVESTMENTS
    =========================================================== */
 
 .locked-plans .table-list-transaction {
@@ -7925,7 +7925,7 @@ html, body {
   width: 4px;
 }
 
-/* Toast types — neutral dark card, colored accent bar + icon */
+/* Toast types - neutral dark card, colored accent bar + icon */
 .toast.success::before { background: #386641; }
 .toast.success .ph { color: #6FBF73; }
 
@@ -8021,7 +8021,7 @@ html, body {
   50% { height: 30px; opacity: 1; }
 }
 /* =========================================================
-   ALDERNORTH — MODAL SYSTEM (Improved UI + UX)
+   ALDERNORTH - MODAL SYSTEM (Improved UI + UX)
    ========================================================= */
 
 /* ---------- Base Modal Container ---------- */
@@ -8235,7 +8235,7 @@ html, body {
 }
 
 /* ============================================================
-   ALDERNORTH — Pending Deposit List (Enhanced Styling)
+   ALDERNORTH - Pending Deposit List (Enhanced Styling)
    ============================================================ */
 
 .pending-list {
@@ -8385,7 +8385,7 @@ html, body {
   to { opacity: 0; }
 }
 /* ============================================================
-   ALDERNORTH — Wallet Activity Styles (Enhanced with Iconify)
+   ALDERNORTH - Wallet Activity Styles (Enhanced with Iconify)
    ============================================================ */
 
 .list-wallet-activity {
@@ -8525,35 +8525,11 @@ td.negative {
   opacity: 1;
   transform: translateY(0);
 }
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-  margin-top: 16px;
-}
+/* The .pagination and .page-btn rules that lived here are gone. .page-btn
+   was hardcoded #386641 - a dead brand green with no dark-mode awareness -
+   and every pager now renders .anc-pager, styled in anc-dashboard.css from
+   theme tokens. See assets/js/anc-pagination.js. */
 
-.page-btn {
-  border: 1px solid #ccc;
-  background: #fff;
-  padding: 6px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 14px;
-  color: #333;
-}
-
-.page-btn:hover {
-  background: #386641;
-  color: #fff;
-}
-
-.page-btn.active {
-  background: #386641;
-  color: #fff;
-  font-weight: 600;
-}
 /* Center empty state messages in tables */
 .table-list-transaction table {
   width: 100%;
@@ -8589,7 +8565,7 @@ td.negative {
   transition: all 0.3s ease;
 }
 /* ==============================
-   WALLET OVERVIEW — HRC STYLE
+   WALLET OVERVIEW - HRC STYLE
    ============================== */
 .wallet-overview {
   background: var(--White);
@@ -8681,7 +8657,7 @@ td.negative {
   }
 }
 /* ==============================
-   CARD DETAILS — CLEAN REFINED VERSION
+   CARD DETAILS - CLEAN REFINED VERSION
    ============================== */
 .card-details {
   background: var(--White);
@@ -8740,7 +8716,7 @@ td.negative {
 }
 
 /* ==============================
-   CARD DETAILS — CLEAN REFINED VERSION
+   CARD DETAILS - CLEAN REFINED VERSION
    ============================== */
 .card-details {
   background: var(--White);

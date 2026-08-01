@@ -21,7 +21,7 @@ include __DIR__ . '/_partials/head.php';
         <p>Enter your registered email and we'll send a one-time code.</p>
       </div>
 
-      <!-- Step 1 — request OTP -->
+      <!-- Step 1 - request OTP -->
       <form id="forgot-step1" class="form-stack" autocomplete="off">
         <div class="form-field">
           <label class="form-field__label" for="forgot-email">Email address</label>
@@ -30,7 +30,7 @@ include __DIR__ . '/_partials/head.php';
         <button type="submit" class="btn btn--primary" style="width: 100%;">Send code</button>
       </form>
 
-      <!-- Step 2 — verify OTP -->
+      <!-- Step 2 - verify OTP -->
       <form id="forgot-step2" class="form-stack hidden" autocomplete="off" style="margin-top: var(--space-5);">
         <div class="form-field">
           <label class="form-field__label" for="otp">Enter the 6-digit code</label>
@@ -40,7 +40,7 @@ include __DIR__ . '/_partials/head.php';
         <button type="submit" class="btn btn--primary" style="width: 100%;">Verify code</button>
       </form>
 
-      <!-- Step 3 — set new password -->
+      <!-- Step 3 - set new password -->
       <form id="forgot-step3" class="form-stack hidden" autocomplete="off" style="margin-top: var(--space-5);">
         <div class="form-field">
           <label class="form-field__label" for="new_password">New password</label>
@@ -62,6 +62,7 @@ include __DIR__ . '/_partials/head.php';
 
 <?php include __DIR__ . '/_partials/footer.php'; ?>
 
+<script src="<?= anc_asset('/assets/js/main.js') ?>" defer></script>
 <script src="<?= anc_asset('/assets/js/api.js') ?>" defer></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 <?php
 // ========================================
-// ADMIN REGISTRATION — Aldernorth Capital
+// ADMIN REGISTRATION - Aldernorth Capital
 // ========================================
 
 ini_set('display_errors', 0);
@@ -11,19 +11,24 @@ require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/constants.php';
 require_once __DIR__ . '/../../config/env.php';
 require_once __DIR__ . '/../backend/email.php';
+require_once __DIR__ . '/../utilities/security.php';   // ancHashPassword()
 
-session_start([
-    'cookie_lifetime' => 86400,
-    'cookie_httponly' => true,
-    'cookie_secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
-    'cookie_samesite' => 'Strict',
-]);
+ancSessionStart();
+
+// CSRF. Safe methods return immediately; anything else must present the
+// session token as X-CSRF-Token (assets/js/api.js sends it on every POST).
+ancCsrfEnforce();
 
 ob_clean();
 header('Content-Type: application/json; charset=utf-8');
 
 try {
     $pdo = getPDO();
+
+    // Throttle before doing any work. Scope 'register' is independent of
+    // the login buckets, so abuse here cannot lock anyone out of signing in.
+    ancEnforceRateLimit($pdo, 'register');
+    ancRecordAttempt($pdo, 'register', ancClientIp());
     $input = json_decode(file_get_contents('php://input'), true);
 
     $username    = trim($input['username'] ?? '');
@@ -66,7 +71,7 @@ try {
         exit;
     }
 
-    $hashed = password_hash($password, PASSWORD_DEFAULT);
+    $hashed = ancHashPassword($password);
     $name = $username;
 
     // Insert into admins table
@@ -88,7 +93,13 @@ try {
     sendEmail([
         'to' => $email,
         'template' => 'welcome_admin',
-        'variables' => ['admin_name' => $name],
+        // welcome_admin renders {{admin_email}} and {{admin_role}}; both were
+        // omitted, so every new admin received two literal placeholders.
+        'variables' => [
+            'admin_name'  => $name,
+            'admin_email' => $email,
+            'admin_role'  => 'manager',
+        ],
     ]);
 
     echo json_encode([

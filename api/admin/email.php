@@ -4,7 +4,15 @@
 // Fetches recipients from DB and sends emails using system's PHPMailer setup.
 // ========================================
 header('Content-Type: application/json');
-session_start();
+require_once __DIR__ . '/../../api/utilities/security.php';
+// Hardened + proxy-aware session cookie (HttpOnly, Secure, SameSite=Strict,
+// use_strict_mode). A bare session_start() inherited this box's ini defaults,
+// which set NONE of those - see api/utilities/security.php.
+ancSessionStart();
+
+// CSRF. Safe methods return immediately; anything else must present the
+// session token as X-CSRF-Token (assets/js/api.js sends it on every POST).
+ancCsrfEnforce();
 
 // --- DEPENDENCY INCLUSION ---
 // 1. Core Config & Database

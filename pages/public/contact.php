@@ -16,7 +16,7 @@ include __DIR__ . '/_partials/head.php';
       <p class="eyebrow"><span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>Contact</p>
       <h1 style="font-size: var(--text-h1); line-height: var(--lh-h1); letter-spacing: var(--tracking-h1); font-weight: var(--fw-regular);">Let's talk.</h1>
       <p class="section-header__body" style="max-width: 600px;">
-        Our team is based in London and works alongside compliance, banking, and audit partners across the UK. Whether you're looking to open an account, discuss a partnership, or ask about our regulatory permissions — we're happy to help.
+        Our team is based in the United States and works alongside compliance, banking, and audit partners. Whether you're looking to open an account, discuss a partnership, or ask about how the plans work, we're happy to help.
       </p>
     </div>
   </div>
@@ -28,8 +28,20 @@ include __DIR__ . '/_partials/head.php';
     <div class="grid-2" style="gap: var(--space-10); align-items: flex-start;">
       <!-- Form -->
       <div class="form-card form-card--wide" style="margin: 0;">
-        <form class="form-stack" action="/contact/submit" method="POST" enctype="multipart/form-data">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+        <?php // Was action="/contact/submit" as a native POST. That path matched no
+              // rewrite rule, so every submission fell through to the 404 page and the
+              // message was lost. Submitted with fetch + FormData now, like the rest
+              // of the site. ?>
+        <form class="form-stack" id="contact-form" enctype="multipart/form-data" novalidate>
+          <?php // Honeypot. Off-screen rather than display:none, which some bots
+                // check for. Real people never see or fill it; api/public/contact.php
+                // answers a filled one with the ordinary success shape. ?>
+          <div aria-hidden="true" style="position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden;">
+            <label for="company_website">Company website</label>
+            <input id="company_website" name="company_website" type="text" tabindex="-1" autocomplete="off">
+          </div>
+
+          <div class="form-row">
             <div class="form-field">
               <label class="form-field__label" for="name">Full name</label>
               <input id="name" name="name" type="text" class="form-field__input" placeholder="Jane Doe" required>
@@ -40,7 +52,7 @@ include __DIR__ . '/_partials/head.php';
             </div>
           </div>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+          <div class="form-row">
             <div class="form-field">
               <label class="form-field__label" for="type">Message type</label>
               <select id="type" name="type" class="form-field__input" required>
@@ -77,11 +89,13 @@ include __DIR__ . '/_partials/head.php';
           </div>
 
           <div class="form-field">
-            <label class="form-field__label" for="attachment">Attachment <span style="color: var(--color-ink-muted); font-weight: 400;">(optional, PDF/JPG/PNG/DOC)</span></label>
-            <input id="attachment" name="attachment" type="file" class="form-field__input" accept=".pdf,.jpg,.png,.doc,.docx" style="padding: 12px; height: auto;">
+            <label class="form-field__label" for="attachment">Attachment <span style="color: var(--color-ink-muted); font-weight: 400;">(optional)</span></label>
+            <input id="attachment" name="attachment" type="file" class="form-field__input" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+            <p class="form-field__hint">PDF, JPG, PNG or DOC. Max 5&nbsp;MB.</p>
           </div>
 
-          <button type="submit" class="btn btn--primary" style="width: 100%;">Send message</button>
+          <button type="submit" class="btn btn--primary" id="contact-submit" style="width: 100%;">Send message</button>
+          <p class="form-field__hint" id="contact-status" role="status" aria-live="polite"></p>
         </form>
       </div>
 
@@ -90,7 +104,7 @@ include __DIR__ . '/_partials/head.php';
         <p class="eyebrow" style="margin-bottom: var(--space-4);"><span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>Direct lines</p>
         <h2 style="margin-bottom: var(--space-5);">Talk to a human.</h2>
         <p style="color: var(--color-ink-muted); margin-bottom: var(--space-6);">
-          Existing members can also reach support directly from inside the app — typical response in under 2 working hours.
+          Existing members can also reach support directly from inside the app. Typical response is under 2 working hours.
         </p>
 
         <ul style="display: flex; flex-direction: column; gap: var(--space-4);">
@@ -105,20 +119,11 @@ include __DIR__ . '/_partials/head.php';
           </li>
           <li style="display: flex; gap: var(--space-3); align-items: flex-start;">
             <span style="width: 32px; height: 32px; border-radius: var(--radius-circle); background: var(--color-surface-warm); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-            </span>
-            <div>
-              <p style="font-weight: var(--fw-medium); color: var(--color-ink-primary);">+44 20 4574 0000</p>
-              <p style="font-size: var(--text-sm); color: var(--color-ink-muted);">Mon–Fri, 09:00–18:00 GMT</p>
-            </div>
-          </li>
-          <li style="display: flex; gap: var(--space-3); align-items: flex-start;">
-            <span style="width: 32px; height: 32px; border-radius: var(--radius-circle); background: var(--color-surface-warm); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
             </span>
             <div>
-              <p style="font-weight: var(--fw-medium); color: var(--color-ink-primary);">London, United Kingdom</p>
-              <p style="font-size: var(--text-sm); color: var(--color-ink-muted);">Registered in England &amp; Wales</p>
+              <p style="font-weight: var(--fw-medium); color: var(--color-ink-primary);">New York, New York</p>
+              <p style="font-size: var(--text-sm); color: var(--color-ink-muted);">United States</p>
             </div>
           </li>
         </ul>
@@ -127,11 +132,12 @@ include __DIR__ . '/_partials/head.php';
   </div>
 </section>
 
-<div id="loader" class="loader hidden"><div class="loader-spinner"></div></div>
-<div id="successModal" class="modal-message hidden"><div class="modal-content"><p>Message sent! Please check your email.</p></div></div>
-
+<?php // #loader and #successModal lived here referencing legacy main.css
+      // selectors that no JS ever touched. The form reports inline and via the
+      // shared toast instead. ?>
 <?php include __DIR__ . '/_partials/footer.php'; ?>
 
 <script src="<?= anc_asset('/assets/js/main.js') ?>" defer></script>
+<script src="<?= anc_asset('/assets/js/contact.js') ?>" defer></script>
 </body>
 </html>

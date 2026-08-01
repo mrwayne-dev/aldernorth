@@ -70,7 +70,7 @@ try {
         $__cards[] = [
             'tier'     => ucfirst($cadence),
             'icon'     => $r['icon'] ?: 'ph-chart-line-up',
-            // Headline is the per-period rate — that is what the member receives.
+            // Headline is the per-period rate - that is what the member receives.
             'roi'      => anc_pct($roi),
             'roi_note' => 'per ' . ($cadence === 'monthly' ? 'month' : 'week'),
             'name'     => $r['title'],
@@ -132,11 +132,6 @@ $__title   = $plans_heading ?? 'Pick your payout rhythm.';
           <?php endif; ?>
         </article>
       <?php endforeach; ?>
-    </div>
-
-    <div style="display:flex; gap:var(--space-3); justify-content:center; margin-top:var(--space-10);">
-      <a href="/register" class="btn btn--primary">Open an account</a>
-      <a href="/login" class="btn btn--ghost">Sign in</a>
     </div>
   </div>
 </section>

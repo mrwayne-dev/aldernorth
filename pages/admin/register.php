@@ -1,38 +1,42 @@
-<?php require_once __DIR__ . '/../../config/assets.php'; ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="description" content="Aldernorth Capital Admin — create a new administrator account.">
-  <meta name="author" content="Aldernorth Capital">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="robots" content="noindex, nofollow">
-  <link rel="canonical" href="https://aldernorthcapital.com/admin.register">
-  <title>Admin Register | Aldernorth Capital</title>
-
-  <link rel="stylesheet" href="<?= anc_asset('/assets/css/anc-design.css') ?>">
-
-  <link rel="icon" type="image/png" href="/assets/favicon/favicon-32x32.png" sizes="32x32">
-  <link rel="shortcut icon" href="/assets/favicon/favicon.ico">
-  <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png">
-  <meta name="apple-mobile-web-app-title" content="Aldernorth Capital">
-</head>
+<?php
+// The hand-rolled <head> that used to live here loaded anc-design.css ALONE.
+// No data-theme attribute, so :root[data-theme="light"] could never match and
+// this page was locked to dark with no toggle; no phosphor.css, so every toast
+// icon rendered as tofu; no font.css, so Switzer never loaded. The public head
+// partial does all four and is now shared.
+$page_title       = 'Admin Register | Aldernorth Capital';
+$page_description = 'Create an Aldernorth Capital administrator account.';
+$page_path        = '/admin.register';
+$page_robots      = 'noindex, nofollow';
+include __DIR__ . '/../public/_partials/head.php';
+?>
 
 <body class="anc-redesign">
+
+<?php // No navbar on these pages, so the toggle needs its own anchor.
+      // theme.js binds any [data-theme-toggle]. ?>
+<button type="button" class="theme-toggle auth-theme-toggle" data-theme-toggle aria-label="Toggle colour theme">
+  <i class="ph ph-sun" aria-hidden="true"></i>
+</button>
 
 <main class="auth-page">
   <div class="container">
     <div class="form-card">
       <div class="form-card__header">
-        <a href="/" aria-label="Aldernorth Capital home" style="margin-bottom: var(--space-2);">
-          <img src="/assets/images/logo/aldernorth-black.svg" alt="Aldernorth Capital" style="height: 30px;">
+        <a href="/" class="auth-brand" aria-label="Aldernorth Capital home">
+          <?php // Two-image swap on the mark. A single ink mark was invisible
+                // against the dark .form-card; the name is text so it follows
+                // --color-ink-primary and is readable in both themes. ?>
+          <img class="auth-logo auth-logo--light" src="/assets/images/logo/anc-mark-orange.png" width="128" height="128" alt="">
+          <img class="auth-logo auth-logo--dark" src="/assets/images/logo/anc-mark-ink.png" width="128" height="128" alt="">
+          <span class="auth-wordmark">Aldernorth Capital</span>
         </a>
         <p class="eyebrow">
           <span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>
           Admin Console
         </p>
         <h1>Create an admin account</h1>
-        <p>Restricted — requires authorisation.</p>
+        <p>Restricted. Requires authorisation.</p>
       </div>
 
       <form id="register-form" class="form-stack" autocomplete="off">
@@ -49,7 +53,7 @@
         <div class="form-field form-field--with-action">
           <label class="form-field__label" for="password">Password</label>
           <input id="password" name="password" type="password" class="form-field__input" placeholder="••••••••" required>
-          <button type="button" class="form-field__action" aria-label="Show / hide password" onclick="(function(b){const i=b.previousElementSibling;i.type=i.type==='password'?'text':'password';})(this)">
+          <button type="button" class="form-field__action" aria-label="Show / hide password" aria-pressed="false">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
           <p class="form-field__hint">Minimum 8 characters. Include a number or symbol.</p>
@@ -58,7 +62,7 @@
         <div class="form-field">
           <label class="form-field__label" for="invite_code">Admin invite code</label>
           <input id="invite_code" name="invite_code" type="text" class="form-field__input" placeholder="Enter your invite code" autocomplete="off" required>
-          <p class="form-field__hint">Required — provided by a platform administrator.</p>
+          <p class="form-field__hint">Required. Provided by a platform administrator.</p>
         </div>
 
         <label style="display: inline-flex; align-items: flex-start; gap: var(--space-2); font-size: var(--text-sm); color: var(--color-ink-muted); cursor: pointer; line-height: 1.5;">

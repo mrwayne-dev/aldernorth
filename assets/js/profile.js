@@ -1,5 +1,5 @@
 /* =======================================================
-   profile.js — Aldernorth Capital user profile
+   profile.js - Aldernorth Capital user profile
    Loads + updates personal details, password, and avatar.
    ======================================================= */
 
@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if ($('pf-email'))     $('pf-email').value     = d.email     || '';
       if ($('pf-phone'))     $('pf-phone').value     = d.phone     || '';
       if ($('pf-country'))   $('pf-country').value   = d.country   || '';
+      if ($('pf-location'))  $('pf-location').value  = d.location  || '';
       if ($('pf-address'))   $('pf-address').value   = d.address   || '';
       if (d.profile_picture && $('avatar-preview')) $('avatar-preview').src = d.profile_picture;
     } else {
@@ -34,6 +35,7 @@ document.addEventListener('DOMContentLoaded', function () {
       email:     $('pf-email').value.trim(),
       phone:     $('pf-phone').value.trim(),
       country:   $('pf-country').value.trim(),
+      location:  $('pf-location')?.value.trim() ?? '',
       address:   $('pf-address').value.trim(),
     });
     btn.disabled = false;
@@ -77,8 +79,11 @@ document.addEventListener('DOMContentLoaded', function () {
   fileInput?.addEventListener('change', () => {
     const file = fileInput.files?.[0];
     if (!file) { if (uploadBtn) uploadBtn.disabled = true; return; }
-    if (file.size > 2 * 1024 * 1024) {
-      showToast('Image must be 2 MB or smaller.', 'error');
+    // Must stay in step with MAX_AVATAR_BYTES in api/backend/upload_avatar.php
+    // AND with upload_max_filesize in .htaccess / .user.ini - the PHP ini
+    // limits sit under both checks and reject the request before either runs.
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('Image must be 10 MB or smaller.', 'error');
       fileInput.value = '';
       return;
     }
@@ -98,8 +103,12 @@ document.addEventListener('DOMContentLoaded', function () {
     try {
       const fd = new FormData();
       fd.append('avatar', file);
+      // multipart/form-data, so no Content-Type header is set by hand - the
+      // browser must generate the boundary. The CSRF token rides in the header
+      // rather than as a form field for the same reason.
       const r = await fetch('/api/backend/upload_avatar.php', {
         method: 'POST', body: fd, credentials: 'include',
+        headers: ancWithCsrf(),
       });
       const data = await r.json();
       if (data.status === 'success') {

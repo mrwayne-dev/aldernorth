@@ -4,8 +4,16 @@
 // PURPOSE: Admin CRUD for member-facing announcements
 // ACTIONS: get_list, add, edit, delete, toggle
 // ============================================================
+// Hardened + proxy-aware session cookie (HttpOnly, Secure, SameSite=Strict,
+// use_strict_mode). A bare session_start() inherited this box's ini defaults,
+// which set NONE of those - see api/utilities/security.php.
 
-session_start();
+require_once __DIR__ . '/../../api/utilities/security.php';
+ancSessionStart();
+
+// CSRF. Safe methods return immediately; anything else must present the
+// session token as X-CSRF-Token (assets/js/api.js sends it on every POST).
+ancCsrfEnforce();
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['admin_id'])) {
@@ -18,6 +26,12 @@ require_once __DIR__ . '/../../config/database.php';
 
 try {
     $pdo = getPDO();
+
+    // Role gate: this endpoint publishes messages to all members.
+    // Only isset($_SESSION['admin_id']) was checked before, so a `support`
+    // admin had exactly the same power here as the owner. Read from the DB,
+    // fails closed. See ancRequireAdminRole() in api/utilities/security.php.
+    ancRequireAdminRole($pdo, ANC_ROLE_OPERATOR);
 } catch (Exception $e) {
     http_response_code(500);
     echo json_encode(['status' => 'error', 'message' => 'Database connection failed.']);

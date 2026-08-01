@@ -131,40 +131,19 @@ function renderTransactionsTable(transactions) {
     }
 
     // --- Pagination Renderer (Borrowed from Users.js for consistency) ---
+    /**
+     * Shared renderer (assets/js/anc-pagination.js). This was one of three
+     * byte-identical copies emitting `.page-link`, a Bootstrap class with no
+     * matching rule in either stylesheet, plus a `disabled` class that had no
+     * CSS and never set the attribute.
+     */
     function renderPagination(currentPage, totalPages) {
-        const paginationEl = $('#pagination');
-        paginationEl.empty();
-        if (totalPages <= 1) return;
-
-        // Previous button
-        paginationEl.append(`<button class="tf-button style-1 f12-bold px-3 py-1 page-link ${currentPage === 1 ? 'disabled' : ''}" data-page="${currentPage - 1}">Previous</button>`);
-
-        // Page buttons (show max 5 pages centered around current)
-        let startPage = Math.max(1, currentPage - 2);
-        let endPage = Math.min(totalPages, currentPage + 2);
-
-        if (currentPage <= 3) {
-            endPage = Math.min(totalPages, 5);
-            startPage = 1;
-        } else if (currentPage >= totalPages - 2) {
-            startPage = Math.max(1, totalPages - 4);
-            endPage = totalPages;
-        }
-
-        for (let i = startPage; i <= endPage; i++) {
-            const activeClass = i === currentPage ? 'bg-Primary text-White' : 'bg-GrayLight text-Black';
-            paginationEl.append(`<button class="tf-button style-1 f12-bold px-3 py-1 page-link ${activeClass}" data-page="${i}">${i}</button>`);
-        }
-        
-        // Next button
-        paginationEl.append(`<button class="tf-button style-1 f12-bold px-3 py-1 page-link ${currentPage === totalPages ? 'disabled' : ''}" data-page="${currentPage + 1}">Next</button>`);
-        
-        // Bind click events
-        paginationEl.find('.page-link').on('click', function(e) {
-            e.preventDefault();
-            if ($(this).hasClass('disabled')) return;
-            const newPage = $(this).data('page');
-            loadTransactions(newPage, currentFilter, currentSearch);
+        window.ancRenderPagination('#pagination', {
+            page: currentPage,
+            pages: totalPages,
+            onPage: function (n) {
+                loadTransactions(n, currentFilter, currentSearch);
+            },
         });
     }
 

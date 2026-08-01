@@ -55,9 +55,14 @@ function createCryptoPayment($user_id, $user_email, $amount, $reference)
         'ipn_callback_url'  => rtrim(APP_URL, '/') . '/api/payments/now_webhook.php',
         'order_id'          => $reference,
         'order_description' => "Aldernorth Capital deposit: {$reference}",
-        'success_url'       => rtrim(APP_URL, '/') . '/pages/user/wallet.php?deposit=success&ref=' . urlencode($reference),
-        'cancel_url'        => rtrim(APP_URL, '/') . '/pages/user/wallet.php?deposit=cancel&ref=' . urlencode($reference),
-        // ❌ NOTE: buyer_email removed — deprecated by NOWPayments
+        // Routed URLs, not raw file paths. /pages/user/wallet.php resolves today
+        // only because nothing blocks direct /pages/ access - it bypasses the
+        // rewrite layer, and any future deny rule on /pages/ would strand every
+        // member who has just paid. /dashboard.wallet is the canonical route
+        // (.htaccess:109).
+        'success_url'       => rtrim(APP_URL, '/') . '/dashboard.wallet?deposit=success&ref=' . urlencode($reference),
+        'cancel_url'        => rtrim(APP_URL, '/') . '/dashboard.wallet?deposit=cancel&ref=' . urlencode($reference),
+        // ❌ NOTE: buyer_email removed - deprecated by NOWPayments
     ];
 
     // Remove any empty values for safety
@@ -98,12 +103,20 @@ function createCryptoPayment($user_id, $user_email, $amount, $reference)
     // -----------------------------------
     if ($raw === false) {
         error_log("createCryptoPayment: cURL failed: {$curlErr}");
-        $isLocal = (defined('APP_ENV') && APP_ENV === 'local') ||
-                   (strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') !== false) ||
-                   php_sapi_name() === 'cli';
+        // Explicit opt-in only.
+        //
+        // This branch re-sends the LIVE API key with CURLOPT_SSL_VERIFYPEER
+        // disabled. The old test also matched `php_sapi_name() === 'cli'`,
+        // so any CLI invocation - a cron, a seed script, a one-off `php -r` -
+        // silently transmitted the key over an unverified TLS channel. Now it
+        // requires someone to have set NOWPAY_INSECURE_FALLBACK=true in .env
+        // on purpose, and it still refuses when the app thinks it is
+        // production.
+        $optedIn = defined('NOWPAY_INSECURE_FALLBACK') && NOWPAY_INSECURE_FALLBACK === true;
+        $notProd = !defined('APP_ENV') || APP_ENV !== 'production';
 
-        if ($isLocal) {
-            error_log("createCryptoPayment: Retrying with SSL verification disabled (local mode).");
+        if ($optedIn && $notProd) {
+            error_log('createCryptoPayment: retrying with TLS peer verification DISABLED (NOWPAY_INSECURE_FALLBACK opt-in).');
             $ch2 = curl_init();
             curl_setopt_array($ch2, [
                 CURLOPT_URL            => $nowpayments_url,

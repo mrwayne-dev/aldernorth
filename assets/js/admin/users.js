@@ -25,7 +25,7 @@ $(document).on('click', '.dropdown-menu .dropdown-item', function (e) {
     async function loadUsers(page = 1, filter = 'all', search = '') {
         const tableBody = $('#users-table-body');
         const paginationEl = $('#pagination');
-        tableBody.empty().html('<tr><td colspan="6" class="text-center text-Primary f14-regular">Loading users...</td></tr>');
+        tableBody.empty().html('<tr><td class="anc-empty" colspan="6">Loading users...</td></tr>');
         paginationEl.empty();
 
         currentPage = page;
@@ -45,7 +45,7 @@ $(document).on('click', '.dropdown-menu .dropdown-item', function (e) {
 
             if (res.status !== 'success') {
                 showToast(res.message || 'Failed to load user list.', 'error');
-                tableBody.html('<tr><td colspan="6" class="text-center text-Red f14-regular">Error loading data.</td></tr>');
+                tableBody.html('<tr><td class="anc-empty" colspan="6">Error loading data.</td></tr>');
                 return;
             }
 
@@ -57,7 +57,7 @@ $(document).on('click', '.dropdown-menu .dropdown-item', function (e) {
         } catch (error) {
             console.error('API Error loading users:', error);
             showToast('A network error occurred while fetching user data.', 'error');
-            tableBody.html('<tr><td colspan="6" class="text-center text-Red f14-regular">Network error. Check console.</td></tr>');
+            tableBody.html('<tr><td class="anc-empty" colspan="6">Network error. Check console.</td></tr>');
         }
     }
 
@@ -80,88 +80,51 @@ $(document).on('click', '.dropdown-menu .dropdown-item', function (e) {
         tableBody.empty();
 
         if (!users || users.length === 0) {
-            tableBody.html('<tr><td colspan="6" class="text-center text-Gray f14-regular">No users found matching current criteria.</td></tr>');
+            tableBody.html('<tr><td class="anc-empty" colspan="6">No users found matching current criteria.</td></tr>');
             return;
         }
 
+        const esc = window.ancEsc;
+
         users.forEach(user => {
-            
-            // Determine Role Badge Colors/Classes
-            let roleBadgeClass;
-            if (user.role === 'admin') {
-                // Admin role uses Primary color badge
-                roleBadgeClass = 'bg-Primary text-White';
-            } else {
-                // User role uses lighter, neutral background
-                roleBadgeClass = 'bg-Primary text-White ';
-            }
-            
-            // Determine Status Badge Colors/Classes
-            let statusBadgeClass;
-            if (user.status === 'active') {
-                // Active status uses Green background
-                statusBadgeClass = 'bg-Green text-White';
-            } else { 
-                // Disabled/Suspended uses Salmon/Red background
-                statusBadgeClass = 'bg-Salmon text-White'; 
-            }
-            
-            const actionDropdown = `
-                <div class="dropdown default style-fill actions-dropdown">
-                    <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        Actions
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li>
-                            <button type="button" class="dropdown-item action-edit"
-                                data-id="${user.id}"
-                                data-name="${user.display_name}"
-                                data-email="${user.email}"
-                                data-role="${user.role}"
-                                data-status="${user.status}">
-                                Edit User
-                            </button>
-                        </li>
-                        <li>
-                            <button type="button" class="dropdown-item action-email"
-                                data-id="${user.id}"
-                                data-email="${user.email}"
-                                data-name="${user.display_name}">
-                                Send Email
-                            </button>
-                        </li>
-                        <li class="dropdown-divider"></li>
-                        <li>
-                            <button type="button" class="dropdown-item action-delete text-Red"
-                                data-id="${user.id}"
-                                data-name="${user.display_name}">
-                                Delete User
-                            </button>
-                        </li>
-                    </ul>
-                </div>
+
+            // Admin was `bg-Primary text-White` and so was "user" - the two
+            // branches were byte-identical, so the badge carried no
+            // information. Members get a neutral chip now.
+            const roleBadgeClass = user.role === 'admin' ? 'bg-Primary' : 'bg-Neutral';
+            const statusBadgeClass = user.status === 'active' ? 'bg-Green' : 'bg-Salmon';
+
+            /* Inline buttons, not a Bootstrap dropdown.
+               .anc-scroll-table is `overflow-x: auto`, which establishes a
+               scroll container - an absolutely positioned .dropdown-menu
+               inside it is clipped on the vertical axis, so the Actions menu
+               was unreachable for the last rows. anc-dashboard.css:2102 lays
+               inline .tf-buttons out as a neat row and every already-converted
+               table (deposit addresses, pending deposits) uses that shape. */
+            const actions = `
+                <button type="button" class="tf-button f12-bold action-edit"
+                    data-id="${user.id}"
+                    data-name="${esc(user.display_name)}"
+                    data-email="${esc(user.email)}"
+                    data-role="${esc(user.role)}"
+                    data-status="${esc(user.status)}">Edit</button>
+                <button type="button" class="tf-button f12-bold bg-Accent text-Black action-email"
+                    data-id="${user.id}"
+                    data-email="${esc(user.email)}"
+                    data-name="${esc(user.display_name)}">Email</button>
+                <button type="button" class="tf-button f12-bold bg-Red text-White action-delete"
+                    data-id="${user.id}"
+                    data-name="${esc(user.display_name)}">Delete</button>
             `;
-            
-            // FIXED: Added tf-table-item class and data-label attributes for correct table rendering
+
             const row = `
-                <tr data-id="${user.id}" class="tf-table-item">
-                    <td class="f14-regular" data-label="Name">${user.display_name} (ID: ${user.id})</td>
-                    <td class="f14-regular" data-label="Email">${user.email}</td>
-                    
-                    <td data-label="Role">
-                        <div class="box-status ${roleBadgeClass}">
-                            ${user.role.toUpperCase()}
-                        </div>
-                    </td>
-                    
-                    <td data-label="Status">
-                        <div class="box-status ${statusBadgeClass}">
-                            ${user.status.toUpperCase()}
-                        </div>
-                    </td>
-                    
-                    <td class="f14-regular text-Gray" data-label="Last Login">${user.last_login}</td>
-                    <td class="f14-regular" data-label="Actions">${actionDropdown}</td>
+                <tr data-id="${user.id}">
+                    <td>${esc(user.display_name)}<div class="f12-regular text-Gray">ID ${user.id}</div></td>
+                    <td class="anc-td-muted">${esc(user.email)}</td>
+                    <td><div class="box-status ${roleBadgeClass}"><span class="font-poppins">${esc(String(user.role || '').toUpperCase())}</span></div></td>
+                    <td><div class="box-status ${statusBadgeClass}"><span class="font-poppins">${esc(String(user.status || '').toUpperCase())}</span></div></td>
+                    <td class="anc-td-muted">${esc(user.last_login)}</td>
+                    <td>${actions}</td>
                 </tr>
             `;
             tableBody.append(row);
@@ -169,40 +132,19 @@ $(document).on('click', '.dropdown-menu .dropdown-item', function (e) {
     }
 
     // --- Pagination Renderer ---
+    /**
+     * Shared renderer (assets/js/anc-pagination.js). This was one of three
+     * byte-identical copies emitting `.page-link`, a Bootstrap class with no
+     * matching rule in either stylesheet, plus a `disabled` class that had no
+     * CSS and never set the attribute.
+     */
     function renderPagination(currentPage, totalPages) {
-        const paginationEl = $('#pagination');
-        paginationEl.empty();
-        if (totalPages <= 1) return;
-
-        // Previous button
-        paginationEl.append(`<button class="tf-button style-1 f12-bold px-3 py-1 page-link ${currentPage === 1 ? 'disabled' : ''}" data-page="${currentPage - 1}">Previous</button>`);
-
-        // Page buttons (show max 5 pages centered around current)
-        let startPage = Math.max(1, currentPage - 2);
-        let endPage = Math.min(totalPages, currentPage + 2);
-
-        if (currentPage <= 3) {
-            endPage = Math.min(totalPages, 5);
-            startPage = 1;
-        } else if (currentPage >= totalPages - 2) {
-            startPage = Math.max(1, totalPages - 4);
-            endPage = totalPages;
-        }
-
-        for (let i = startPage; i <= endPage; i++) {
-            const activeClass = i === currentPage ? 'bg-Primary text-White' : 'bg-GrayLight text-Black';
-            paginationEl.append(`<button class="tf-button style-1 f12-bold px-3 py-1 page-link ${activeClass}" data-page="${i}">${i}</button>`);
-        }
-        
-        // Next button
-        paginationEl.append(`<button class="tf-button style-1 f12-bold px-3 py-1 page-link ${currentPage === totalPages ? 'disabled' : ''}" data-page="${currentPage + 1}">Next</button>`);
-        
-        // Bind click events
-        paginationEl.find('.page-link').on('click', function(e) {
-            e.preventDefault();
-            if ($(this).hasClass('disabled')) return;
-            const newPage = $(this).data('page');
-            loadUsers(newPage, currentFilter, currentSearch);
+        window.ancRenderPagination('#pagination', {
+            page: currentPage,
+            pages: totalPages,
+            onPage: function (n) {
+                loadUsers(n, currentFilter, currentSearch);
+            },
         });
     }
 
@@ -285,7 +227,8 @@ $(document).on('click', '.dropdown-menu .dropdown-item', function (e) {
             const name = $(this).data('name');
 
             $('#email-user-id').val(id);
-            $('#email-to').val(`${name} <${email}>`);
+            // Stated text now, not a disabled input.
+            $('#email-to').text(`${name} <${email}>`);
             $('#send-email-modal h2').text(`Send Email to ${name}`);
 
             showModal('#send-email-modal');

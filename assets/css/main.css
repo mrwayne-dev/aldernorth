@@ -114,7 +114,7 @@ button {
 address { font-style: normal; }
 table { border-collapse: collapse; width: 100%; }
 
-/* Unified container — used globally */
+/* Unified container - used globally */
 .container {
   max-width: 1400px;
   margin: 0 auto;
@@ -202,136 +202,12 @@ table { border-collapse: collapse; width: 100%; }
   font-weight: 700;
   letter-spacing: -0.02em;
 }
-.navbar {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 3rem;
-}
-.navbar-list { display: flex; gap: 1rem; }
-.navbar-link {
-  font-weight: 500;
-  color: var(--color-surface);
-  position: relative;
-  padding: 0.5rem 1.2rem;
-  border-radius: var(--radius-12);
-  transition: all 0.35s ease-in-out;
-}
-.navbar-link:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  color: var(--color-surface);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-.sign-up {
-  padding: 0.75rem 1.5rem;
-  border-radius: 15px;
-  background-color: var(--color-surface);
-  color: var(--color-bg);
-  font-weight: 500;
-  transition: var(--transition-1);
-  box-shadow: var(--shadow-sm);
-}
-.sign-up:hover {
-  background-color: var(--color-primary-hover);
-}
-
-/* Hamburger */
-.nav-toggle-btn {
-  display: none;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  padding: 0.5rem;
-  background: none;
-  border: none;
-  color: var(--color-surface);
-  z-index: 1002;
-}
-.nav-toggle-btn .line {
-  width: 24px;
-  height: 2px;
-  background-color: var(--color-surface);
-  transition: transform 0.3s ease, opacity 0.3s ease;
-  transform-origin: center;
-}
-.nav-toggle-btn .line-2 { margin: 6px 0; }
-.nav-toggle-btn.active .line-1 { transform: translateY(8px) rotate(45deg); }
-.nav-toggle-btn.active .line-2 { opacity: 0; }
-.nav-toggle-btn.active .line-3 { transform: translateY(-8px) rotate(-45deg); }
-/* Hide mobile-only nav items on desktop */
-.mobile-only {
-  display: none;
-}
-
-/* Mobile Menu */
-@media (max-width: 992px) {
-  .navbar { display: none; }
-  .nav-toggle-btn { display: flex; }
-  .logo { flex: 1; }
-  .sign-up { margin-left: auto; }
-
-  .navbar.navbar-mobile-active {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: flex-end; /* 🔹 right-align all menu content */
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 100%;
-    height: 100vh;
-    background: rgba(49, 77, 41, 0.85);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    padding: 6rem 2rem;
-    z-index: 999;
-    overflow-y: auto;
-    opacity: 0;
-    transform: translateX(100%);
-    transition: opacity 0.4s ease, transform 0.4s ease;
-  }
-
-  .navbar.navbar-mobile-active.appear {
-    opacity: 1;
-    transform: translateX(0);
-  }
-
-  .navbar.navbar-mobile-active .navbar-list {
-    flex-direction: column;
-    align-items: flex-end; /* 🔹 align list items to right edge */
-    gap: 2.4rem;
-    width: 100%;
-    text-align: right; /* 🔹 align text inside links to the right */
-  }
-
-  .navbar.navbar-mobile-active .navbar-item {
-    width: 100%;
-  }
-
-  .navbar.navbar-mobile-active .navbar-link {
-    display: block;
-    font-size: 2.2rem;
-    color: var(--color-surface);
-    font-weight: 600;
-    padding: 1.2rem 1.6rem;
-    width: 100%;
-    border-radius: var(--radius-12);
-    transition: background-color 0.25s ease-in-out, transform 0.2s ease;
-    text-align: right; /* 🔹 right-align text inside link */
-  }
-
-  .navbar.navbar-mobile-active .navbar-link:hover {
-    background-color: rgba(255, 255, 255, 0.12);
-    transform: translateX(-4px); /* 🔹 slide slightly left on hover */
-  }
-
-  .mobile-only {
-    display: block;
-  }
-}
+/* NOTE: the legacy .navbar / .navbar-list / .navbar-link / .nav-toggle-btn /
+   .mobile-only / .sign-up rules that used to live here were removed. No page
+   in this project uses those class names any more (the public nav is
+   .navbar__links / .navbar__link, styled in anc-design.css), and the old
+   `@media (max-width: 992px) { .navbar { display: none } }` rule was hiding
+   the entire public header on every phone-width viewport. */
 
 /* ==============================
    Buttons

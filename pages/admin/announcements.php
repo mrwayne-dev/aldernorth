@@ -1,10 +1,9 @@
 <?php
-session_start([
-    'cookie_lifetime' => 86400,
-    'cookie_httponly' => true,
-    'cookie_secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
-    'cookie_samesite' => 'Strict',
-]);
+require_once __DIR__ . '/../../api/utilities/security.php';
+// Hardened + proxy-aware: use_strict_mode, and a cookie_secure that
+// survives a TLS-terminating proxy (the inline options this replaced
+// tested $_SERVER['HTTPS'] === 'on', which is unset behind one).
+ancSessionStart();
 if (!isset($_SESSION['admin_id'])) {
     header('Location: /admin.login');
     exit;
@@ -25,6 +24,7 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
 
             <!-- Sidebar -->
             <?php $active = "announcements"; include __DIR__ . "/_partials/sidebar.php"; ?>
+            <?php include __DIR__ . "/_partials/dock.php"; ?>
             <!-- /Sidebar -->
 
             <!-- Main Content -->
@@ -44,17 +44,21 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
                                         </button>
                                     </div>
 
-                                    <div class="table-list-transaction">
-                                        <div class="list-transaction-head title-sort bg-Primary">
-                                            <div class="f12-bold text-White">Title</div>
-                                            <div class="f12-bold text-White">Category</div>
-                                            <div class="f12-bold text-White">Status</div>
-                                            <div class="f12-bold text-White">Published</div>
-                                            <div class="f12-bold text-White">Actions</div>
-                                        </div>
-                                        <table class="list-transaction-content content-sort w-100">
+                                    <?php // See the note on the users table: the div-grid header
+                                          // and the table body were sized independently. ?>
+                                    <div class="anc-scroll-table">
+                                        <table class="anc-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Title</th>
+                                                    <th>Category</th>
+                                                    <th>Status</th>
+                                                    <th>Published</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
                                             <tbody id="announcements-body">
-                                                <tr><td colspan="5" class="text-center text-Primary f14-regular">Loading announcements...</td></tr>
+                                                <tr><td class="anc-empty" colspan="5">Loading announcements...</td></tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -65,53 +69,81 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
                     </div>
                 </div>
 
-                <!-- Add/Edit Announcement Modal -->
-                <div class="modal" id="announcement-modal">
-                    <div class="modal-overlay"></div>
-                    <div class="modal-content" style="max-width: 700px;">
-                        <div class="modal-header">
-                            <h2 id="announcement-title">New Announcement</h2>
-                            <button class="button-close-modal">×</button>
-                        </div>
+                <?php // Rebuilt on .anc-field. The inline `style="max-width:700px"` is
+                      // gone: .anc-modal--wide is the one place a dialog width is
+                      // declared, and it is guarded by min-width:576px so it cannot
+                      // pin a desktop width onto a phone bottom sheet. ?>
+                <div class="modal anc-modal--wide anc-modal--compact" id="announcement-modal" role="dialog" aria-modal="true" aria-hidden="true">
+                    <div class="modal-overlay" data-modal-close></div>
+                    <div class="modal-content" tabindex="-1" aria-labelledby="announcement-title">
+                        <header class="modal-header">
+                            <div>
+                                <h2 id="announcement-title">New Announcement</h2>
+                                <p class="modal-header__sub">Published announcements appear on every member dashboard.</p>
+                            </div>
+                            <button type="button" class="modal-close button-close-modal" data-modal-close aria-label="Close dialog">&times;</button>
+                        </header>
                         <div class="modal-body">
-                            <form id="announcement-form">
-                                <input type="hidden" id="announcement-id">
-                                <div class="form-group mb-3">
-                                    <label>Title <span class="text-Red">*</span></label>
-                                    <input type="text" class="form-control" id="announcement-title-input" maxlength="255" required>
+                            <form id="announcement-form" autocomplete="off">
+                                <input type="hidden" id="announcement-id" value="">
+
+                                <div class="anc-field">
+                                    <div class="anc-field__top">
+                                        <label class="anc-field__label" for="announcement-title-input">Title</label>
+                                        <span class="anc-field__hint">Required</span>
+                                    </div>
+                                    <div class="anc-field__row">
+                                        <input type="text" class="anc-field__input" id="announcement-title-input" maxlength="255" required>
+                                    </div>
                                 </div>
-                                <div class="form-group mb-3">
-                                    <label>Body <span class="text-Red">*</span></label>
-                                    <textarea class="form-control" id="announcement-body" rows="6" required></textarea>
+
+                                <div class="anc-field anc-field--textarea">
+                                    <div class="anc-field__top">
+                                        <label class="anc-field__label" for="announcement-body">Body</label>
+                                        <span class="anc-field__hint">Required</span>
+                                    </div>
+                                    <div class="anc-field__row">
+                                        <textarea class="anc-field__input" id="announcement-body" rows="6" required></textarea>
+                                    </div>
                                 </div>
+
                                 <div class="row">
                                     <div class="col-md-6">
-                                        <div class="form-group mb-3">
-                                            <label>Category</label>
-                                            <select class="form-control" id="announcement-category">
-                                                <option value="general">General</option>
-                                                <option value="product">Product Update</option>
-                                                <option value="maintenance">Maintenance</option>
-                                                <option value="regulatory">Regulatory</option>
-                                                <option value="security">Security</option>
-                                            </select>
+                                        <div class="anc-field">
+                                            <div class="anc-field__top">
+                                                <label class="anc-field__label" for="announcement-category">Category</label>
+                                            </div>
+                                            <div class="anc-field__row">
+                                                <select class="anc-field__input" id="announcement-category">
+                                                    <option value="general">General</option>
+                                                    <option value="product">Product Update</option>
+                                                    <option value="maintenance">Maintenance</option>
+                                                    <option value="regulatory">Regulatory</option>
+                                                    <option value="security">Security</option>
+                                                </select>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <div class="form-group mb-3">
-                                            <label>Status</label>
-                                            <select class="form-control" id="announcement-status">
-                                                <option value="published">Published</option>
-                                                <option value="draft">Draft</option>
-                                            </select>
+                                        <div class="anc-field">
+                                            <div class="anc-field__top">
+                                                <label class="anc-field__label" for="announcement-status">Status</label>
+                                            </div>
+                                            <div class="anc-field__row">
+                                                <select class="anc-field__input" id="announcement-status">
+                                                    <option value="published">Published</option>
+                                                    <option value="draft">Draft</option>
+                                                </select>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="d-flex justify-content-end gap-2">
-                                    <button type="button" class="button-close-modal tf-button bg-GrayLight text-Black">Cancel</button>
-                                    <button type="submit" class="modal-confirm-btn">Save Announcement</button>
-                                </div>
                             </form>
+                        </div>
+
+                        <div class="modal-footer-actions">
+                            <button type="button" class="button-close-modal tf-button" data-modal-close>Cancel</button>
+                            <button type="submit" form="announcement-form" class="modal-confirm-btn">Save announcement</button>
                         </div>
                     </div>
                 </div>

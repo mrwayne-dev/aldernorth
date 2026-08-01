@@ -17,13 +17,13 @@ Here is the complete, exhaustive design analysis of **minta.framer.ai**:
 | Role | Value | Notes |
 |---|---|---|
 | Page Background | `#000000` / `rgb(0,0,0)` | Pure black, applied globally to `<body>` |
-| Surface / Card Background | `rgba(255,255,255,0.06)` | ~6% white alpha — primary glass card |
-| Surface Elevated | `rgba(255,255,255,0.12)` | ~12% white alpha — slightly lifted surface |
-| Nav Background | `rgba(250,250,250,0)` — transparent | Transparent by default; blends with hero image |
+| Surface / Card Background | `rgba(255,255,255,0.06)` | ~6% white alpha - primary glass card |
+| Surface Elevated | `rgba(255,255,255,0.12)` | ~12% white alpha - slightly lifted surface |
+| Nav Background | `rgba(250,250,250,0)` - transparent | Transparent by default; blends with hero image |
 | Primary Text | `#ffffff` / `rgb(255,255,255)` | Pure white for headings, labels, UI text |
 | Secondary Text | `#c2c2c2` / `rgb(194,194,194)` | Mid-gray for subtitles, body, muted labels |
-| Muted Text | `#8a8a8a` / `rgb(138,138,138)` | Token `--token-4da943ea` — footer links, captions |
-| Accent / Brand Orange | `#fa8039` (approx.) | Token `--token-5ce86d7b` — used in hero image light streak; brand warmth |
+| Muted Text | `#8a8a8a` / `rgb(138,138,138)` | Token `--token-4da943ea` - footer links, captions |
+| Accent / Brand Orange | `#fa8039` (approx.) | Token `--token-5ce86d7b` - used in hero image light streak; brand warmth |
 | CTA Button Background | `rgba(255,255,255,0.06)` | Same glass surface as cards |
 | CTA Button Inset | `rgba(255,255,255,0.20)` | Inset box-shadow creating a top-edge highlight |
 | Footer Background | `#000000` | Identical to page bg |
@@ -58,7 +58,7 @@ The site uses **no traditional dividers or `<hr>` elements**. Visual separation 
 | Testimonial Cards | `box-shadow: rgba(255,255,255,0.20) 0px 1px 0px 0px inset` |
 | Footer Subscribe Button | `box-shadow: rgba(255,255,255,0.20) 0px 1.5px 0px 0px inset` |
 
-The inset top-edge highlight (`rgba(255,255,255,0.20) 0px 1.5px 0px 0px inset`) is the **single most recurring micro-detail** across the component system — it simulates a glass edge catching light and is applied consistently to interactive surfaces.
+The inset top-edge highlight (`rgba(255,255,255,0.20) 0px 1.5px 0px 0px inset`) is the **single most recurring micro-detail** across the component system - it simulates a glass edge catching light and is applied consistently to interactive surfaces.
 
 ### 1.4 Overall Mood & Tone
 
@@ -83,9 +83,9 @@ Three font families are used in a deliberate three-tier typographic system:
 
 | Level | Font | Size | Weight | Color | Letter-Spacing | Line-Height | Usage |
 |---|---|---|---|---|---|---|---|
-| H1 — Hero Headline | Inter Display | 56px | 400 | `#ffffff` | -2.24px (-4%) | 67.2px (1.2) | Page hero title |
-| H2 — Section Heading | Inter Display | 32px | 400 | `#ffffff` | -0.96px (-3%) | 35.2px (1.1) | All section headings |
-| H2 — CTA Repeat Headline | Inter Display | (approx.) 32–40px | 400 | `#ffffff` | tight negative | tight | Bottom CTA heading |
+| H1 - Hero Headline | Inter Display | 56px | 400 | `#ffffff` | -2.24px (-4%) | 67.2px (1.2) | Page hero title |
+| H2 - Section Heading | Inter Display | 32px | 400 | `#ffffff` | -0.96px (-3%) | 35.2px (1.1) | All section headings |
+| H2 - CTA Repeat Headline | Inter Display | (approx.) 32–40px | 400 | `#ffffff` | tight negative | tight | Bottom CTA heading |
 | Logo / Wordmark | Inter Display | 20px | 500 | `#ffffff` | -0.4px | 24px | Nav logo |
 | Section Sub-label (parallax) | Inter Display | 20px | 400 | `#ffffff` / `#c2c2c2` | -0.4px | 26px | Scroll-text animations |
 | Body / Subheadline | Inter | 16px | 400 | `#c2c2c2` | normal | 22.4px (1.4) | Section subtitles, descriptions |
@@ -101,7 +101,7 @@ Three font families are used in a deliberate three-tier typographic system:
 
 - **Negative letter-spacing is pervasive.** All display text tracks tightly inward: H1 at -2.24px, H2 at -0.96px, logo at -0.4px. This creates a condensed, premium editorial feel.
 - **Section category labels** use JetBrains Mono at 14px with `text-transform: uppercase`. They function as structured metadata for each section.
-- **Stats** use Geist Mono (light weight, 300) — a deliberate choice to signal data precision and contrast with the expressive Inter Display headings.
+- **Stats** use Geist Mono (light weight, 300) - a deliberate choice to signal data precision and contrast with the expressive Inter Display headings.
 - **Body text is always `rgb(194,194,194)`** (secondary gray) for subtitles and descriptions, never full white, preserving a clear hierarchy between headline and support copy.
 - **Font weight hierarchy is minimal:** Primarily 300 (stats), 400 (display headings, body), and 500 (UI labels, logo, buttons). No bold (700) or heavy (900) weights are used anywhere.
 
@@ -138,7 +138,7 @@ All sections follow a consistent `section → [label] → H2 → subtitle → [c
 
 ### 3.4 Whitespace Usage
 
-Whitespace is used **generously and deliberately**. Long dark voids exist between sections as breathing room — the site treats silence as a design element, mirroring cinematic pacing. No section feels visually crowded.
+Whitespace is used **generously and deliberately**. Long dark voids exist between sections as breathing room - the site treats silence as a design element, mirroring cinematic pacing. No section feels visually crowded.
 
 ---
 
@@ -150,7 +150,7 @@ Whitespace is used **generously and deliberately**. Long dark voids exist betwee
 |---|---|
 | Height | 64px |
 | Width | 1128px (matches content max-width) |
-| Background | Transparent — floats over hero image |
+| Background | Transparent - floats over hero image |
 | Padding | 16px all sides |
 | Alignment | Flex row, space-between |
 | Navigation Links | Hidden behind hamburger menu only |
@@ -163,7 +163,7 @@ Whitespace is used **generously and deliberately**. Long dark voids exist betwee
 |---|---|
 | Shape | Pill / fully-rounded |
 | Border Radius | 48px |
-| Background | `rgba(255,255,255,0.06)` — glass |
+| Background | `rgba(255,255,255,0.06)` - glass |
 | Inset Shadow | `rgba(255,255,255,0.20) 0px 1.5px 0px 0px inset` |
 | Text Color | `#ffffff` |
 | Font | Inter, 16px, weight 500 |
@@ -262,17 +262,17 @@ Whitespace is used **generously and deliberately**. Long dark voids exist betwee
 
 ## 7. DESIGN PRINCIPLES INFERRED
 
-Minta's design philosophy is rooted in **restraint amplified by atmosphere**. Every visual decision reduces noise while maximizing emotional weight — the pure black background is a deliberate stage that makes every glass card feel luminous by contrast. The type system enforces strict hierarchy through size, weight, and color temperature alone, avoiding decorative elements. The three-font system (Inter Display for editorial impact, Inter for functional clarity, JetBrains Mono for technical precision) communicates both human warmth and technical credibility. The site intentionally avoids the neon-green cyberpunk aesthetic common to crypto products, choosing the visual language of premium consumer finance instead. Motion serves the narrative through subtle counter animations and text reveals — interaction is implied rather than demanded. The result feels less like a product landing page and more like an editorial brand experience.
+Minta's design philosophy is rooted in **restraint amplified by atmosphere**. Every visual decision reduces noise while maximizing emotional weight - the pure black background is a deliberate stage that makes every glass card feel luminous by contrast. The type system enforces strict hierarchy through size, weight, and color temperature alone, avoiding decorative elements. The three-font system (Inter Display for editorial impact, Inter for functional clarity, JetBrains Mono for technical precision) communicates both human warmth and technical credibility. The site intentionally avoids the neon-green cyberpunk aesthetic common to crypto products, choosing the visual language of premium consumer finance instead. Motion serves the narrative through subtle counter animations and text reveals - interaction is implied rather than demanded. The result feels less like a product landing page and more like an editorial brand experience.
 
 ---
 
 ## 8. DO NOT REPLICATE LIST
 
-1. **Minta wordmark and snowflake/radiant logo icon** — proprietary brand identity
-2. **Hero hand-reaching-toward-light photography** — core to the "Step into the light" brand metaphor
-3. **Minta physical card renders** — proprietary product renders with Minta branding
-4. **Mobile app UI screenshots** — Minta's own product design IP
-5. **"Step into the light. Your future is already waiting." copy** — Minta's proprietary creative positioning
+1. **Minta wordmark and snowflake/radiant logo icon** - proprietary brand identity
+2. **Hero hand-reaching-toward-light photography** - core to the "Step into the light" brand metaphor
+3. **Minta physical card renders** - proprietary product renders with Minta branding
+4. **Mobile app UI screenshots** - Minta's own product design IP
+5. **"Step into the light. Your future is already waiting." copy** - Minta's proprietary creative positioning
 
 ---
 

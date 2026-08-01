@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Aldernorth Capital">
-  <title>Aldernorth Capital</title>
-  
-  <path d="M32 8c14 8 21 20 21 32 0 13-9 23-21 29-12-6-21-16-21-29 0-12 7-24 21-32z" fill="#FF6D29"/>
-  <path d="M32 13v52M32 31l12-10M32 31L20 21M32 47l14-12M32 47L18 35" stroke="#161316" stroke-width="2.6" stroke-linecap="round" opacity=".55"/>
-</svg>

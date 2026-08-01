@@ -5,13 +5,19 @@ error_reporting(0);
     // FILE: /api/backend/wallet.php
     // PURPOSE: Central wallet controller for Aldernorth Capital
     // DESCRIPTION:
-    // Handles all wallet actions — deposits, withdrawals,
+    // Handles all wallet actions - deposits, withdrawals,
     // confirmations, and pending data retrieval.
     // Integrates with NOWPayments for crypto deposits,
     // updates wallet balances, and triggers notification emails.
     // ===============================================
 
-    session_start();
+    // Hardened + proxy-aware - see api/utilities/security.php.
+require_once __DIR__ . '/../../api/utilities/security.php';
+    ancSessionStart();
+
+    // CSRF. Safe methods return immediately; anything else must present the
+    // session token as X-CSRF-Token (assets/js/api.js sends it on every POST).
+    ancCsrfEnforce();
     header('Content-Type: application/json');
 
     // ---------------------------
@@ -29,7 +35,9 @@ error_reporting(0);
     require_once __DIR__ . '/../../config/database.php';
     require_once __DIR__ . '/../../config/env.php';        // must precede constants.php so .env APP_URL wins
     require_once __DIR__ . '/../../config/constants.php';
+    require_once __DIR__ . '/../utilities/helpers.php';   // formatPaymentMethod()
     require_once __DIR__ . '/email.php';
+    require_once __DIR__ . '/../../api/utilities/security.php';   // rate limiting + sessions
 
     $pdo = getPDO();
     $user_id = (int) $_SESSION['user_id'];
@@ -48,9 +56,29 @@ error_reporting(0);
         $action = trim($_POST['action']);
     }
 
-    // 2️⃣ GET param
+    // 2️⃣ GET param - READ-ONLY actions only.
+    //
+    // This used to accept ANY action over GET, which made initiate_deposit,
+    // confirm_deposit_payment and withdraw_request reachable by a bare
+    // cross-site <img src> or <form method=get> - no script, no CORS
+    // preflight, nothing for the browser to stop. A GET must never move money.
+    //
+    // Every actual caller uses fetchApi() (JSON POST), so nothing in this
+    // application relied on the GET path; the allow-list only preserves it for
+    // the three reads in case something external polls them.
+    $readOnlyActions = ['get_pending_deposits', 'get_wallet_summary', 'get_deposit_networks'];
     if (!$action && isset($_GET['action']) && $_GET['action'] !== '') {
-        $action = trim($_GET['action']);
+        $candidate = trim($_GET['action']);
+        if (in_array($candidate, $readOnlyActions, true)) {
+            $action = $candidate;
+        } else {
+            http_response_code(405);
+            echo json_encode([
+                'status'  => 'error',
+                'message' => 'This action requires POST.',
+            ]);
+            exit;
+        }
     }
 
     // 3️⃣ JSON body (fetch API)
@@ -115,17 +143,92 @@ error_reporting(0);
             // 1️⃣ INITIATE DEPOSIT
             // -------------------------------------------------------
             case 'initiate_deposit':
+                // Money-moving action: throttled per IP AND per account, so one
+                // compromised session cannot be used to hammer the endpoint.
+                ancEnforceRateLimit($pdo, 'deposit', (string) $user_id);
+                ancRecordAttempt($pdo, 'deposit', ancClientIp());
+                ancRecordAttempt($pdo, 'deposit', (string) $user_id);
+
                 $data = $parsedJsonBody ?? (json_decode(file_get_contents('php://input'), true) ?: []);
                 $amount = (float) ($data['amount'] ?? 0);
                 $method = strtolower(trim((string)($data['method'] ?? '')));
+                $addressId = (int) ($data['deposit_address_id'] ?? 0);
 
                 if ($amount <= 0 || !$method) {
                     jsonResponse('error', 'Invalid deposit details provided.');
                 }
 
+                // secure_exchange = NOWPayments checkout, which issues its own
+                // address. deposit_address = manual transfer to an address WE
+                // publish; that transaction stays pending until an admin
+                // confirms receipt. Wire transfer and cash mailing are retired.
+                //
+                // There was no whitelist at all before this - $method went
+                // straight into the INSERT and only the MySQL ENUM stood between
+                // a caller and an arbitrary value, which fails as a 500 rather
+                // than a message.
+                if (!in_array($method, ['secure_exchange', 'deposit_address'], true)) {
+                    jsonResponse('error', 'Unsupported deposit method.');
+                }
+
+                $snapshot = null;
+                if ($method === 'deposit_address') {
+                    if ($addressId <= 0) {
+                        jsonResponse('error', 'Select the coin and network you want to send.');
+                    }
+
+                    // is_active lives in the WHERE, not in a check afterwards:
+                    // an address an admin hid a second ago must not be handed out.
+                    $addrStmt = $pdo->prepare("
+                        SELECT id, asset, network, label, address, memo_tag, memo_label,
+                               min_amount, confirmations, instructions
+                        FROM deposit_addresses
+                        WHERE id = ? AND is_active = 1
+                        LIMIT 1
+                    ");
+                    $addrStmt->execute([$addressId]);
+                    $addrRow = $addrStmt->fetch(PDO::FETCH_ASSOC);
+
+                    if (!$addrRow) {
+                        jsonResponse('error', 'That deposit address is no longer available. Please pick another network.');
+                    }
+
+                    $minAmount = (float) $addrRow['min_amount'];
+                    if ($minAmount > 0 && $amount < $minAmount) {
+                        jsonResponse('error', sprintf(
+                            'The minimum deposit for %s is $%s.',
+                            $addrRow['label'],
+                            number_format($minAmount, 2)
+                        ));
+                    }
+
+                    // SNAPSHOT: the transaction owns its address forever. Rotating
+                    // or deleting a deposit_addresses row must never change what a
+                    // member was already told to pay - which is what makes the
+                    // "safe to hard-delete" contract in api/admin/deposit_addresses.php
+                    // actually true.
+                    $snapshot = [
+                        'id'            => (int) $addrRow['id'],
+                        'asset'         => strtoupper((string) $addrRow['asset']),
+                        'network'       => (string) $addrRow['network'],
+                        'label'         => (string) $addrRow['label'],
+                        'address'       => (string) $addrRow['address'],
+                        'memo_tag'      => $addrRow['memo_tag'],
+                        'memo_label'    => $addrRow['memo_label'],
+                        'min_amount'    => $minAmount,
+                        'confirmations' => (int) $addrRow['confirmations'],
+                        'instructions'  => (string) ($addrRow['instructions'] ?? ''),
+                        'snapshot_at'   => date('Y-m-d H:i:s'),
+                    ];
+                }
+
                 $reference = generateReference('ANC-DEP');
                 $timestamp = date('Y-m-d H:i:s');
-                $details = json_encode(['initiated_at' => $timestamp, 'method' => $method]);
+                $detailsArr = ['initiated_at' => $timestamp, 'method' => $method];
+                if ($snapshot) {
+                    $detailsArr['deposit_address'] = $snapshot;
+                }
+                $details = json_encode($detailsArr);
 
                 $insert = $pdo->prepare("
                     INSERT INTO transactions (user_id, type, method, amount, reference, status, details, created_at)
@@ -149,21 +252,68 @@ error_reporting(0);
                         jsonResponse('error', 'Payment provider did not return a redirect URL.', $response);
                     }
 
+                    // The member is about to leave the site for the provider.
+                    // Until now nothing was sent here at all, so if the checkout
+                    // was abandoned or the IPN never landed, the deposit existed
+                    // only as a pending row nobody had been told about.
+                    // deposit_initiated is the right template for this branch -
+                    // it says instructions follow, which for a hosted checkout
+                    // they do, on the provider's page.
+                    sendEmail([
+                        'to' => $user_email,
+                        'template' => 'deposit_initiated',
+                        'variables' => [
+                            'user_name' => $user_name,
+                            'amount'    => number_format($amount, 2),
+                            'method'    => formatPaymentMethod($method),
+                            'reference' => $reference,
+                        ],
+                    ]);
+
+                    sendEmail([
+                        'to' => ADMIN_CONTACT_EMAIL,
+                        'template' => 'admin_deposit_notification',
+                        'variables' => [
+                            'admin_name' => 'Admin',
+                            'user_name'  => $user_name,
+                            'user_email' => $user_email,
+                            'amount'     => number_format($amount, 2),
+                            'method'     => formatPaymentMethod($method),
+                            'reference'  => $reference,
+                        ],
+                    ]);
+
                     jsonResponse('success', 'Redirecting to crypto payment...', [
                         'redirect_url' => $paymentUrl,
                         'reference' => $reference
                     ]);
                 }
 
-                // 🔹 Manual deposits (wire / cash)
+                // 🔹 Manual transfer to a published address.
+                //
+                // Template is deposit_details_provided, NOT deposit_initiated:
+                // the latter promises "you will receive an email shortly with
+                // specific instructions", which is no longer true because the
+                // instructions are in this very message. deposit_details_provided
+                // has a {{deposit_address}} slot and closes by telling the member
+                // to come back and press "I Have Paid" - written for exactly this
+                // flow and unreachable until now.
+                $addressLine = $snapshot['label'] . ' — ' . $snapshot['address'];
+                if (!empty($snapshot['memo_tag'])) {
+                    $addressLine .= ' (' . ($snapshot['memo_label'] ?: 'Memo') . ': ' . $snapshot['memo_tag'] . ')';
+                }
+
                 sendEmail([
                     'to' => $user_email,
-                    'template' => 'deposit_initiated',
+                    'template' => 'deposit_details_provided',
                     'variables' => [
                         'user_name' => $user_name,
                         'amount' => number_format($amount, 2),
-                        'method' => ucfirst(str_replace('_', ' ', $method)),
-                        'reference' => $reference
+                        'reference' => $reference,
+                        // sendEmail() escapes every variable that is not on its
+                        // raw-HTML allowlist, so escaping here too delivered
+                        // &amp;amp; to the member for any address containing &.
+                        'deposit_address' => $addressLine,
                     ]
                 ]);
 
@@ -174,18 +324,32 @@ error_reporting(0);
                         'user_name' => $user_name,
                         'user_email' => $user_email,
                         'amount' => number_format($amount, 2),
-                        'method' => ucfirst($method),
+                        'method' => formatPaymentMethod($method) . ' (' . $snapshot['label'] . ')',
                         'reference' => $reference
                     ]
                 ]);
 
-                jsonResponse('success', 'Deposit request initiated successfully.', ['reference' => $reference]);
+                // The snapshot goes back with the response so the modal renders
+                // the address with no second round trip.
+                jsonResponse('success', 'Deposit instructions ready.', [
+                    'reference'       => $reference,
+                    'amount'          => round($amount, 2),
+                    'method'          => $method,
+                    'created_at'      => $timestamp,
+                    'deposit_address' => $snapshot,
+                ]);
                 break;
 
             // -------------------------------------------------------
             // 2️⃣ CONFIRM DEPOSIT PAYMENT ("I Have Paid")
             // -------------------------------------------------------
             case 'confirm_deposit_payment':
+                // Money-moving action: throttled per IP AND per account, so one
+                // compromised session cannot be used to hammer the endpoint.
+                ancEnforceRateLimit($pdo, 'deposit', (string) $user_id);
+                ancRecordAttempt($pdo, 'deposit', ancClientIp());
+                ancRecordAttempt($pdo, 'deposit', (string) $user_id);
+
                 $data = $parsedJsonBody ?? (json_decode(file_get_contents('php://input'), true) ?: []);
                 $reference = trim((string)($data['reference'] ?? ''));
                 if (!$reference) jsonResponse('error', 'Reference is required.');
@@ -199,10 +363,26 @@ error_reporting(0);
                 $txn = $stmt->fetch();
                 if (!$txn) jsonResponse('error', 'No pending deposit found for this reference.');
 
+                // Optional on-chain transaction hash. Without it the admin is
+                // approving on the amount alone; with it they can check a block
+                // explorer before crediting. Bounded because it is echoed into
+                // an email and an admin table.
+                $txHash = trim((string)($data['tx_hash'] ?? ''));
+                if ($txHash !== '') {
+                    if (mb_strlen($txHash) > 120 || preg_match('/\s/', $txHash)) {
+                        jsonResponse('error', 'That transaction hash does not look valid.');
+                    }
+                }
+
+                // Merged at the TOP level, so the nested deposit_address
+                // snapshot written by initiate_deposit survives untouched.
                 $details = json_decode($txn['details'] ?? '{}', true);
                 if (!is_array($details)) $details = [];
                 $details['user_marked_paid'] = true;
                 $details['marked_paid_at'] = date('Y-m-d H:i:s');
+                if ($txHash !== '') {
+                    $details['tx_hash'] = $txHash;
+                }
 
                 $upd = $pdo->prepare("UPDATE transactions SET details = ? WHERE id = ?");
                 $upd->execute([json_encode($details), $txn['id']]);
@@ -214,10 +394,26 @@ error_reporting(0);
                         'user_name' => $user_name,
                         'user_email' => $user_email,
                         'amount' => number_format($txn['amount'], 2),
-                        'method' => ucfirst($txn['method']),
+                        'method' => formatPaymentMethod($txn['method']),
                         'reference' => $txn['reference'],
-                        'details' => 'User confirmed payment manually.'
+                        'details' => $txHash !== ''
+                            ? 'User confirmed payment. Transaction hash: ' . $txHash   // sendEmail escapes
+                            : 'User confirmed payment manually. No transaction hash supplied.'
                     ]
+                ]);
+
+                // Member receipt. Only the admin was told before, so the member
+                // pressed a button and got nothing but a toast.
+                sendEmail([
+                    'to' => $user_email,
+                    'template' => 'deposit_marked_paid',
+                    'variables' => [
+                        'user_name' => $user_name,
+                        'amount'    => number_format($txn['amount'], 2),
+                        'method'    => formatPaymentMethod($txn['method']),
+                        'reference' => $txn['reference'],
+                        'tx_hash'   => $txHash !== '' ? $txHash : 'Not supplied',
+                    ],
                 ]);
 
                 jsonResponse('success', 'Deposit marked as paid. Please wait while we complete verification.');
@@ -227,12 +423,24 @@ error_reporting(0);
             // 3️⃣ WITHDRAW REQUEST
             // -------------------------------------------------------
             case 'withdraw_request':
+                // Money-moving action: throttled per IP AND per account, so one
+                // compromised session cannot be used to hammer the endpoint.
+                ancEnforceRateLimit($pdo, 'withdraw', (string) $user_id);
+                ancRecordAttempt($pdo, 'withdraw', ancClientIp());
+                ancRecordAttempt($pdo, 'withdraw', (string) $user_id);
+
                 $data = $parsedJsonBody ?? (json_decode(file_get_contents('php://input'), true) ?: []);
                 $amount = (float) ($data['amount'] ?? 0);
                 $method = strtolower(trim((string)($data['method'] ?? '')));
                 $details = $data['details'] ?? [];
 
                 if ($amount <= 0 || !$method) jsonResponse('error', 'Invalid withdrawal details.');
+
+                // Same reasoning as initiate_deposit: there was no whitelist,
+                // so the MySQL ENUM was the only gate. cash_mailing is retired.
+                if (!in_array($method, ['local_bank', 'wallet_address'], true)) {
+                    jsonResponse('error', 'Unsupported withdrawal method.');
+                }
 
                 $wallet = getUserWallet($pdo, $user_id);
                 if (!$wallet || $wallet['balance'] < $amount) jsonResponse('error', 'Insufficient wallet balance.');
@@ -280,13 +488,10 @@ error_reporting(0);
                     $detailsHtml .= "<p {$baseStyle}><strong>-- Crypto Details --</strong></p>";
                     $detailsHtml .= "<p {$baseStyle}><strong>Coin:</strong> " . strtoupper(htmlspecialchars($details['coin'] ?? 'N/A')) . "</p>";
                     $detailsHtml .= "<p {$baseStyle}><strong>Wallet Address:</strong> " . htmlspecialchars($details['address'] ?? 'N/A') . "</p>";
-                } elseif ($method === 'cash_mailing') {
-                    $detailsHtml .= "<p {$baseStyle}><strong>-- Mailing Details --</strong></p>";
-                    $detailsHtml .= "<div style='padding-left:15px; border-left: 2px solid #386641; margin-left: 5px;'>";
-                    // Use nl2br for textarea content to preserve line breaks
-                    $detailsHtml .= nl2br(htmlspecialchars($details['mail'] ?? 'N/A'));
-                    $detailsHtml .= "</div>";
                 } else {
+                    // The cash_mailing branch lived here. It went with the
+                    // method; the whitelist above means this is now genuinely
+                    // unreachable except for a future method added upstream.
                     $detailsHtml = "<p {$baseStyle}><strong>Details:</strong> No structured details provided for this method.</p>";
                 }
                 // --- END MODIFIED LOGIC ---
@@ -297,7 +502,7 @@ error_reporting(0);
                     'variables' => [
                         'user_name' => $user_name,
                         'amount' => number_format($amount, 2),
-                        'method' => ucfirst(str_replace('_', ' ', $method)),
+                        'method' => formatPaymentMethod($method),
                         'reference' => $reference
                     ]
                 ]);
@@ -309,7 +514,7 @@ error_reporting(0);
                         'user_name' => $user_name,
                         'user_email' => $user_email,
                         'amount' => number_format($amount, 2),
-                        'method' => ucfirst($method),
+                        'method' => formatPaymentMethod($method),
                         'reference' => $reference,
                         'details_html' => $detailsHtml, // <-- New variable passed here
                     ]
@@ -400,31 +605,40 @@ error_reporting(0);
                 break;
 
 
-                // -------------------------------------------------------
-        // 6️⃣ GET DEPOSIT DETAILS FROM SETTINGS
         // -------------------------------------------------------
-        case 'get_deposit_details':
-            $data = $parsedJsonBody ?? (json_decode(file_get_contents('php://input'), true) ?: []);
-            $method = strtolower(trim((string)($data['method'] ?? '')));
+        // 6️⃣ PUBLISHED DEPOSIT ADDRESSES (one per chain)
+        //
+        // Replaces get_deposit_details, which interpolated a column name
+        // into `SELECT {$column} FROM settings LIMIT 1` - no WHERE id = 1,
+        // so the moment a second settings row existed members would have
+        // been shown an arbitrary address.
+        // -------------------------------------------------------
+        case 'get_deposit_networks':
+            $stmt = $pdo->query("
+                SELECT id, asset, network, label, address, memo_tag, memo_label,
+                       min_amount, confirmations, instructions
+                FROM deposit_addresses
+                WHERE is_active = 1
+                ORDER BY sort_order ASC, asset ASC, network ASC
+            ");
+            $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
 
-            if ($method === 'cash_mailing') {
-                $column = 'cash_mailing_address';
-            } elseif ($method === 'wallet_address') {
-                $column = 'wallet_deposit_address';
-            } else {
-                jsonResponse('error', 'Invalid deposit method specified.');
-            }
+            $networks = array_map(static function (array $r): array {
+                return [
+                    'id'            => (int) $r['id'],
+                    'asset'         => strtoupper((string) $r['asset']),
+                    'network'       => (string) $r['network'],
+                    'label'         => (string) $r['label'],
+                    'address'       => (string) $r['address'],
+                    'memo_tag'      => $r['memo_tag'],
+                    'memo_label'    => $r['memo_label'],
+                    'min_amount'    => (float) $r['min_amount'],
+                    'confirmations' => (int) $r['confirmations'],
+                    'instructions'  => (string) ($r['instructions'] ?? ''),
+                ];
+            }, $rows);
 
-            // Fetch the deposit address/details from the settings table
-            $stmt = $pdo->prepare("SELECT {$column} FROM settings LIMIT 1");
-            $stmt->execute();
-            $settings = $stmt->fetchColumn();
-
-            if (empty($settings)) {
-                jsonResponse('error', 'Support details not yet configured for this method.', ['details' => '']);
-            }
-
-            jsonResponse('success', 'Deposit details retrieved.', ['details' => $settings]);
+            jsonResponse('success', 'Deposit networks retrieved.', ['networks' => $networks]);
             break;
 
                 

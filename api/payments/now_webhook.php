@@ -42,7 +42,17 @@ $payload = json_decode($rawBody, true);
 if (!is_array($payload)) {
     // invalid JSON
     http_response_code(400);
-    error_log('NOWWebhook: Invalid JSON received: ' . $rawBody);
+    // Length and a hash, NOT the body. This branch is reachable by anyone who
+    // can POST to the endpoint - the signature has not been checked yet - so
+    // logging $rawBody verbatim let an unauthenticated caller write arbitrary
+    // attacker-chosen bytes into the error log: newlines to forge fake log
+    // entries, and unbounded volume to fill the disk. The hash is still enough
+    // to tell whether two reports are the same payload.
+    error_log(sprintf(
+        'NOWWebhook: invalid JSON (bytes=%d, sha256=%s)',
+        strlen($rawBody),
+        substr(hash('sha256', $rawBody), 0, 16)
+    ));
     echo json_encode(['status' => 'error', 'message' => 'Invalid JSON payload']);
     exit;
 }
@@ -69,7 +79,7 @@ function canonicalJson($data) {
             }
             return '{' . implode(',', $parts) . '}';
         } else {
-            // Indexed array — preserve order
+            // Indexed array - preserve order
             $parts = [];
             foreach ($data as $item) {
                 $parts[] = canonicalJson($item);
@@ -91,8 +101,19 @@ $expectedSig = hash_hmac('sha512', $canonical, NOWPAY_IPN_SECRET);
 
 // Compare signatures in a timing-safe manner
 if (!hash_equals($expectedSig, $signatureHeader)) {
-    // Signature mismatch -> log and reject
-    error_log("NOWWebhook: Signature verification failed. Expected: {$expectedSig} Received: {$signatureHeader}");
+    // Signature mismatch -> reject.
+    //
+    // Deliberately does NOT log $expectedSig. That value is a VALID HMAC over
+    // an attacker-chosen payload, so logging it turned this endpoint into a
+    // signing oracle: submit a payload, read the log, then replay a forged
+    // `finished` IPN with the harvested signature and credit any wallet.
+    // A short prefix of the RECEIVED value is enough to correlate a report
+    // with a log line without handing anything back.
+    error_log(sprintf(
+        'NOWWebhook: signature verification failed (order_id=%s, received_sig_prefix=%s)',
+        (string)($payload['order_id'] ?? 'unknown'),
+        substr($signatureHeader, 0, 8)
+    ));
     http_response_code(403);
     echo json_encode(['status' => 'error', 'message' => 'Invalid signature']);
     exit;
@@ -131,7 +152,7 @@ $stmt->execute([$orderId]);
 $txn = $stmt->fetch();
 
 if (!$txn) {
-    // no transaction — might be created differently. Log and return 404.
+    // no transaction - might be created differently. Log and return 404.
     error_log("NOWWebhook: Transaction not found for reference {$orderId}");
     http_response_code(404);
     echo json_encode(['status' => 'error', 'message' => 'Transaction not found']);
@@ -141,7 +162,7 @@ if (!$txn) {
 // Idempotency: if transaction already completed, return OK.
 if (strtolower($txn['status']) === 'completed') {
     // Update provider info optionally, but do not credit again.
-    error_log("NOWWebhook: Transaction {$orderId} already completed — ignoring duplicate IPN.");
+    error_log("NOWWebhook: Transaction {$orderId} already completed - ignoring duplicate IPN.");
     http_response_code(200);
     echo json_encode(['status' => 'success', 'message' => 'Already processed']);
     exit;
@@ -176,7 +197,7 @@ if ($paymentStatus !== null) {
 // If the payload includes an amount, we can use it to be safe. Otherwise fall back to txn.amount.
 $amountToCredit = $txn['amount'];
 if (!empty($paidAmount) && is_numeric($paidAmount)) {
-    // sometimes price_amount is string — cast to float
+    // sometimes price_amount is string - cast to float
     $amountToCredit = (float)$paidAmount;
 }
 
@@ -245,7 +266,9 @@ if ($shouldComplete) {
             'amount' => number_format($amountToCredit, 2),
             'method' => 'secure_exchange',
             'reference' => $orderId,
-            'details' => 'Auto-confirmed via NOWPayments IPN.'
+            // The template body says "Manual verification is required", which is
+            // false on this path - the wallet was already credited above.
+            'details' => 'Auto-confirmed via NOWPayments IPN. Wallet already credited; no action needed.'
         ]
     ]);
 
@@ -262,6 +285,52 @@ try {
     $upd->execute([json_encode($existingDetails), $txn['id']]);
 } catch (Exception $e) {
     error_log('NOWWebhook: Failed to update transaction details for non-final status: ' . $e->getMessage());
+}
+
+// A payment that FAILED, EXPIRED or was REFUNDED is final - it is never coming
+// back, and the member was previously told nothing at all: the row just sat
+// pending forever. Statuses like 'waiting' / 'confirming' are genuinely
+// intermediate and stay silent.
+$deadStatuses = ['failed', 'expired', 'refunded'];
+
+if (in_array(strtolower((string) $paymentStatus), $deadStatuses, true)) {
+    try {
+        // Only fire once, however many times the provider re-sends the IPN.
+        if (empty($existingDetails['failure_notified'])) {
+            $pdo->prepare("UPDATE transactions SET status = 'failed' WHERE id = ? AND status = 'pending'")
+                ->execute([$txn['id']]);
+
+            $userStmt = $pdo->prepare("SELECT name, full_name, email FROM users WHERE id = ? LIMIT 1");
+            $userStmt->execute([$txn['user_id']]);
+            $u = $userStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+            $reasons = [
+                'failed'   => 'The payment was not completed by the provider.',
+                'expired'  => 'The payment window closed before the transfer arrived.',
+                'refunded' => 'The payment was refunded by the provider.',
+            ];
+
+            if (!empty($u['email'])) {
+                sendEmail([
+                    'to' => $u['email'],
+                    'template' => 'deposit_failed',
+                    'variables' => [
+                        'user_name'      => $u['full_name'] ?? $u['name'] ?? 'there',
+                        'amount'         => number_format((float) $txn['amount'], 2),
+                        'reference'      => $orderId,
+                        'failure_reason' => $reasons[strtolower((string) $paymentStatus)]
+                                            ?? 'The payment did not complete.',
+                    ],
+                ]);
+            }
+
+            $existingDetails['failure_notified'] = date('Y-m-d H:i:s');
+            $pdo->prepare("UPDATE transactions SET details = ? WHERE id = ?")
+                ->execute([json_encode($existingDetails), $txn['id']]);
+        }
+    } catch (Exception $e) {
+        error_log('NOWWebhook: failure notification error: ' . $e->getMessage());
+    }
 }
 
 http_response_code(200);

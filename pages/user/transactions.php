@@ -1,12 +1,11 @@
 <?php
 // pages/user/transactions.php
 
-session_start([
-    'cookie_lifetime' => 86400,
-    'cookie_httponly' => true,
-    'cookie_secure' => true,
-    'cookie_samesite' => 'Strict',
-]);
+require_once __DIR__ . '/../../api/utilities/security.php';
+// Hardened + proxy-aware (use_strict_mode, and cookie_secure that survives
+// a TLS-terminating proxy - the inline options this replaced tested
+// $_SERVER['HTTPS'] === 'on', which is unset there).
+ancSessionStart();
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: /login');
@@ -33,6 +32,7 @@ $transactions = [];
 
             <!-- Sidebar -->
             <?php $active = "transactions"; include __DIR__ . "/_partials/sidebar.php"; ?>
+            <?php include __DIR__ . "/_partials/dock.php"; ?>
 
             <!-- Main Section -->
             <div class="section-content-right">
@@ -52,17 +52,17 @@ $transactions = [];
                                             <input type="text" placeholder="Search transactions" class="show-search style-1" required>
                                         </fieldset>
                                         <div class="button-submit">
-                                            <button type="submit"><i class="icon-search-normal1"></i></button>
+                                            <button type="submit"><i class="ph ph-magnifying-glass"></i></button>
                                         </div>
                                     </form>
                                     <div class="right">
                                         <a href="#" class="tf-button style-2 f12-bold d-md-flex d-none">
-                                            <i class="icon icon-receive-square"></i>
+                                            <i class="ph ph-download-simple"></i>
                                             Export Report
                                         </a>
                                         <div class="dropdown default style-fill">
                                             <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                                <i class="icon icon-setting-5"></i> Filter
+                                                <i class="ph ph-sliders-horizontal"></i> Filter
                                             </button>
                                             <ul class="dropdown-menu dropdown-menu-end">
                                                 <li><a href="#">All</a></li>
@@ -92,7 +92,7 @@ $transactions = [];
                                     </table>
                                 </div>
                                 <!-- /table -->
-                                 <div id="pagination" class="pagination mt-3 flex gap-2 justify-center"></div>
+                                 <div id="pagination"></div>
                             </div>
                         </div>
                     </div>
@@ -106,6 +106,7 @@ $transactions = [];
 <script src="<?= anc_asset('../../assets/js/api.js') ?>"></script> <!-- Or move after jQuery if dependent -->
 <script src="<?= anc_asset('../../assets/js/jquery.min.js') ?>"></script>
 <script src="<?= anc_asset('../../assets/js/bootstrap.min.js') ?>"></script>
+<script src="<?= anc_asset('../../assets/js/anc-pagination.js') ?>" defer></script>
 <script src="<?= anc_asset('../../assets/js/dashboard.js') ?>" defer></script>
 <script src="<?= anc_asset('../../assets/js/transaction.js') ?>" defer></script>
 </body>

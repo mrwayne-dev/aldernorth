@@ -4,8 +4,12 @@
 // PURPOSE: Fetch all platform transactions (Admin View) with
 // pagination, search, filtering, and metric calculation.
 // ============================================================
+// Hardened + proxy-aware session cookie (HttpOnly, Secure, SameSite=Strict,
+// use_strict_mode). A bare session_start() inherited this box's ini defaults,
+// which set NONE of those - see api/utilities/security.php.
 
-session_start();
+require_once __DIR__ . '/../../api/utilities/security.php';
+ancSessionStart();
 header('Content-Type: application/json');
 
 // Ensure only authenticated admins can access this script
@@ -16,6 +20,7 @@ if (!isset($_SESSION['admin_id'])) {
 }
 
 require_once '../../config/database.php';
+require_once __DIR__ . '/../utilities/helpers.php';   // formatTransactionType()
 // Assuming executeQuery helper is defined elsewhere (e.g., in a utils file or copied here)
 // For simplicity, we define it here, assuming database.php provides getPDO().
 $pdo = getPDO();
@@ -123,7 +128,7 @@ if ($export) {
             date('Y-m-d H:i', strtotime($r['created_at'])),
             $r['user_name'],
             $email,
-            ucfirst($r['type']),
+            formatTransactionType($r['type']),
             number_format((float)$r['amount'], 2),
             strtoupper($r['status'])
         ]);
@@ -137,7 +142,7 @@ $formatted = array_map(fn($r) => [
     'id' => (int)$r['id'],
     'reference' => $r['reference'],
     'date' => date('M d, Y H:i', strtotime($r['created_at'])),
-    'type' => ucfirst($r['type']),
+    'type' => formatTransactionType($r['type']),
     'amount' => (string)(float)$r['amount'], 
     'status' => ucfirst($r['status']),
     'user_name' => $r['user_name'],

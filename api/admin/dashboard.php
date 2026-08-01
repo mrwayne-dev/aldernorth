@@ -5,21 +5,38 @@
 // ---------------------------
 // Session & Headers
 // ---------------------------
-session_start([
-    'cookie_lifetime' => 86400,
-    'cookie_httponly' => true,
-    'cookie_secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on', // Use safe setting
-    'cookie_samesite' => 'Strict',
-]);
+require_once __DIR__ . '/../../api/utilities/security.php';
+// Hardened + proxy-aware: use_strict_mode, and a cookie_secure that
+// survives a TLS-terminating proxy (the inline options this replaced
+// tested $_SERVER['HTTPS'] === 'on', which is unset behind one).
+ancSessionStart();
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *'); 
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+// CORS removed.
+//
+// These endpoints are same-origin only - every caller is assets/js/*.js on
+// this host - so no CORS headers are needed at all, and the ones that were
+// here actively hurt:
+//
+//   Access-Control-Allow-Origin: *
+//   Access-Control-Allow-Credentials: true
+//
+// A wildcard origin combined with credentials is rejected outright by every
+// browser, so this never worked as written; what it did do was advertise
+// intent and guarantee that the day someone "fixed" it by echoing back the
+// Origin header, any site on the internet could read a member's dashboard.
+// The X-CSRF-Token header the client now sends also requires a preflight
+// cross-origin, and with no CORS headers that preflight simply fails - which
+// is the desired outcome.
+//
+// The OPTIONS short-circuit is kept: browsers may still preflight, and it
+// should return cleanly rather than fall through to the auth check.
 
 // ---------------------------
 // Include dependencies
 // ---------------------------
 require_once __DIR__ . '/../../config/constants.php';
 require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../utilities/helpers.php';   // formatTransactionType()
 
 // ---------------------------
 // **ADMIN** Auth Check
@@ -46,7 +63,6 @@ try {
 // 1. Fetch Global Metrics for Cards & Alerts
 // ---------------------------
 $totalRevenue = 0.00;
-$totalDonations = 0.00;
 $activeInvestmentsCount = 0;
 $totalUsers = 0;
 $pendingDeposits = 0;
@@ -57,13 +73,18 @@ try {
     // Metric 1: Total Revenue (all deposits into wallets)
     $totalRevenue = $pdo->query("SELECT COALESCE(SUM(total_deposited), 0) FROM wallets")->fetchColumn();
 
-    // Metric 2: Total Donations (sum of all donations made)
-    $totalDonations = $pdo->query("SELECT COALESCE(SUM(total_donations), 0) FROM wallets")->fetchColumn();
-    
-    // Metric 3: Active Investments Count
+    // NOTE: a "total donations" metric used to be queried here against
+    // wallets.total_donations, a column left over from the inherited product
+    // that this schema does not have. The query threw, the catch below
+    // swallowed it, and EVERY metric after it (active investments, total
+    // users, both pending counts, total invested) silently stayed 0. Nothing
+    // consumed the value: its #total-donations element does not exist in any
+    // admin page. Removed rather than repaired.
+
+    // Metric 2: Active Investments Count
     $activeInvestmentsCount = $pdo->query("SELECT COUNT(id) FROM investments WHERE status = 'active'")->fetchColumn();
 
-    // Metric 4: Total Active Users
+    // Metric 3: Total Active Users
     $totalUsers = $pdo->query("SELECT COUNT(id) FROM users WHERE status = 'active'")->fetchColumn();
 
     // Pending Alerts: Deposits & Withdrawals (Count)
@@ -98,7 +119,7 @@ try {
             'date' => date('M d, Y', strtotime($txn['created_at'])),
             'user' => htmlspecialchars($txn['full_name'] ?? 'System User'),
             // FIX: Format type to 'Capitalized First Letter'
-            'type' => ucfirst(strtolower(htmlspecialchars($txn['type'] ?? 'N/A'))), 
+            'type' => htmlspecialchars(formatTransactionType($txn['type'] ?? '')), 
             'amount' => (float)$txn['amount'],
             'status' => htmlspecialchars($txn['status'] ?? 'N/A'),
         ];
@@ -110,28 +131,27 @@ try {
 // ---------------------------
 // 3. Calculate Chart Ratios (Distribution of monetary values)
 // ---------------------------
+// The "donations" slice went with the removed metric above; the chart legend
+// in pages/admin/dashboard.php only ever had Revenue / Invested / Users.
 $chartSources = [
     'revenue_raw' => (float)$totalRevenue,
-    'donations_raw' => (float)$totalDonations,
     'investments_raw' => (float)$totalInvestedAmount,
 ];
 
-$chartMonetaryTotal = $chartSources['revenue_raw'] + $chartSources['donations_raw'] + $chartSources['investments_raw'];
+$chartMonetaryTotal = $chartSources['revenue_raw'] + $chartSources['investments_raw'];
 
 $chartPercentages = [
     'revenue' => 0.0,
-    'donations' => 0.0,
     'investments' => 0.0,
     'users' => 0.0,
 ];
 
 if ($chartMonetaryTotal > 0) {
     $chartPercentages['revenue'] = round(($chartSources['revenue_raw'] / $chartMonetaryTotal) * 100, 1);
-    $chartPercentages['donations'] = round(($chartSources['donations_raw'] / $chartMonetaryTotal) * 100, 1);
     $chartPercentages['investments'] = round(($chartSources['investments_raw'] / $chartMonetaryTotal) * 100, 1);
-    
+
     // Assign remaining percentage to users/placeholder slice for a full 100% chart visualization
-    $monetarySum = $chartPercentages['revenue'] + $chartPercentages['donations'] + $chartPercentages['investments'];
+    $monetarySum = $chartPercentages['revenue'] + $chartPercentages['investments'];
     $chartPercentages['users'] = round(max(0, 100 - $monetarySum), 1);
 } else {
     // If no data, split for visualization or assign all to users
@@ -147,9 +167,12 @@ echo json_encode([
     'data' => [
         'metrics' => [
             'total_revenue' => (float)$totalRevenue,
-            'total_donations' => (float)$totalDonations,
             'active_investments' => (int)$activeInvestmentsCount,
             'total_users' => (int)$totalUsers,
+            // Capital currently under management. The #total-aum card has always
+            // existed in the admin markup but nothing ever populated it, so it
+            // was pinned at $0.00.
+            'total_aum' => (float)$totalInvestedAmount,
         ],
         'pending_alerts' => [
             'deposits' => (int)$pendingDeposits,

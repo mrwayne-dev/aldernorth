@@ -1,6 +1,6 @@
 <?php
 $page_title = 'Platform | One wallet, every way to grow it | Aldernorth Capital';
-$page_description = 'The Aldernorth Capital platform — one investment product, one wallet, audit-grade reporting. Built on trust, secured by design.';
+$page_description = 'One investment product, one wallet, audit-grade reporting. The Aldernorth Capital platform is built on trust and secured by design.';
 $page_path = '/platform';
 include __DIR__ . '/_partials/head.php';
 ?>
@@ -30,7 +30,7 @@ include __DIR__ . '/_partials/head.php';
     <div class="section-header" style="margin-bottom: var(--space-10);">
       <p class="eyebrow"><span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>How it works</p>
       <h2 class="section-header__title">One product, done properly.</h2>
-      <p class="section-header__body">We deliberately do not run a sprawling product shelf. There is one thing to decide — how often you want to be paid — and everything else is handled for you.</p>
+      <p class="section-header__body">We deliberately do not run a sprawling product shelf. There is one thing to decide: how often you want to be paid. Everything else is handled for you.</p>
     </div>
 
     <div class="grid-2">
@@ -74,7 +74,7 @@ include __DIR__ . '/_partials/plans-section.php';
     <div class="section-header" style="margin-bottom: var(--space-10);">
       <p class="eyebrow"><span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>Trust architecture</p>
       <h2 class="section-header__title">Built on trust. Secured by design.</h2>
-      <p class="section-header__body">Four layers of operational discipline sit beneath every product — audited, logged, and presented to you in plain English.</p>
+      <p class="section-header__body">Four layers of operational discipline sit beneath every product. Each one is audited, logged, and presented to you in plain English.</p>
     </div>
 
     <div class="grid-2">
@@ -86,7 +86,7 @@ include __DIR__ . '/_partials/plans-section.php';
       <article class="card-feature">
         <span class="card-feature__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="16" r="1"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><rect x="3" y="11" width="18" height="11" rx="2"/></svg></span>
         <h3 class="card-feature__title">Suitability before allocation</h3>
-        <p class="card-feature__desc">Every product surfaces yield, risk, lock-up, and the worst-case scenario before you commit a pound. No hidden tiers, no jargon-walled fine print.</p>
+        <p class="card-feature__desc">Every product surfaces yield, risk, lock-up, and the worst-case scenario before you commit a dollar. No hidden tiers, no jargon-walled fine print.</p>
       </article>
       <article class="card-feature">
         <span class="card-feature__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg></span>
@@ -96,7 +96,7 @@ include __DIR__ . '/_partials/plans-section.php';
       <article class="card-feature">
         <span class="card-feature__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg></span>
         <h3 class="card-feature__title">Compliance beyond regulation</h3>
-        <p class="card-feature__desc">UK GDPR, anti-money-laundering checks, and internal safeguarding rules. Quarterly security reviews. Annual independent audit of client-fund reconciliations.</p>
+        <p class="card-feature__desc">Data-protection controls, anti-money-laundering checks, and internal safeguarding rules. Quarterly security reviews. Annual independent audit of client-fund reconciliations.</p>
       </article>
     </div>
   </div>
@@ -105,7 +105,7 @@ include __DIR__ . '/_partials/plans-section.php';
 <section class="section section--white">
   <div class="container">
     <div class="testimonial">
-      <h2 class="testimonial__quote">Put your capital to work — at institutional terms, retail minimums.</h2>
+      <h2 class="testimonial__quote">Put your capital to work at institutional terms, retail minimums.</h2>
       <div>
         <p class="eyebrow" style="margin-bottom: var(--space-4);"><span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>Open an account</p>
         <p style="color: var(--color-ink-muted); margin-bottom: var(--space-5);">Three-minute sign-up. Segregated from your first deposit. Close your account anytime.</p>

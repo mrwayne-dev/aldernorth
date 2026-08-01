@@ -32,7 +32,7 @@ $(document).on('click', '.dropdown-menu .dropdown-item', function (e) {
         currentSearch = search;
         
         // Show loader
-        tableBody.empty().html('<tr><td colspan="4" class="text-center text-Primary f14-regular">Loading wallet data...</td></tr>');
+        tableBody.empty().html('<tr><td class="anc-empty" colspan="5">Loading wallet data...</td></tr>');
         paginationEl.empty();
         
         try {
@@ -46,7 +46,7 @@ $(document).on('click', '.dropdown-menu .dropdown-item', function (e) {
 
             if (res.status !== 'success') {
                 window.showToast(res.message || 'Failed to load wallet list.', 'error');
-                tableBody.html('<tr><td colspan="4" class="text-center text-Red f14-regular">Error loading data.</td></tr>');
+                tableBody.html('<tr><td class="anc-empty" colspan="5">Error loading data.</td></tr>');
                 return;
             }
 
@@ -58,7 +58,7 @@ $(document).on('click', '.dropdown-menu .dropdown-item', function (e) {
         } catch (error) {
             console.error('API Error loading wallets:', error);
             window.showToast('A network error occurred while fetching wallet data.', 'error');
-            tableBody.html('<tr><td colspan="4" class="text-center text-Red f14-regular">Network error. Check console.</td></tr>');
+            tableBody.html('<tr><td class="anc-empty" colspan="5">Network error. Check console.</td></tr>');
         }
     }
 
@@ -88,45 +88,68 @@ $(document).on('click', '.dropdown-menu .dropdown-item', function (e) {
         tableBody.empty();
 
         if (!wallets || wallets.length === 0) {
-            tableBody.html('<tr><td colspan="4" class="text-center text-Gray f14-regular">No wallets found matching current criteria.</td></tr>');
+            tableBody.html('<tr><td class="anc-empty" colspan="5">No wallets found matching current criteria.</td></tr>');
             return;
         }
         
         // Assumes formatCurrency is a global utility
         const formatCurrency = window.formatCurrency || ((amount) => Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 
+        const esc = window.ancEsc;
+
         wallets.forEach(wallet => {
-            // Apply text color based on balance value
-            const balanceColor = Number(wallet.balance) > 0 ? 'text-Green' : 'text-Red';
-            
-            const actionDropdown = `
-                <div class="dropdown default style-fill actions-dropdown">
-                    <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        Actions
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li>
-                            <button type="button" class="dropdown-item action-edit-balance"
-                                data-wallet-id="${wallet.wallet_id}"
-                                data-user-name="${wallet.user_name} (ID: ${wallet.user_id})"
-                                data-current-balance="${wallet.balance}">
-                                Edit Balance
-                            </button>
-                        </li>
-                    </ul>
-                </div>
+            // A zero balance is not an error, so it no longer renders red.
+            const balanceClass = Number(wallet.balance) > 0 ? 'is-in' : '';
+
+            const depCount = Number(wallet.pending_deposits_count || 0);
+            const wdCount  = Number(wallet.pending_withdrawals_count || 0);
+
+            /* Pending column: chips only when there IS something pending, so the
+               column reads as an exception list rather than a wall of zeros.
+               Counts come from a LEFT JOIN over transactions in the API - the
+               stored wallets.pending_withdrawals figure drifts and is not used. */
+            const pendingChips = [];
+            if (depCount) {
+                pendingChips.push(`<div class="box-status bg-Orange"><span class="font-poppins">${depCount} DEP</span></div>`);
+            }
+            if (wdCount) {
+                pendingChips.push(`<div class="box-status bg-Primary"><span class="font-poppins">${wdCount} WDL</span></div>`);
+            }
+            const pendingCell = pendingChips.length
+                ? pendingChips.join(' ')
+                : '<span class="text-Gray f12-regular">&mdash;</span>';
+
+            /* Inline buttons rather than a Bootstrap dropdown: the .anc-table
+               wrapper is `overflow-x: auto`, which clips an absolutely
+               positioned .dropdown-menu.
+
+               The two queue buttons open the SAME dialogs the dashboard uses
+               (pages/admin/_partials/pending-modals.php), scoped to this member.
+               They are only rendered when that member actually has something
+               pending - an empty queue is not worth a click. */
+            const actions = `
+                <button type="button" class="tf-button f12-bold action-edit-balance"
+                    data-wallet-id="${wallet.wallet_id}"
+                    data-user-name="${esc(wallet.user_name)} (ID: ${wallet.user_id})"
+                    data-current-balance="${wallet.balance}">Edit balance</button>
+                ${depCount ? `<button type="button" class="tf-button f12-bold bg-Accent text-Black action-user-deposits"
+                    data-user-id="${wallet.user_id}"
+                    data-user-name="${esc(wallet.user_name)}">Deposits (${depCount})</button>` : ''}
+                ${wdCount ? `<button type="button" class="tf-button f12-bold bg-Accent text-Black action-user-withdrawals"
+                    data-user-id="${wallet.user_id}"
+                    data-user-name="${esc(wallet.user_name)}">Withdrawals (${wdCount})</button>` : ''}
             `;
-            
-            // NOTE: Added 'tf-table-item' class and 'data-label' attributes for proper styling
+
             const row = `
-                <tr data-wallet-id="${wallet.wallet_id}" class="tf-table-item">
-                    <td class="f14-regular" data-label="User">
-                        <a href="/admin.users?search=${wallet.user_id}" class="text-Primary f14-bold">${wallet.user_name}</a>
-                        <div class="f12-regular text-Gray">${wallet.user_email}</div>
+                <tr data-wallet-id="${wallet.wallet_id}" data-user-id="${wallet.user_id}">
+                    <td>
+                        <a href="/admin.users?search=${encodeURIComponent(wallet.user_id)}">${esc(wallet.user_name)}</a>
+                        <div class="f12-regular text-Gray">${esc(wallet.user_email)}</div>
                     </td>
-                    <td class="f14-regular" data-label="Wallet ID">${wallet.wallet_id}</td>
-                    <td class="f14-bold ${balanceColor}" data-label="Balance">$${formatCurrency(wallet.balance)}</td>
-                    <td class="f14-regular" data-label="Actions">${actionDropdown}</td>
+                    <td class="anc-td-muted">${esc(wallet.wallet_id)}</td>
+                    <td class="anc-td-amount ${balanceClass}">$${formatCurrency(wallet.balance)}</td>
+                    <td>${pendingCell}</td>
+                    <td>${actions}</td>
                 </tr>
             `;
             tableBody.append(row);
@@ -134,39 +157,19 @@ $(document).on('click', '.dropdown-menu .dropdown-item', function (e) {
     }
 
     // --- Pagination Renderer ---
+    /**
+     * Shared renderer (assets/js/anc-pagination.js). This was one of three
+     * byte-identical copies emitting `.page-link`, a Bootstrap class with no
+     * matching rule in either stylesheet, plus a `disabled` class that had no
+     * CSS and never set the attribute.
+     */
     function renderPagination(currentPage, totalPages) {
-        const paginationEl = $('#pagination');
-        paginationEl.empty();
-        if (totalPages <= 1) return;
-
-        // Previous button
-        paginationEl.append(`<button class="tf-button style-1 f12-bold px-3 py-1 page-link ${currentPage === 1 ? 'disabled' : ''}" data-page="${currentPage - 1}">Previous</button>`);
-
-        let startPage = Math.max(1, currentPage - 2);
-        let endPage = Math.min(totalPages, currentPage + 2);
-
-        if (currentPage <= 3) {
-            endPage = Math.min(totalPages, 5);
-            startPage = 1;
-        } else if (currentPage >= totalPages - 2) {
-            startPage = Math.max(1, totalPages - 4);
-            endPage = totalPages;
-        }
-
-        for (let i = startPage; i <= endPage; i++) {
-            const activeClass = i === currentPage ? 'bg-Primary text-White' : 'bg-GrayLight text-Black';
-            paginationEl.append(`<button class="tf-button style-1 f12-bold px-3 py-1 page-link ${activeClass}" data-page="${i}">${i}</button>`);
-        }
-        
-        // Next button
-        paginationEl.append(`<button class="tf-button style-1 f12-bold px-3 py-1 page-link ${currentPage === totalPages ? 'disabled' : ''}" data-page="${currentPage + 1}">Next</button>`);
-        
-        // Bind click events
-        paginationEl.find('.page-link').on('click', function(e) {
-            e.preventDefault();
-            if ($(this).hasClass('disabled')) return;
-            const newPage = $(this).data('page');
-            loadWallets(newPage, currentFilter, currentSearch);
+        window.ancRenderPagination('#pagination', {
+            page: currentPage,
+            pages: totalPages,
+            onPage: function (n) {
+                loadWallets(n, currentFilter, currentSearch);
+            },
         });
     }
 
@@ -214,11 +217,17 @@ $(document).on('click', '.dropdown-menu .dropdown-item', function (e) {
             const currentBalance = $(this).data('current-balance');
 
             $('#edit-wallet-id').val(walletId);
-            $('#edit-wallet-user').val(userName);
-            $('#edit-current-balance').val(`$${formatCurrency(currentBalance)}`);
+            // Member and current balance are now stated text, not disabled
+            // inputs, so they are written with .text() rather than .val().
+            $('#edit-wallet-user').text(userName);
+            $('#edit-current-balance').text(`$${formatCurrency(currentBalance)}`);
             $('#edit-new-balance').val(currentBalance);
 
             window.showModal('#edit-balance-modal');
+            // showModal focuses the first input, which is the hidden wallet id.
+            window.setTimeout(function () {
+                $('#edit-new-balance').trigger('focus').trigger('select');
+            }, 60);
         });
 
 
@@ -257,13 +266,45 @@ $(document).on('click', '.dropdown-menu .dropdown-item', function (e) {
             }
         });
         
-        // 6. Handle Clicks on Pending Deposit/Withdrawal Cards (to open respective modals)
-        $('#pending-deposits').closest('.wallet-card').on('click', function() {
-            window.showModal('#pending-deposits-modal');
+        // 6. Per-user pending queues.
+        //
+        // These used to bounce the admin to /admin.dashboard because the modals
+        // existed only there. The markup is a shared partial now, so the same
+        // dialogs open here scoped to one member.
+        //
+        // The refresh callback is the point: admin.js's processDepositAction /
+        // processWithdrawalAction called loadAdminDashboardData() unconditionally,
+        // which means nothing on this page. They take a callback now, so the
+        // wallets table is what refreshes after an approval.
+        const refreshWallets = () => loadWallets(currentPage, currentFilter, currentSearch);
+
+        $(document).on('click', '.action-user-deposits', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            window.ancOpenPendingDeposits({
+                userId: $(this).data('user-id'),
+                userName: $(this).data('user-name'),
+                onChange: refreshWallets,
+            });
         });
-        
-        $('#pending-withdrawals').closest('.wallet-card').on('click', function() {
-            window.showModal('#pending-withdrawals-modal');
+
+        $(document).on('click', '.action-user-withdrawals', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            window.ancOpenPendingWithdrawals({
+                userId: $(this).data('user-id'),
+                userName: $(this).data('user-name'),
+                onChange: refreshWallets,
+            });
+        });
+
+        // The metric cards are global figures, so they still open the global queue.
+        $('#pending-deposits').closest('.wallet-card').on('click', function () {
+            window.ancOpenPendingDeposits({ onChange: refreshWallets });
+        });
+
+        $('#pending-withdrawals').closest('.wallet-card').on('click', function () {
+            window.ancOpenPendingWithdrawals({ onChange: refreshWallets });
         });
     }
 

@@ -1,6 +1,6 @@
 <?php
 // ========================================
-// CARD USAGE API — Aldernorth Capital
+// CARD USAGE API - Aldernorth Capital
 // Splits the member's capital by payout cadence for the dashboard chart.
 //
 // This used to fan out across six product tables. With a single invest
@@ -9,7 +9,11 @@
 
 require_once '../../config/database.php';
 require_once '../../config/constants.php';
-session_start();
+require_once __DIR__ . '/../../api/utilities/security.php';
+// Hardened + proxy-aware session cookie (HttpOnly, Secure, SameSite=Strict,
+// use_strict_mode). A bare session_start() inherited this box's ini defaults,
+// which set NONE of those - see api/utilities/security.php.
+ancSessionStart();
 
 header('Content-Type: application/json');
 

@@ -1,10 +1,9 @@
 <?php
-session_start([
-    'cookie_lifetime' => 86400,
-    'cookie_httponly' => true,
-    'cookie_secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
-    'cookie_samesite' => 'Strict',
-]);
+require_once __DIR__ . '/../../api/utilities/security.php';
+// Hardened + proxy-aware: use_strict_mode, and a cookie_secure that
+// survives a TLS-terminating proxy (the inline options this replaced
+// tested $_SERVER['HTTPS'] === 'on', which is unset behind one).
+ancSessionStart();
 
 if (!isset($_SESSION['admin_id'])) {
     header('Location: /admin.login');
@@ -37,6 +36,7 @@ $admin_email = $_SESSION['admin_email'] ?? '';
                 <!-- /preload -->
                 <!-- section-menu-left -->
                 <?php $active = "dashboard"; include __DIR__ . "/_partials/sidebar.php"; ?>
+                <?php include __DIR__ . "/_partials/dock.php"; ?>
                 <!-- section-content-right -->
                 <div class="section-content-right">
                     <!-- header-dashboard -->
@@ -57,7 +57,7 @@ $admin_email = $_SESSION['admin_email'] ?? '';
                                             <div class="wallet-overview">
                                                 <div class="section-header flex justify-between items-center mb-16">
                                                     <h6 class="label-01">Dashboard Overview</h6>
-                                                    <a href="#" class="f14-regular flex items-center gap8 text-Primary" onclick="refreshDashboard()">
+                                                    <a href="#" class="f14-regular flex items-center gap8 text-Primary" data-refresh-dashboard>
                                                         <i class="ph ph-arrows-clockwise"></i> Refresh Stats
                                                     </a>
                                                 </div>
@@ -173,20 +173,25 @@ $admin_email = $_SESSION['admin_email'] ?? '';
                                                         <div class="label-01">Recent Activity</div>
                                                         <a href="/admin/transactions" class="f12-bold text-Primary">View All</a>
                                                     </div>
-                                                    <table class="tab-sell-order">
-                                                        <thead>
-                                                            <tr>
-                                                                <th class="f14-regular text-Gray">Date</th>
-                                                                <th class="f14-regular text-Gray">User</th>
-                                                                <th class="f14-regular text-Gray">Type</th>
-                                                                <th class="f14-regular text-Gray">Amount</th>
-                                                                <th class="f14-regular text-Gray">Status</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody id="recent-activity">
-                                                            <!-- Rows will be populated by JavaScript using backend data -->
-                                                        </tbody>
-                                                    </table>
+                                                    <?php // Was `table.tab-sell-order`: content-driven flex cells
+                                                          // with no widths, no scroll wrapper, and an orange
+                                                          // row-hover at 2.81:1 contrast. ?>
+                                                    <div class="anc-scroll-table">
+                                                        <table class="anc-table">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Date</th>
+                                                                    <th>Member</th>
+                                                                    <th>Type</th>
+                                                                    <th>Amount</th>
+                                                                    <th>Status</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody id="recent-activity">
+                                                                <tr><td class="anc-empty" colspan="5">Loading activity...</td></tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
                                                 </div>
                                                 <!-- /Recent Activity Section -->
                                             </div>
@@ -206,16 +211,12 @@ $admin_email = $_SESSION['admin_email'] ?? '';
                                                                     Send Email
                                                                 </button>
 
-                                                                <button id="set-deposit-address-btn" class="quick-action-btn bg-Green text-White">
-                                                                    <i class="ph ph-gear"></i>
-                                                                    Set Deposit Address
-                                                                </button>
-
-                                                                <button id="view-deposit-address-btn" class="quick-action-btn bg-Black text-White">
-                                                                    <i class="ph ph-eye"></i>
-                                                                    View Deposit Addresses
-                                                                </button>
-
+                                                                <?php // Two buttons that set and viewed a single address each became
+                                                                      // one link to the CRUD page, now that there is a row per chain. ?>
+                                                                <a href="/admin.deposit-addresses" class="quick-action-btn bg-Green text-White">
+                                                                    <i class="ph ph-wallet"></i>
+                                                                    Deposit Addresses
+                                                                </a>
 
 
                                                                 <a href="/admin/transactions/pending" class="quick-action-btn bg-Accent text-Black">
@@ -245,205 +246,101 @@ $admin_email = $_SESSION['admin_email'] ?? '';
 
                     <!-- Modals -->
 
-                    <!-- Send Email Modal -->
-                    <div class="modal" id="email-modal">
-                        <div class="modal-overlay"></div>
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h2>Send Email</h2>
-                                <button class="button-close-modal">&times;</button>
-                            </div>
+                    <?php // Broadcast email. Rebuilt on .anc-field - the last legacy
+                          // .form-group dialog in the admin panel. "Donors Only" was
+                          // dropped: it is a leftover recipient group from the
+                          // inherited product with no matching data here. ?>
+                    <div class="modal anc-modal--compact" id="email-modal" role="dialog" aria-modal="true" aria-hidden="true">
+                        <div class="modal-overlay" data-modal-close></div>
+                        <div class="modal-content" tabindex="-1" aria-labelledby="email-modal-title">
+                            <header class="modal-header">
+                                <div>
+                                    <h2 id="email-modal-title">Send email</h2>
+                                    <p class="modal-header__sub">Goes out immediately to everyone in the group.</p>
+                                </div>
+                                <button type="button" class="modal-close button-close-modal" data-modal-close aria-label="Close dialog">&times;</button>
+                            </header>
                             <div class="modal-body">
-                                <form id="email-form">
-                                    <div class="form-group mb-3">
-                                        <label for="email-recipients" class="form-label">Recipient Group</label>
-                                        <select class="form-control" id="email-recipients" required>
-                                            <option value="">Select...</option>
-                                            <option value="all">All Users</option>
-                                            <option value="active">Active Users</option>
-                                            <option value="investors">Investors Only</option>
-                                            <option value="donors">Donors Only</option>
-                                            <option value="specific">Specific User ID</option>
-                                        </select>
+                                <form id="email-form" autocomplete="off">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="anc-field">
+                                                <div class="anc-field__top">
+                                                    <label class="anc-field__label" for="email-recipients">Recipients</label>
+                                                </div>
+                                                <div class="anc-field__row">
+                                                    <select class="anc-field__input" id="email-recipients" required>
+                                                        <option value="">Select...</option>
+                                                        <option value="all">All members</option>
+                                                        <option value="active">Active members</option>
+                                                        <option value="investors">Investors only</option>
+                                                        <option value="specific">A single member</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="anc-field">
+                                                <div class="anc-field__top">
+                                                    <label class="anc-field__label" for="email-priority">Priority</label>
+                                                </div>
+                                                <div class="anc-field__row">
+                                                    <select class="anc-field__input" id="email-priority">
+                                                        <option value="normal">Normal</option>
+                                                        <option value="high">High</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="form-group mb-3" id="email-user-id-group" style="display: none;">
-                                        <label for="email-user-id" class="form-label">User ID</label>
-                                        <input type="text" class="form-control" id="email-user-id" placeholder="Enter exact User ID">
+
+                                    <div class="anc-field" id="email-user-id-group" hidden>
+                                        <div class="anc-field__top">
+                                            <label class="anc-field__label" for="email-user-id">Member ID</label>
+                                            <span class="anc-field__hint">Exact match</span>
+                                        </div>
+                                        <div class="anc-field__row">
+                                            <input type="text" class="anc-field__input" id="email-user-id" inputmode="numeric" maxlength="12" placeholder="e.g. 42">
+                                        </div>
                                     </div>
-                                    <div class="form-group mb-3">
-                                        <label for="email-subject" class="form-label">Subject</label>
-                                        <input type="text" class="form-control" id="email-subject" placeholder="Enter email subject..." required>
+
+                                    <div class="anc-field">
+                                        <div class="anc-field__top">
+                                            <label class="anc-field__label" for="email-subject">Subject</label>
+                                        </div>
+                                        <div class="anc-field__row">
+                                            <input type="text" class="anc-field__input" id="email-subject" maxlength="150" placeholder="Scheduled maintenance this weekend" required>
+                                        </div>
                                     </div>
-                                    <div class="form-group mb-3">
-                                        <label for="email-body" class="form-label">Message Body</label>
-                                        <textarea class="form-control" id="email-body" rows="6" placeholder="Enter your message..." required></textarea>
-                                    </div>
-                                    <div class="form-group mb-3">
-                                        <label for="email-priority" class="form-label">Priority</label>
-                                        <select class="form-control" id="email-priority">
-                                            <option value="normal">Normal</option>
-                                            <option value="high">High</option>
-                                        </select>
-                                    </div>
-                                    <div class="d-flex justify-content-end gap-2">
-                                        <button type="button" class="button-close-modal tf-button bg-GrayLight text-Black">Cancel</button>
-                                        <button type="submit" class="modal-confirm-btn">Send Email</button>
+
+                                    <div class="anc-field anc-field--textarea">
+                                        <div class="anc-field__top">
+                                            <label class="anc-field__label" for="email-body">Message</label>
+                                        </div>
+                                        <div class="anc-field__row">
+                                            <textarea class="anc-field__input" id="email-body" rows="5" maxlength="4000" placeholder="Write the message members will receive." required></textarea>
+                                        </div>
                                     </div>
                                 </form>
                             </div>
-                        </div>
-                    </div>
 
-
-                    <!-- =========================================================
-                    VIEW DEPOSIT ADDRESSES — MODAL
-                    ========================================================= -->
-                    <div class="modal" id="view-deposit-address-modal">
-                        <div class="modal-overlay"></div>
-
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h2>Deposit Addresses</h2>
-                                <button class="button-close-modal">&times;</button>
-                            </div>
-
-                            <div class="modal-body">
-
-                                <div class="mb-3">
-                                    <label class="form-label"><strong>Cash Mailing Address</strong></label>
-                                    <div id="view-cash-mailing" class="p-2 bg-GrayLight rounded text-Black"></div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label"><strong>Wallet Deposit Address</strong></label>
-                                    <div id="view-wallet-address" class="p-2 bg-GrayLight rounded text-Black"></div>
-                                </div>
-
-                                <div class="text-right">
-                                    <button class="button-close-modal tf-button bg-Accent text-Black">Close</button>
-                                </div>
-
+                            <div class="modal-footer-actions">
+                                <button type="button" class="button-close-modal tf-button" data-modal-close>Cancel</button>
+                                <button type="submit" form="email-form" class="modal-confirm-btn">Send email</button>
                             </div>
                         </div>
                     </div>
 
 
-                    <!-- =========================================================
-                    SET DEPOSIT ADDRESS — MODAL
-                    ========================================================= -->
-                    <div class="modal" id="set-deposit-address-modal">
-                        <div class="modal-overlay"></div>
+                    <?php // The "view deposit addresses" and "set deposit address" modals
+                          // lived here. Both were built around `settings` holding exactly
+                          // one cash-mailing address and one wallet address; addresses are
+                          // now a table with a row per chain, managed at
+                          // /admin.deposit-addresses. ?>
 
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h2>Set Deposit Address</h2>
-                                <button class="button-close-modal">&times;</button>
-                            </div>
-
-                            <div class="modal-body">
-                                <form id="set-deposit-address-form">
-
-                                    <!-- Deposit Type -->
-                                    <div class="form-group mb-3">
-                                        <label class="form-label">Deposit Method</label>
-                                        <select class="form-control" id="deposit-method" required>
-                                            <option value="">Select Method...</option>
-                                            <option value="cash_mailing">Cash Mailing</option>
-                                            <option value="wallet_address">Wallet Address</option>
-                                        </select>
-                                    </div>
-
-                                    <!-- Address input -->
-                                    <div class="form-group mb-3">
-                                        <label class="form-label">Deposit Address / Instructions</label>
-                                        <textarea class="form-control" id="deposit-value" rows="4"
-                                            placeholder="Enter wallet address or mailing instructions..."
-                                            required></textarea>
-                                    </div>
-
-                                    <div class="d-flex justify-content-end gap-2">
-                                        <button type="button" class="button-close-modal tf-button bg-GrayLight text-Black">Cancel</button>
-                                        <button type="submit" class="modal-confirm-btn">Save Address</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-
-
-
-                    <!-- =========================================================
-                    PENDING DEPOSITS — SIMPLIFIED MODAL
-                    ========================================================= -->
-                    <div class="modal" id="pending-deposits-modal">
-                        <div class="modal-overlay"></div>
-
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h2>Pending Deposit Requests</h2>
-                                <button class="modal-close button-close-modal">&times;</button>
-                            </div>
-
-                            <div class="modal-body">
-
-                                <table class="tab-sell-order" id="pending-deposit-table">
-                                    <thead>
-                                        <tr>
-                                            <th class="f14-regular text-Gray">User</th>
-                                            <th class="f14-regular text-Gray">Amount</th>
-                                            <th class="f14-regular text-Gray">Date</th>
-                                            <th class="f14-regular text-Gray">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="pending-deposits-list">
-                                        <!-- Loaded via JS -->
-                                    </tbody>
-                                </table>
-
-                                <div id="no-pending-deposits" class="text-center text-Gray mt-20" style="display:none;">
-                                    No pending deposit requests.
-                                </div>
-
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- =========================================================
-                    PENDING WITHDRAWALS — MODAL
-                    ========================================================= -->
-                    <div class="modal" id="pending-withdrawals-modal">
-                        <div class="modal-overlay"></div>
-
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h2>Pending Withdrawal Requests</h2>
-                                <button class="modal-close button-close-modal">&times;</button>
-                            </div>
-
-                            <div class="modal-body">
-
-                                <table class="tab-sell-order" id="pending-withdrawals-table">
-                                    <thead>
-                                        <tr>
-                                            <th class="f14-regular text-Gray">User</th>
-                                            <th class="f14-regular text-Gray">Amount</th>
-                                            <th class="f14-regular text-Gray">Date</th>
-                                            <th class="f14-regular text-Gray">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="pending-withdrawals-list">
-                                        <!-- Loaded via JS -->
-                                    </tbody>
-                                </table>
-
-                                <div id="no-pending-withdrawals" class="text-center text-Gray mt-20" style="display:none;">
-                                    No pending withdrawal requests.
-                                </div>
-
-                            </div>
-                        </div>
-                    </div>
-
+                    <?php // The six pending-queue dialogs moved to a shared partial so
+                          // /admin.wallets can open the same ones per user. ?>
+                    <?php include __DIR__ . '/_partials/pending-modals.php'; ?>
 
 
 

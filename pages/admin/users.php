@@ -1,10 +1,9 @@
 <?php
-session_start([
-    'cookie_lifetime' => 86400,
-    'cookie_httponly' => true,
-    'cookie_secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
-    'cookie_samesite' => 'Strict',
-]);
+require_once __DIR__ . '/../../api/utilities/security.php';
+// Hardened + proxy-aware: use_strict_mode, and a cookie_secure that
+// survives a TLS-terminating proxy (the inline options this replaced
+// tested $_SERVER['HTTPS'] === 'on', which is unset behind one).
+ancSessionStart();
 if (!isset($_SESSION['admin_id'])) {
     header('Location: /admin.login');
     exit;
@@ -26,6 +25,7 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
 
                 <!-- Sidebar -->
                 <?php $active = "users"; include __DIR__ . "/_partials/sidebar.php"; ?>
+                <?php include __DIR__ . "/_partials/dock.php"; ?>
                 <!-- /Sidebar -->
 
                 <!-- Main Content -->
@@ -87,7 +87,7 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
                                                 <input type="text" id="user-search" placeholder="Search by name, email, or ID..." class="show-search style-1">
                                             </fieldset>
                                             <div class="button-submit">
-                                                <button type="submit"><i class="icon-search-normal1"></i></button>
+                                                <button type="submit"><i class="ph ph-magnifying-glass"></i></button>
                                             </div>
                                         </form>
                                         <div class="right">
@@ -105,25 +105,35 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
                                         </div>
                                     </div>
 
-                                    <!-- USERS TABLE -->
-                                    <div class="table-list-transaction">
-                                        <div class="list-transaction-head title-sort bg-Primary">
-                                            <div class="f12-bold text-White">Name</div>
-                                            <div class="f12-bold text-White">Email</div>
-                                            <div class="f12-bold text-White">Role</div>
-                                            <div class="f12-bold text-White">Status</div>
-                                            <div class="f12-bold text-White">Last Login</div>
-                                            <div class="f12-bold text-White">Actions</div>
-                                        </div>
-                                        <table class="list-transaction-content content-sort w-100">
+                                    <?php /* USERS TABLE
+                                             Was `.table-list-transaction`, whose header is a DIV
+                                             outside the <table>: both sides are flex rows with
+                                             hard-coded nth-child pixel widths authored for a
+                                             7-column layout (dashboard.css:4957 vs :5004, and
+                                             they disagree by 4px on column 1), so the header
+                                             never lined up with the body. Same .anc-table pattern
+                                             as the member transactions page - one <table>, so
+                                             the browser sizes the columns. */ ?>
+                                    <div class="anc-scroll-table">
+                                        <table class="anc-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Name</th>
+                                                    <th>Email</th>
+                                                    <th>Role</th>
+                                                    <th>Status</th>
+                                                    <th>Last Login</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
                                             <tbody id="users-table-body">
-                                                <!-- JS will populate -->
+                                                <tr><td class="anc-empty" colspan="6">Loading users...</td></tr>
                                             </tbody>
                                         </table>
                                     </div>
 
                                     <!-- PAGINATION -->
-                                    <div id="pagination" class="pagination mt-3 flex gap-2 justify-center"></div>
+                                    <div id="pagination"></div>
                                 </div>
                             </div>
                         </div>
@@ -132,95 +142,146 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
 
                     <!-- MODALS -->
 
-                    <!-- Edit User Modal -->
-                    <div class="modal" id="edit-user-modal">
-                        <div class="modal-overlay"></div>
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h2>Edit User</h2>
-                                <button class="button-close-modal">&times;</button>
-                            </div>
+                    <?php // Rebuilt on .anc-field. Was the legacy .form-group/.form-control
+                          // dialect, which anc-dashboard.css only patches loosely - the
+                          // two selects rendered with the browser default caret and the
+                          // labels at 1.1rem, larger than the values beneath them. ?>
+                    <div class="modal anc-modal--compact" id="edit-user-modal" role="dialog" aria-modal="true" aria-hidden="true">
+                        <div class="modal-overlay" data-modal-close></div>
+                        <div class="modal-content" tabindex="-1" aria-labelledby="edit-user-title">
+                            <header class="modal-header">
+                                <div>
+                                    <h2 id="edit-user-title">Edit member</h2>
+                                    <p class="modal-header__sub">Changes take effect on their next request.</p>
+                                </div>
+                                <button type="button" class="modal-close button-close-modal" data-modal-close aria-label="Close dialog">&times;</button>
+                            </header>
                             <div class="modal-body">
-                                <form id="edit-user-form">
-                                    <input type="hidden" id="edit-user-id">
-                                    <div class="form-group mb-3">
-                                        <label>Name</label>
-                                        <input type="text" class="form-control" id="edit-name" required>
+                                <form id="edit-user-form" autocomplete="off">
+                                    <input type="hidden" id="edit-user-id" value="">
+
+                                    <div class="anc-field">
+                                        <div class="anc-field__top">
+                                            <label class="anc-field__label" for="edit-name">Full name</label>
+                                        </div>
+                                        <div class="anc-field__row">
+                                            <input type="text" class="anc-field__input" id="edit-name" maxlength="120" required>
+                                        </div>
                                     </div>
-                                    <div class="form-group mb-3">
-                                        <label>Email</label>
-                                        <input type="email" class="form-control" id="edit-email" required>
+
+                                    <div class="anc-field">
+                                        <div class="anc-field__top">
+                                            <label class="anc-field__label" for="edit-email">Email</label>
+                                        </div>
+                                        <div class="anc-field__row">
+                                            <input type="email" class="anc-field__input" id="edit-email" maxlength="190" required>
+                                        </div>
                                     </div>
-                                    <div class="form-group mb-3">
-                                        <label>Role</label>
-                                        <select class="form-control" id="edit-role">
-                                            <option value="user">User</option>
-                                            <option value="admin">Admin</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group mb-3">
-                                        <label>Status</label>
-                                        <select class="form-control" id="edit-status">
-                                            <option value="active">Active</option>
-                                            <option value="suspended">Suspended</option>
-                                        </select>
-                                    </div>
-                                    <div class="d-flex justify-content-end gap-2">
-                                        <button type="button" class="button-close-modal tf-button bg-GrayLight text-Black">Cancel</button>
-                                        <button type="submit" class="modal-confirm-btn">Save Changes</button>
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="anc-field">
+                                                <div class="anc-field__top">
+                                                    <label class="anc-field__label" for="edit-role">Role</label>
+                                                </div>
+                                                <div class="anc-field__row">
+                                                    <select class="anc-field__input" id="edit-role">
+                                                        <option value="user">User</option>
+                                                        <option value="admin">Admin</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="anc-field">
+                                                <div class="anc-field__top">
+                                                    <label class="anc-field__label" for="edit-status">Status</label>
+                                                </div>
+                                                <div class="anc-field__row">
+                                                    <select class="anc-field__input" id="edit-status">
+                                                        <option value="active">Active</option>
+                                                        <option value="suspended">Suspended</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </form>
+                            </div>
+
+                            <div class="modal-footer-actions">
+                                <button type="button" class="button-close-modal tf-button" data-modal-close>Cancel</button>
+                                <button type="submit" form="edit-user-form" class="modal-confirm-btn">Save changes</button>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Send Email Modal -->
-                    <div class="modal" id="send-email-modal">
-                        <div class="modal-overlay"></div>
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h2>Send Email</h2>
-                                <button class="button-close-modal">&times;</button>
-                            </div>
+                    <div class="modal anc-modal--compact" id="send-email-modal" role="dialog" aria-modal="true" aria-hidden="true">
+                        <div class="modal-overlay" data-modal-close></div>
+                        <div class="modal-content" tabindex="-1" aria-labelledby="send-email-title">
+                            <header class="modal-header">
+                                <div>
+                                    <h2 id="send-email-title">Send email</h2>
+                                    <p class="modal-header__sub">Sent from the platform address, not your own.</p>
+                                </div>
+                                <button type="button" class="modal-close button-close-modal" data-modal-close aria-label="Close dialog">&times;</button>
+                            </header>
                             <div class="modal-body">
-                                <form id="send-email-form">
-                                    <input type="hidden" id="email-user-id">
-                                    <div class="form-group mb-3">
-                                        <label>To</label>
-                                        <input type="text" class="form-control" id="email-to" disabled>
+                                <?php // The recipient was a DISABLED text input, which reads as a
+                                      // broken control rather than a fact. Stated, like the other
+                                      // read-only rows in the panel. ?>
+                                <ul class="anc-summary">
+                                    <li class="anc-summary__row">
+                                        <span class="k"><i class="ph ph-envelope-simple"></i> To</span>
+                                        <span class="v" id="email-to"></span>
+                                    </li>
+                                </ul>
+                                <form id="send-email-form" autocomplete="off">
+                                    <input type="hidden" id="email-user-id" value="">
+
+                                    <div class="anc-field">
+                                        <div class="anc-field__top">
+                                            <label class="anc-field__label" for="email-subject">Subject</label>
+                                        </div>
+                                        <div class="anc-field__row">
+                                            <input type="text" class="anc-field__input" id="email-subject" maxlength="150" required>
+                                        </div>
                                     </div>
-                                    <div class="form-group mb-3">
-                                        <label>Subject</label>
-                                        <input type="text" class="form-control" id="email-subject" required>
-                                    </div>
-                                    <div class="form-group mb-3">
-                                        <label>Message</label>
-                                        <textarea class="form-control" id="email-body" rows="5" required></textarea>
-                                    </div>
-                                    <div class="d-flex justify-content-end gap-2">
-                                        <button type="button" class="button-close-modal tf-button bg-GrayLight text-Black">Cancel</button>
-                                        <button type="submit" class="modal-confirm-btn">Send Email</button>
+
+                                    <div class="anc-field anc-field--textarea">
+                                        <div class="anc-field__top">
+                                            <label class="anc-field__label" for="email-body">Message</label>
+                                        </div>
+                                        <div class="anc-field__row">
+                                            <textarea class="anc-field__input" id="email-body" rows="5" maxlength="4000" required></textarea>
+                                        </div>
                                     </div>
                                 </form>
+                            </div>
+
+                            <div class="modal-footer-actions">
+                                <button type="button" class="button-close-modal tf-button" data-modal-close>Cancel</button>
+                                <button type="submit" form="send-email-form" class="modal-confirm-btn">Send email</button>
                             </div>
                         </div>
                     </div>
 
                     <!-- Delete Confirmation Modal -->
-                    <div class="modal" id="delete-user-modal">
-                        <div class="modal-overlay"></div>
+                    <div class="modal anc-modal--danger" id="delete-user-modal">
+                        <div class="modal-overlay" data-modal-close></div>
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h2>Delete User</h2>
-                                <button class="button-close-modal">&times;</button>
+                                <button type="button" class="modal-close button-close-modal" data-modal-close aria-label="Close dialog">&times;</button>
                             </div>
                             <div class="modal-body">
                                 <p>Are you sure you want to delete <strong id="delete-user-name"></strong>?</p>
-                                <p class="text-Gray f14-regular">This action cannot be undone.</p>
-                                <div class="d-flex justify-content-end gap-2 mt-3">
-                                    <button type="button" class="button-close-modal tf-button bg-GrayLight text-Black">Cancel</button>
-                                    <button type="button" id="confirm-delete" class="modal-confirm-btn bg-Red text-White">Delete User</button>
-                                </div>
+                                <p class="note">This also removes their wallet, positions and transaction history. It cannot be undone.</p>
+                            </div>
+
+                            <div class="modal-footer-actions">
+                                <button type="button" class="button-close-modal tf-button" data-modal-close>Cancel</button>
+                                <button type="button" id="confirm-delete" class="modal-confirm-btn">Delete member</button>
                             </div>
                         </div>
                     </div>
@@ -242,7 +303,8 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
     <script src="<?= anc_asset('../../assets/js/bootstrap.min.js') ?>"></script>
     <script src="<?= anc_asset('../../assets/js/countto.js') ?>" defer></script>
     <script src="<?= anc_asset('../../assets/js/bootstrap-select.min.js') ?>" defer></script>
-    <script src="<?= anc_asset('../../assets/js/admin/admin.js') ?>" defer></script>
+    <script src="<?= anc_asset('../../assets/js/anc-pagination.js') ?>" defer></script>
+<script src="<?= anc_asset('../../assets/js/admin/admin.js') ?>" defer></script>
     <script src="<?= anc_asset('../../assets/js/admin/users.js') ?>" defer></script>
     <script src="/assets/js/chart.min.js"></script>
 </body>

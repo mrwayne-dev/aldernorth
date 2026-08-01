@@ -5,18 +5,34 @@
 // ACTIONS: get_summary, get_plans, start_investment, get_active, unlock_investment
 // ===============================================
 
-session_start([
-    'cookie_lifetime' => 86400,
-    'cookie_httponly' => true,
-    'cookie_secure' => false, // set true in production with HTTPS
-    'cookie_samesite' => 'Strict',
-]);
+require_once __DIR__ . '/../utilities/security.php';
+// Hardened + proxy-aware session cookie - see api/utilities/security.php.
+ancSessionStart();
+
+// CSRF. Safe methods return immediately; anything else must present the
+// session token as X-CSRF-Token (assets/js/api.js sends it on every POST).
+ancCsrfEnforce();
 
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *'); // tighten in production
-header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
-header('Access-Control-Allow-Credentials: true');
+// CORS removed.
+//
+// These endpoints are same-origin only - every caller is assets/js/*.js on
+// this host - so no CORS headers are needed at all, and the ones that were
+// here actively hurt:
+//
+//   Access-Control-Allow-Origin: *
+//   Access-Control-Allow-Credentials: true
+//
+// A wildcard origin combined with credentials is rejected outright by every
+// browser, so this never worked as written; what it did do was advertise
+// intent and guarantee that the day someone "fixed" it by echoing back the
+// Origin header, any site on the internet could read a member's dashboard.
+// The X-CSRF-Token header the client now sends also requires a preflight
+// cross-origin, and with no CORS headers that preflight simply fails - which
+// is the desired outcome.
+//
+// The OPTIONS short-circuit is kept: browsers may still preflight, and it
+// should return cleanly rather than fall through to the auth check.
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
@@ -27,6 +43,7 @@ require_once __DIR__ . '/../../config/constants.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/env.php';
 require_once __DIR__ . '/email.php'; // uses sendEmail()
+require_once __DIR__ . '/../utilities/security.php';   // rate limiting
 
 // auth
 if (!isset($_SESSION['user_id'])) {
@@ -62,7 +79,7 @@ function generateReference($prefix = 'ANC-INV') {
 }
 
 // ---------------------------------------------------------------
-// Cadence helpers — the single source of truth for how a term is
+// Cadence helpers - the single source of truth for how a term is
 // sliced into payouts. The cron uses the same rules, so a preview
 // shown to the member always matches what actually gets credited.
 // ---------------------------------------------------------------
@@ -125,7 +142,7 @@ function projectInvestment(float $amount, float $roi_percent, string $cadence, i
 
 
 // --------------------- ACTION: get_plans ---------------------
-// Optional filter: {"cadence":"weekly"|"monthly"} — omit for all.
+// Optional filter: {"cadence":"weekly"|"monthly"} - omit for all.
 if ($action === 'get_plans') {
     $cadence = $input['cadence'] ?? '';
     if ($cadence !== '' && !in_array($cadence, ['weekly', 'monthly'], true)) {
@@ -155,7 +172,7 @@ if ($action === 'get_plans') {
             'details'       => $r['details'],
             'summary'       => $r['summary'],
 
-            // financials — roi_percent is PER PERIOD, not annualised
+            // financials - roi_percent is PER PERIOD, not annualised
             'roi_percent'   => $roi,
             'duration_days' => $duration,
             'payouts_total' => $payouts,
@@ -177,7 +194,7 @@ if ($action === 'get_plans') {
 
 
 // --------------------- ACTION: preview ---------------------
-// Live projection for the amount box — same maths the cron runs.
+// Live projection for the amount box - same maths the cron runs.
 if ($action === 'preview') {
     $plan_id = (int) ($input['plan_id'] ?? 0);
     $amount  = (float) ($input['amount'] ?? 0);
@@ -306,7 +323,7 @@ if ($action === 'get_matured') {
     $stmt->execute([$user_id]);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
     foreach ($rows as &$r) {
-        // roi_earned is the running total the cron has already credited —
+        // roi_earned is the running total the cron has already credited -
         // never recompute it here, or a partially paid position double-counts.
         $r['roi_earned']    = (float) $r['roi_earned'];
         $r['amount']        = (float) $r['amount'];
@@ -320,6 +337,9 @@ if ($action === 'get_matured') {
 
 // --------------------- ACTION: start_investment ---------------------
 if ($action === 'start_investment') {
+    ancEnforceRateLimit($pdo, 'invest', (string) $user_id);
+    ancRecordAttempt($pdo, 'invest', ancClientIp());
+
     $plan_id = (int) ($input['plan_id'] ?? 0);
     $amount = (float) ($input['amount'] ?? 0);
 
@@ -347,7 +367,7 @@ if ($action === 'start_investment') {
 
     $projection = projectInvestment($amount, $roi_percent, $cadence, $duration_days);
     if ($projection['payouts_total'] < 1) {
-        jsonResponse('error', 'This plan is misconfigured — its term is shorter than one payout period.');
+        jsonResponse('error', 'This plan is misconfigured: its term is shorter than one payout period.');
     }
 
     try {
@@ -485,7 +505,7 @@ if ($action === 'unlock_investment') {
 
         // roi_earned is the running total the cron has already credited to the
         // wallet period by period. Releasing a matured position returns the
-        // PRINCIPAL only — re-crediting ROI here would pay it out twice.
+        // PRINCIPAL only - re-crediting ROI here would pay it out twice.
         $roi_earned   = (float) $inv['roi_earned'];
         $principal    = (float) $inv['amount'];
         $total_payout = $principal;
@@ -518,7 +538,11 @@ if ($action === 'unlock_investment') {
                     'investment_id' => $inv_id,
                     'payout' => number_format($total_payout, 2),
                     'roi_earned' => number_format($roi_earned, 2),
-                    'reference' => $reference
+                    'reference' => $reference,
+                    // investment_matured also renders {{plan_name}} and
+                    // {{principal}}; both were missing.
+                    'plan_name' => $inv['plan_name'] ?? 'your plan',
+                    'principal' => number_format($principal, 2),
                 ]
             ]);
         }

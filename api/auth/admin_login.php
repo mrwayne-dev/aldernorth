@@ -1,6 +1,6 @@
 <?php
 // ========================================
-// ADMIN LOGIN — Aldernorth Capital (Finalized)
+// ADMIN LOGIN - Aldernorth Capital (Finalized)
 // ========================================
 
 ini_set('display_errors', 0);
@@ -11,13 +11,14 @@ require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/constants.php';
 require_once __DIR__ . '/../backend/email.php';
 require_once __DIR__ . '/../utilities/helpers.php';
+require_once __DIR__ . '/../../api/utilities/security.php';   // hashing, throttling, sessions
 
-session_start([
-    'cookie_lifetime' => 86400,
-    'cookie_httponly' => true,
-    'cookie_secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
-    'cookie_samesite' => 'Strict',
-]);
+// Hardened + proxy-aware - see the note in login.php.
+ancSessionStart();
+
+// CSRF. Safe methods return immediately; anything else must present the
+// session token as X-CSRF-Token (assets/js/api.js sends it on every POST).
+ancCsrfEnforce();
 
 ob_clean();
 header('Content-Type: application/json; charset=utf-8');
@@ -35,9 +36,13 @@ try {
         exit;
     }
 
-    // --- Brute-force throttle (per-IP) ---
-    $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-    if (loginThrottleExceeded($pdo, $ip)) {
+    // --- Brute-force throttle ---
+    //
+    // 'admin_login' is its own scope. Previously admin and member login shared
+    // one IP-keyed bucket, so ten failed MEMBER logins from an office locked
+    // the admin panel out from that same office.
+    $ip = ancClientIp();
+    if (ancRateLimited($pdo, 'admin_login', $ip) || ancRateLimited($pdo, 'admin_login', $email)) {
         logSecurityEvent('login_lockout', ['scope' => 'admin', 'ip' => $ip, 'email' => $email, 'ua' => $_SERVER['HTTP_USER_AGENT'] ?? '']);
         http_response_code(429);
         echo json_encode(['status' => 'error', 'message' => 'Too many failed attempts. Please wait ~15 minutes and try again.']);
@@ -50,22 +55,27 @@ try {
     $admin = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$admin || !password_verify($password, $admin['password'])) {
-        recordLoginFailure($pdo, $ip, $email);
+        ancRecordAttempt($pdo, 'admin_login', $ip);
+        ancRecordAttempt($pdo, 'admin_login', $email);
         echo json_encode(['status' => 'error', 'message' => 'Invalid email or password.']);
         exit;
     }
 
-    // --- Check account status ---
+    // --- Check account status (AFTER the password is proven) ---
     if (strtolower($admin['status']) !== 'active') {
+        ancRecordAttempt($pdo, 'admin_login', $ip);
         echo json_encode(['status' => 'error', 'message' => 'Your admin account is disabled.']);
         exit;
     }
+
+    // --- Opportunistic bcrypt -> argon2id upgrade; see login.php ---
+    ancUpgradePasswordHash($pdo, 'admins', (int) $admin['id'], $password, $admin['password']);
 
     // --- Update last login timestamp ---
     $pdo->prepare("UPDATE admins SET last_login = NOW() WHERE id = ?")->execute([$admin['id']]);
 
     // --- Prepare session (regenerate ID first to prevent session fixation) ---
-    session_regenerate_id(true);
+    ancSessionElevate();
     $_SESSION['admin_id'] = $admin['id'];
     $_SESSION['admin_email'] = $admin['email'];
     $_SESSION['admin_name'] = $admin['full_name'] ?: ($admin['name'] ?? 'Administrator');

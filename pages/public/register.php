@@ -38,10 +38,28 @@ include __DIR__ . '/_partials/head.php';
           <input id="email" name="email" type="email" class="form-field__input" placeholder="you@example.com" required>
         </div>
 
+        <?php // Country and location are collected here so the profile page can
+              // show them without the member re-typing anything. Both OPTIONAL -
+              // api/auth/register.php excludes them from its required check, and
+              // an empty value is stored as SQL NULL so the profile field stays
+              // genuinely blank rather than showing a default.
+              //
+              // Address is deliberately absent: it stays a profile-only field. ?>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3);">
+          <div class="form-field">
+            <label class="form-field__label" for="country">Country <span style="color: var(--color-ink-muted); font-weight: 400;">(optional)</span></label>
+            <input id="country" name="country" type="text" class="form-field__input" placeholder="United States" maxlength="80" autocomplete="country-name">
+          </div>
+          <div class="form-field">
+            <label class="form-field__label" for="location">Location <span style="color: var(--color-ink-muted); font-weight: 400;">(optional)</span></label>
+            <input id="location" name="location" type="text" class="form-field__input" placeholder="New York, NY" maxlength="255" autocomplete="address-level2">
+          </div>
+        </div>
+
         <div class="form-field form-field--with-action">
           <label class="form-field__label" for="password">Password</label>
           <input id="password" name="password" type="password" class="form-field__input" placeholder="••••••••" required>
-          <button type="button" class="form-field__action" aria-label="Show / hide password" onclick="(function(b){const i=b.previousElementSibling;i.type=i.type==='password'?'text':'password';})(this)">
+          <button type="button" class="form-field__action" aria-label="Show / hide password" aria-pressed="false">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
           <p class="form-field__hint">Minimum 8 characters. Include a number or symbol.</p>
@@ -55,7 +73,7 @@ include __DIR__ . '/_partials/head.php';
         <button type="submit" class="btn btn--primary" style="width: 100%;">Create account</button>
       </form>
 
-      <!-- Verify step — revealed after sign-up (OTP emailed) -->
+      <!-- Verify step - revealed after sign-up (OTP emailed) -->
       <form id="verify-form" class="form-stack hidden" autocomplete="off">
         <div class="form-field">
           <label class="form-field__label" for="verify-otp">Enter the 6-digit code</label>
@@ -80,6 +98,7 @@ include __DIR__ . '/_partials/head.php';
 
 <?php include __DIR__ . '/_partials/footer.php'; ?>
 
+<script src="<?= anc_asset('/assets/js/main.js') ?>" defer></script>
 <script src="<?= anc_asset('/assets/js/api.js') ?>" defer></script>
 </body>
 </html>

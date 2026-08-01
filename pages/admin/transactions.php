@@ -1,10 +1,9 @@
 <?php
-session_start([
-    'cookie_lifetime' => 86400,
-    'cookie_httponly' => true,
-    'cookie_secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
-    'cookie_samesite' => 'Strict',
-]);
+require_once __DIR__ . '/../../api/utilities/security.php';
+// Hardened + proxy-aware: use_strict_mode, and a cookie_secure that
+// survives a TLS-terminating proxy (the inline options this replaced
+// tested $_SERVER['HTTPS'] === 'on', which is unset behind one).
+ancSessionStart();
 if (!isset($_SESSION['admin_id'])) {
     header('Location: /admin.login');
     exit;
@@ -23,8 +22,9 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
                     <div class="preloading"><span></span></div>
                 </div>
 
-                <!-- Sidebar — Transactions page is active -->
+                <!-- Sidebar - Transactions page is active -->
                 <?php $active = "transactions"; include __DIR__ . "/_partials/sidebar.php"; ?>
+                <?php include __DIR__ . "/_partials/dock.php"; ?>
                 <!-- /Sidebar -->
 
                 <!-- Main Content -->
@@ -74,7 +74,7 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
                                                 <input type="text" id="transaction-search" placeholder="Search by ID, user, or reference..." class="show-search style-1">
                                             </fieldset>
                                             <div class="button-submit">
-                                                <button type="submit"><i class="icon-search-normal1"></i></button>
+                                                <button type="submit"><i class="ph ph-magnifying-glass"></i></button>
                                             </div>
                                         </form>
                                         <div class="right">
@@ -118,7 +118,7 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
                                     </div>
 
                                     <!-- PAGINATION -->
-                                    <div id="pagination" class="pagination mt-3 flex gap-2 justify-center"></div>
+                                    <div id="pagination"></div>
                                 </div>
                             </div>
                         </div>
@@ -139,7 +139,8 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
     <script src="<?= anc_asset('../../assets/js/jquery.min.js') ?>"></script>
     <script src="<?= anc_asset('../../assets/js/bootstrap.min.js') ?>"></script>
     <script src="<?= anc_asset('../../assets/js/bootstrap-select.min.js') ?>" defer></script>
-    <script src="<?= anc_asset('../../assets/js/admin/admin.js') ?>" defer></script>
+    <script src="<?= anc_asset('../../assets/js/anc-pagination.js') ?>" defer></script>
+<script src="<?= anc_asset('../../assets/js/admin/admin.js') ?>" defer></script>
     <script src="<?= anc_asset('../../assets/js/admin/transactions.js') ?>" defer></script>
 
     <script src="/assets/js/chart.min.js"></script>

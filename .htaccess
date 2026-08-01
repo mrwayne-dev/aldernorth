@@ -1,7 +1,58 @@
 # ===============================
 # Aldernorth Capital .htaccess
-# Unified Auto-Detect — Local + Production
+# Unified Auto-Detect - Local + Production
 # ===============================
+
+# -------------------------------
+# FILE EXPOSURE (must stay at the top)
+# -------------------------------
+# The catch-all 404 near the bottom of this file is guarded by
+# `RewriteCond %{REQUEST_FILENAME} !-f`, so ANY real file on disk bypasses
+# routing and is served verbatim. Before these rules, this was true:
+#
+#   GET /.env                       -> 200, full file
+#   GET /.env.local                 -> 200, full file
+#   GET /composer.lock              -> 200
+#   GET /dbschema/*.sql             -> 200, full schema
+#   GET /logs/security.log          -> 200
+#   GET /.user.ini                  -> 200
+#
+# .env carries DB_PASS, SMTP_PASS, ADMIN_INVITE_CODE, NOWPAYMENTS_API_KEY and
+# NOWPAYMENTS_IPN_SECRET. `Options -Indexes` further down stops directory
+# LISTING but does nothing about a direct GET.
+#
+# These are <Files>/<Directory>-style denies rather than rewrites because a
+# rewrite can be bypassed if mod_rewrite is ever unavailable, and because
+# `Require all denied` also covers HEAD and Range requests.
+
+# Every dotfile: .env, .env.local, .git*, .user.ini, .hintrc, .htpasswd ...
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Dependency manifests and lockfiles - version fingerprinting.
+<FilesMatch "^(composer\.(json|lock)|package(-lock)?\.json|yarn\.lock|Gemfile.*|\.env.*)$">
+    Require all denied
+</FilesMatch>
+
+# Server-side source and data that is never fetched by a browser.
+# Note assets/, uploads/ and pages/ are deliberately NOT here - the first two
+# are fetched directly, and pages/ is reachable through the rewrites below.
+RedirectMatch 403 ^/(logs|dbschema|config|vendor|scripts|node_modules)(/|$)
+
+# Backup/editor leftovers that sometimes get rsync'd up.
+<FilesMatch "\.(sql|log|bak|old|orig|save|swp|swo|dist|ini|sh)$">
+    Require all denied
+</FilesMatch>
+
+# PHP's default error_log setting on this host is the bare relative name
+# "error_log", so it drops a log file into whatever directory the entry script
+# lives in - inside the web root, and with NO extension, so the pattern above
+# does not match it. config/env.php now redirects logging to logs/, but this
+# stays as a backstop for any path where that ini_set does not take effect.
+<FilesMatch "^(error_log|php_errorlog|access_log)$">
+    Require all denied
+</FilesMatch>
 
 <IfModule mod_rewrite.c>
 RewriteEngine On
@@ -41,6 +92,14 @@ RewriteCond %{REQUEST_URI} \.(css|js|png|jpg|jpeg|gif|webp|svg|ico|woff2?|ttf|eo
 RewriteRule ^ - [L]
 
 # -------------------------------
+# INTERNAL DOCS ARE NOT PUBLIC
+# -------------------------------
+# The design specs and client briefs in /plans are internal. Because they are
+# real files, the catch-all below (which requires !-f) will not stop them, so
+# they were being served verbatim to anyone who asked for the path.
+RewriteRule \.md$ pages/public/error.php [L,QSA]
+
+# -------------------------------
 # API ROUTES
 # -------------------------------
 RewriteCond %{REQUEST_URI} ^/api/ [NC]
@@ -62,7 +121,9 @@ RewriteRule ^dashboard\.(invest|wallet|transactions|profile|logout)/?$ pages/use
 # ADMIN ROUTES
 # -------------------------------
 RewriteRule ^admin/?$ pages/admin/dashboard.php [L,QSA]
-RewriteRule ^admin\.(dashboard|users|wallets|transactions|announcements|plans|login|register|forgotpassword)/?$ pages/admin/$1.php [L,QSA]
+RewriteRule ^admin\.(dashboard|users|wallets|transactions|announcements|plans|login|register|forgotpassword|logout)/?$ pages/admin/$1.php [L,QSA]
+# Hyphen in the URL, underscore on disk - the group above cannot express that.
+RewriteRule ^admin\.deposit-addresses/?$ pages/admin/deposit_addresses.php [L,QSA]
 
 # -------------------------------
 # CATCH-ALL → 404
@@ -81,20 +142,66 @@ Header always set X-Content-Type-Options "nosniff"
 Header always set Referrer-Policy "strict-origin-when-cross-origin"
 Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
 Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-# CSP keeps 'unsafe-inline' because the app relies on inline scripts AND ~36 inline
-# event handlers (onclick/onerror/onload, incl. the dashboard CSS-swap). It still blocks
-# injected EXTERNAL scripts, clickjacking, <base>/<object> hijacking, and form-action.
-# A nonce/'strict-dynamic' upgrade (full inline-XSS protection) is blocked until those
-# inline handlers are refactored to addEventListener — see security notes.
+# script-src no longer carries 'unsafe-inline'.
+#
+# Every inline event handler has been removed (the four password toggles and
+# two refreshDashboard() links are delegated listeners in assets/js/api.js; the
+# two avatar onerror fallbacks use data-fallback-src; the four
+# rel=preload/onload stylesheet swaps are now plain stylesheets). That left
+# exactly five inline <script> blocks, all of them STATIC - no PHP
+# interpolation - so they are allow-listed by sha256 hash instead.
+#
+# Hashes are used rather than a nonce deliberately: a nonce has to change per
+# request, which means CSP would have to move out of .htaccess and into PHP,
+# and every response that is not a PHP page would silently lose its policy.
+# Static hashes keep one policy covering every response.
+#
+#   IF YOU EDIT AN INLINE <script> BLOCK, ITS HASH CHANGES AND THE SCRIPT WILL
+#   BE BLOCKED. Recompute with:
+#     php -r '$s=file_get_contents("page.php");
+#             preg_match_all("/<script>(.*?)<\/script>/s",$s,$m);
+#             foreach($m[1] as $b) echo "sha256-".base64_encode(hash("sha256",$b,true))."\n";'
+#
+#   1pFct... pages/public/_partials/head.php   pre-paint theme script
+#   kH7VA... pages/user|admin/_partials/head.php  pre-paint theme script (identical)
+#   Mwjuc... pages/user/invest.php
+#   HYKzX... pages/user/dashboard.php
+#
+# style-src keeps 'unsafe-inline': the dashboard template sets element.style
+# in many places and there is no equivalent hash mechanism for style
+# attributes. That is a much weaker vector than inline script.
+#
 # Third-party allowlist: Smartsupp (live chat) only. Fonts (Switzer), icons
 # (Phosphor) and chart.js are all self-hosted under /assets, so no external
 # style, font or script CDN is permitted -- a CDN outage cannot blank the UI,
 # and there is no third-party origin that can inject styles or glyphs.
-Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.smartsuppchat.com https://*.smartsupp.com; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: https:; connect-src 'self' https://*.smartsupp.com wss://*.smartsupp.com https://www.smartsuppchat.com; frame-src 'self' https://*.smartsupp.com https://www.smartsuppchat.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests;"
+Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-1pFctdsLLOhYgvFf+O2wjDqjh98XAio5J1fSuWpmqSc=' 'sha256-kH7VANvlch4E3hPUcWAmuaqyqfOyjHPaEGVJ+/0DDEg=' 'sha256-MwjucJvHF9YRelOzyGi44QJtHQ41GBFEGQ7vfuYRJvI=' 'sha256-HYKzXIWfy/dNWgXhwg2F1lNvzUtJJGra2K48wxeGsyY=' https://*.smartsupp.com https://*.smartsuppchat.com https://*.smartsuppcdn.com; style-src 'self' 'unsafe-inline'; font-src 'self' data: https://*.smartsupp.com https://*.smartsuppchat.com https://*.smartsuppcdn.com; img-src 'self' data: https:; connect-src 'self' https://*.smartsupp.com https://*.smartsuppchat.com https://*.smartsuppcdn.com wss://*.smartsupp.com wss://*.smartsuppchat.com; frame-src 'self' https://*.smartsupp.com https://*.smartsuppchat.com https://*.smartsuppcdn.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests;"
 # Strip the PHP version banner (info disclosure). The "Server: LiteSpeed" banner
 # must be removed in the LiteSpeed admin (Server Signature = off).
 Header always unset X-Powered-By
 Header unset X-Powered-By
+</IfModule>
+
+# ===============================
+# Upload limits (avatar images, 10 MB)
+#
+# The app checks 10 MB in assets/js/profile.js and
+# api/backend/upload_avatar.php, but PHP's own limits sit UNDERNEATH both:
+# the stock 2M/8M would have rejected the request before either check ran.
+# Headroom above 10 MB covers multipart overhead, and post_max_size must
+# exceed upload_max_filesize or the body is discarded first.
+#
+# The <IfModule> guard is not optional. This host runs mod_php, but a bare
+# php_value on a PHP-FPM or CGI host is a fatal .htaccess error that 500s
+# the entire site. .user.ini in the web root covers those hosts instead.
+# ===============================
+<IfModule mod_php.c>
+  php_value upload_max_filesize 12M
+  php_value post_max_size 14M
+</IfModule>
+<IfModule mod_php7.c>
+  php_value upload_max_filesize 12M
+  php_value post_max_size 14M
 </IfModule>
 
 # ===============================

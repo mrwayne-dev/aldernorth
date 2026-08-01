@@ -3,8 +3,16 @@
 // ============================================================
 // PURPOSE: Manage user wallets (Admin View): fetch data, metrics, and update balances.
 // ============================================================
+// Hardened + proxy-aware session cookie (HttpOnly, Secure, SameSite=Strict,
+// use_strict_mode). A bare session_start() inherited this box's ini defaults,
+// which set NONE of those - see api/utilities/security.php.
 
-session_start();
+require_once __DIR__ . '/../../api/utilities/security.php';
+ancSessionStart();
+
+// CSRF. Safe methods return immediately; anything else must present the
+// session token as X-CSRF-Token (assets/js/api.js sends it on every POST).
+ancCsrfEnforce();
 header('Content-Type: application/json');
 
 // Ensure only authenticated admins can access this script
@@ -18,6 +26,12 @@ require_once '../../config/database.php';
 // Assuming getPDO() and executeQuery() helpers are accessible or defined above
 
 $pdo = getPDO();
+
+// Role gate: this endpoint edits wallet balances directly.
+// Only isset($_SESSION['admin_id']) was checked before, so a `support`
+// admin had exactly the same power here as the owner. Read from the DB,
+// fails closed. See ancRequireAdminRole() in api/utilities/security.php.
+ancRequireAdminRole($pdo, ANC_ROLE_OWNER);
 
 /**
  * Executes a prepared statement and returns results or handles errors.
@@ -87,8 +101,24 @@ $filter = strtolower(trim($input['filter'] ?? 'all'));
 $metrics = fetchWalletMetrics($pdo);
 
 // 2. Build Base Query for Wallet List
+//
+// The LEFT JOIN gives a per-user pending count and amount, which nothing else
+// supplies: fetchWalletMetrics() returns GLOBAL scalars, and w.pending_withdrawals
+// is a stored dollar figure that drifts (process_withdrawal.php used to complete
+// a withdrawal without decrementing it, so it only ever grew). This is derived
+// from transactions on every read, so it cannot drift.
 $sql = "FROM wallets w 
         JOIN users u ON w.user_id = u.id 
+        LEFT JOIN (
+            SELECT user_id,
+                   SUM(type = 'deposit')  AS pending_deposits_count,
+                   SUM(type = 'withdraw') AS pending_withdrawals_count,
+                   SUM(CASE WHEN type = 'deposit'  THEN amount ELSE 0 END) AS pending_deposits_amount,
+                   SUM(CASE WHEN type = 'withdraw' THEN amount ELSE 0 END) AS pending_withdrawals_amount
+            FROM transactions
+            WHERE status = 'pending' AND type IN ('deposit', 'withdraw')
+            GROUP BY user_id
+        ) p ON p.user_id = w.user_id
         WHERE 1";
 $params = [];
 
@@ -98,6 +128,9 @@ if ($filter === 'active') {
     $sql .= " AND u.status = 'active'"; 
 } elseif ($filter === 'zero') {
     $sql .= " AND w.balance = 0.00";
+} elseif ($filter === 'pending') {
+    // Wallets with something waiting on an admin.
+    $sql .= " AND (COALESCE(p.pending_deposits_count, 0) + COALESCE(p.pending_withdrawals_count, 0)) > 0";
 }
 
 // Apply search
@@ -125,10 +158,15 @@ $dataSql = "SELECT
                 w.balance, 
                 w.total_deposited, 
                 w.pending_withdrawals, 
+                COALESCE(p.pending_deposits_count, 0)     AS pending_deposits_count,
+                COALESCE(p.pending_withdrawals_count, 0)  AS pending_withdrawals_count,
+                COALESCE(p.pending_deposits_amount, 0)    AS pending_deposits_amount,
+                COALESCE(p.pending_withdrawals_amount, 0) AS pending_withdrawals_amount,
                 COALESCE(u.full_name, u.name) AS user_name,
                 u.email AS user_email
             " . $sql . " 
-            ORDER BY w.balance DESC" . $limitSql;
+            ORDER BY (COALESCE(p.pending_deposits_count, 0) + COALESCE(p.pending_withdrawals_count, 0)) DESC,
+                     w.balance DESC" . $limitSql;
 
 $stmt = executeQuery($pdo, $dataSql, $params);
 $rows = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
@@ -141,6 +179,11 @@ $formatted = array_map(fn($r) => [
     'balance' => (string)(float)$r['balance'], 
     'deposited' => (string)(float)$r['total_deposited'],
     'pending_withdrawals_sum' => (string)(float)$r['pending_withdrawals'], // Sum stored in wallets table
+    // Derived per read from transactions - see the note on the LEFT JOIN.
+    'pending_deposits_count'     => (int)$r['pending_deposits_count'],
+    'pending_withdrawals_count'  => (int)$r['pending_withdrawals_count'],
+    'pending_deposits_amount'    => (string)(float)$r['pending_deposits_amount'],
+    'pending_withdrawals_amount' => (string)(float)$r['pending_withdrawals_amount'],
     'user_name' => $r['user_name'],
     'user_email' => $r['user_email']
 ], $rows);
@@ -179,7 +222,7 @@ function fetchWalletMetrics($pdo) {
         $metrics['pending_deposits_count'] = $stmt_dep->fetchColumn() ?? 0;
 
         // Count Pending Withdrawals (Transaction Type: withdrawal, Status: pending)
-        $stmt_wdr = $pdo->prepare("SELECT COUNT(id) FROM transactions WHERE type = 'withdrawal' AND status = 'pending'");
+        $stmt_wdr = $pdo->prepare("SELECT COUNT(id) FROM transactions WHERE type = 'withdraw' AND status = 'pending'");
         $stmt_wdr->execute();
         $metrics['pending_withdrawals_count'] = $stmt_wdr->fetchColumn() ?? 0;
 

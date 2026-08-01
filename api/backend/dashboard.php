@@ -3,22 +3,40 @@ ini_set('display_errors', 0);
 error_reporting(0);
 // ===============================================
 // FILE: /api/backend/dashboard.php
-// PURPOSE: Provides user dashboard data — wallet stats,
+// PURPOSE: Provides user dashboard data - wallet stats,
 // live investment position summary, and recent transactions.
 // Supports SPA dashboard requests (via fetch or AJAX).
 // ===============================================
-session_start([
-    'cookie_lifetime' => 86400,
-    'cookie_httponly' => true,
-    'cookie_secure' => false, // Set true on HTTPS
-    'cookie_samesite' => 'Strict',
-]);
+require_once __DIR__ . '/../../api/utilities/security.php';
+// Hardened + proxy-aware: use_strict_mode, and a cookie_secure that
+// survives a TLS-terminating proxy (the inline options this replaced
+// tested $_SERVER['HTTPS'] === 'on', which is unset behind one).
+ancSessionStart();
+
+// CSRF. Safe methods return immediately; anything else must present the
+// session token as X-CSRF-Token (assets/js/api.js sends it on every POST).
+ancCsrfEnforce();
 
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *'); // Restrict for production
-header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
-header('Access-Control-Allow-Credentials: true');
+// CORS removed.
+//
+// These endpoints are same-origin only - every caller is assets/js/*.js on
+// this host - so no CORS headers are needed at all, and the ones that were
+// here actively hurt:
+//
+//   Access-Control-Allow-Origin: *
+//   Access-Control-Allow-Credentials: true
+//
+// A wildcard origin combined with credentials is rejected outright by every
+// browser, so this never worked as written; what it did do was advertise
+// intent and guarantee that the day someone "fixed" it by echoing back the
+// Origin header, any site on the internet could read a member's dashboard.
+// The X-CSRF-Token header the client now sends also requires a preflight
+// cross-origin, and with no CORS headers that preflight simply fails - which
+// is the desired outcome.
+//
+// The OPTIONS short-circuit is kept: browsers may still preflight, and it
+// should return cleanly rather than fall through to the auth check.
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit(0);
@@ -30,6 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once __DIR__ . '/../../config/constants.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/env.php';
+require_once __DIR__ . '/../utilities/helpers.php';   // formatTransactionType()
 
 // ---------------------------
 // Auth check
@@ -178,7 +197,7 @@ $transactions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 $recent_activity = [];
 foreach ($transactions as $txn) {
     $recent_activity[] = [
-        'type' => ucfirst($txn['type']),
+        'type' => formatTransactionType($txn['type']),
         'method' => ucfirst(str_replace('_', ' ', $txn['method'] ?? '')),
         'amount' => (float)$txn['amount'],        'status' => ucfirst($txn['status']),
         'reference' => $txn['reference'],

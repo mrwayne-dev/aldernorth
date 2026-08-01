@@ -1,6 +1,6 @@
 <?php
 $page_title = 'About Aldernorth Capital | Weekly and monthly investment plans';
-$page_description = 'Aldernorth Capital — invest a lump sum, choose weekly or monthly payouts, and get your principal back in full at maturity.';
+$page_description = 'About Aldernorth Capital. Invest a lump sum, choose weekly or monthly payouts, and get your principal back in full at maturity.';
 $page_path = '/about';
 include __DIR__ . '/_partials/head.php';
 ?>
@@ -22,7 +22,7 @@ include __DIR__ . '/_partials/head.php';
       <p class="eyebrow"><span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>About Aldernorth Capital</p>
       <h1 class="hero__title">We make wealth-building boring.</h1>
       <p class="hero__subtitle">
-        We give everyday investors the same yield products, transparency, and protections institutions take for granted — in one regulated wallet.
+        We give everyday investors the same yield products, transparency, and protections institutions take for granted, all in one regulated wallet.
       </p>
       <div class="hero__cta-row">
         <a href="/contact" class="btn btn--primary">Get in touch</a>
@@ -39,7 +39,7 @@ include __DIR__ . '/_partials/head.php';
       <p class="eyebrow"><span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>Our story</p>
       <h2 class="section-header__title">Built to close the gap between retail and institutional investing.</h2>
       <p class="section-header__body">
-        Founded in 2020 by a team of ex-fintech and investment-banking operators, Aldernorth Capital was born from a simple frustration — retail investors were being offered ISAs and a few index funds, while institutions had access to fixed-income, fractional equity, infrastructure deals, and structured products that compounded quietly for decades. We built ANC to close that gap.
+        Founded in 2020 by a team of ex-fintech and investment-banking operators, Aldernorth Capital was born from a simple frustration: retail investors were being offered savings accounts and a few index funds, while institutions had access to fixed-income, fractional equity, infrastructure deals, and structured products that compounded quietly for decades. We built ANC to close that gap.
       </p>
     </div>
 
@@ -52,7 +52,7 @@ include __DIR__ . '/_partials/head.php';
       <article class="card-feature">
         <span class="card-feature__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12c0 5-4 9-9 9s-9-4-9-9 4-9 9-9 9 4 9 9z"/><path d="M9 12l2 2 4-4"/></svg></span>
         <h3 class="card-feature__title">Our values</h3>
-        <p class="card-feature__desc">Transparency, suitability, simplicity. No hidden tiers, no jargon-walled disclosures — every product shows yield, risk, and lock-up before you commit a pound.</p>
+        <p class="card-feature__desc">Transparency, suitability, simplicity. No hidden tiers, no jargon-walled disclosures. Every product shows yield, risk, and lock-up before you commit a dollar.</p>
       </article>
       <article class="card-feature">
         <span class="card-feature__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg></span>
@@ -63,7 +63,7 @@ include __DIR__ . '/_partials/head.php';
   </div>
 </section>
 
-<!-- =================== HOW IT STARTED — pull-quote =================== -->
+<!-- =================== HOW IT STARTED - pull-quote =================== -->
 <section class="section section--warm">
   <div class="container">
     <div class="testimonial">
@@ -71,7 +71,7 @@ include __DIR__ . '/_partials/head.php';
       <div>
         <p class="eyebrow" style="margin-bottom: var(--space-4);"><span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>How it started</p>
         <p style="color: var(--color-ink-muted);">
-          Aldernorth Capital began in 2020, when the founding team — alumni of major UK banks, fintech start-ups, and asset managers — kept hearing the same complaint: <em>"Why are the only options my bank gives me a 0.5% saver and a cash ISA?"</em> With backgrounds in regulated financial services and investment operations, they set out to build a single platform that delivered a clear, published rate and a predictable payout schedule to everyday savers.
+          Aldernorth Capital began in 2020, when the founding team (alumni of major US banks, fintech start-ups, and asset managers) kept hearing the same complaint: <em>"Why are the only options my bank gives me a 0.5% savings account and a CD?"</em> With backgrounds in regulated financial services and investment operations, they set out to build a single platform that delivered a clear, published rate and a predictable payout schedule to everyday savers.
         </p>
       </div>
     </div>
@@ -86,7 +86,7 @@ include __DIR__ . '/_partials/head.php';
       <div>
         <p class="eyebrow" style="margin-bottom: var(--space-4);"><span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>Privacy policy</p>
         <p style="color: var(--color-ink-muted);">
-          At Aldernorth Capital, privacy is a core design principle. We operate under UK GDPR, the Data Protection Act 2018, and recognised operational-resilience and record-keeping standards. Every customer's information is stored using end-to-end encryption and processed only on the lawful bases set out in our Privacy Notice. We never sell identifiable personal data, and our internal analytics run on de-identified datasets.
+          At Aldernorth Capital, privacy is a core design principle. We operate under recognised US data-protection, operational-resilience and record-keeping standards. Every customer's information is stored using end-to-end encryption and processed only on the lawful bases set out in our Privacy Notice. We never sell identifiable personal data, and our internal analytics run on de-identified datasets.
         </p>
       </div>
     </div>
@@ -101,7 +101,7 @@ include __DIR__ . '/_partials/head.php';
       <div>
         <p class="eyebrow" style="margin-bottom: var(--space-4);"><span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>Terms of use</p>
         <p style="color: var(--color-ink-muted); margin-bottom: var(--space-3);">
-          By opening an account you agree to our suitability process, fee schedule, and the risk disclosures presented before each allocation. Customers may invest across our weekly and monthly plans — subject to per-plan minimums, fixed terms, and risk disclosures.
+          By opening an account you agree to our suitability process, fee schedule, and the risk disclosures presented before each allocation. Customers may invest across our weekly and monthly plans, subject to per-plan minimums, fixed terms, and risk disclosures.
         </p>
         <p style="color: var(--color-ink-muted);">
           Past performance does not guarantee future returns, and your capital is at risk. Accounts must be used only by the registered individual. Misuse may result in account suspension and referral to relevant authorities.

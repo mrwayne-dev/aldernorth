@@ -1,6 +1,6 @@
 <?php
 // ========================================
-// ADMIN RESET PASSWORD — Aldernorth Capital
+// ADMIN RESET PASSWORD - Aldernorth Capital
 // ========================================
 
 ini_set('display_errors', 0);
@@ -10,41 +10,79 @@ ob_start();
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/constants.php';
 require_once __DIR__ . '/../backend/email.php';
+require_once __DIR__ . '/../utilities/security.php';   // ancHashPassword()
 
 ob_clean();
 header('Content-Type: application/json; charset=utf-8');
+
+// These four never opened a session - they authenticate with an emailed OTP,
+// not a cookie. CSRF verification is session-bound though (the token lives in
+// $_SESSION), and the visitor already holds a session from the page that
+// rendered the form, so the session is resumed here purely to read it back.
+ancSessionStart();
+ancCsrfEnforce();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['status' => 'error', 'message' => 'Invalid request']);
     exit;
 }
 
+// Keyed by EMAIL with an attempt cap - see the note in resetpassword.php.
 $input = json_decode(file_get_contents('php://input'), true);
-$admin_id = intval($input['user_id'] ?? 0);
+$email = trim((string)($input['email'] ?? ''));
 $otp = trim($input['otp'] ?? '');
 $new_password = trim($input['new_password'] ?? '');
 $verify_only = !empty($input['verify_only']);
 
-if (!$admin_id || !$otp) {
-    echo json_encode(['status' => 'error', 'message' => 'Missing OTP or ID']);
+const MAX_OTP_ATTEMPTS = 5;
+
+if ($email === '' || $otp === '') {
+    echo json_encode(['status' => 'error', 'message' => 'Email and OTP are required']);
     exit;
 }
 
 try {
     $pdo = getPDO();
 
-    // --- Validate OTP ---
-    $stmt = $pdo->prepare("SELECT * FROM admin_password_resets WHERE admin_id = :aid AND otp = :otp LIMIT 1");
-    $stmt->execute(['aid' => $admin_id, 'otp' => $otp]);
+    // Throttle before doing any work. Scope 'reset' is independent of
+    // the login buckets, so abuse here cannot lock anyone out of signing in.
+    ancEnforceRateLimit($pdo, 'reset', $email);
+    ancRecordAttempt($pdo, 'reset', ancClientIp());
+
+    $stmt = $pdo->prepare("SELECT id FROM admins WHERE email = :email LIMIT 1");
+    $stmt->execute(['email' => $email]);
+    $admin_id = (int) ($stmt->fetchColumn() ?: 0);
+
+    if (!$admin_id) {
+        echo json_encode(['status' => 'error', 'message' => 'Invalid or expired code']);
+        exit;
+    }
+
+    $stmt = $pdo->prepare("SELECT * FROM admin_password_resets WHERE admin_id = :aid ORDER BY id DESC LIMIT 1");
+    $stmt->execute(['aid' => $admin_id]);
     $reset = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$reset) {
-        echo json_encode(['status' => 'error', 'message' => 'Invalid OTP']);
+        echo json_encode(['status' => 'error', 'message' => 'Invalid or expired code']);
+        exit;
+    }
+
+    if ((int) $reset['otp_attempts'] >= MAX_OTP_ATTEMPTS) {
+        $pdo->prepare("DELETE FROM admin_password_resets WHERE admin_id = :aid")->execute(['aid' => $admin_id]);
+        echo json_encode(['status' => 'error', 'message' => 'Too many incorrect codes. Please request a new one.']);
         exit;
     }
 
     if (strtotime($reset['expires_at']) < time()) {
-        echo json_encode(['status' => 'error', 'message' => 'OTP expired']);
+        $pdo->prepare("DELETE FROM admin_password_resets WHERE admin_id = :aid")->execute(['aid' => $admin_id]);
+        echo json_encode(['status' => 'error', 'message' => 'Invalid or expired code']);
+        exit;
+    }
+
+    if (!hash_equals((string) $reset['otp'], $otp)) {
+        $pdo->prepare("UPDATE admin_password_resets SET otp_attempts = otp_attempts + 1 WHERE id = :id")
+            ->execute(['id' => $reset['id']]);
+        echo json_encode(['status' => 'error', 'message' => 'Invalid or expired code']);
         exit;
     }
 
@@ -63,7 +101,7 @@ try {
     // --- Update admin password ---
     $stmt = $pdo->prepare("UPDATE admins SET password = :password WHERE id = :aid");
     $stmt->execute([
-        'password' => password_hash($new_password, PASSWORD_DEFAULT),
+        'password' => ancHashPassword($new_password),
         'aid' => $admin_id
     ]);
 
@@ -80,14 +118,19 @@ try {
         sendEmail([
             'to' => $admin['email'],
             'template' => 'password_reset_success',
-            'variables' => ['user_name' => $admin['full_name'] ?? 'Administrator'],
+            'variables' => [
+                'user_name'  => $admin['full_name'] ?? 'Administrator',
+                'user_email' => $admin['email'],   // see resetpassword.php
+            ],
         ]);
     }
 
     echo json_encode([
         'status' => 'success',
         'message' => 'Password reset successfully!',
-        'data' => ['redirect' => '/admin/login']
+        // Was '/admin/login', which matches no rewrite rule - .htaccess uses
+        // dot notation for admin pages, so that 404'd after a successful reset.
+        'data' => ['redirect' => '/admin.login']
     ]);
 
 } catch (Exception $e) {

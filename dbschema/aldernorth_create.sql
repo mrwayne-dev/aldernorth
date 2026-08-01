@@ -1,14 +1,31 @@
 -- ============================================================
--- Aldernorth Capital — Database Creation Script
+-- Aldernorth Capital - Database Creation Script
 -- File: dbschema/aldernorth_create.sql
 --
 -- Idempotent: drops & recreates all ANC tables and seeds the
 -- plan catalog the platform needs to render its dashboards.
 -- Safe to run on a fresh DB or to reset a stale one.
 --
--- Usage:
---   mysql -u root -p aldernorth_db < dbschema/aldernorth_create.sql
---   (create the database first, or uncomment the block below)
+-- THIS FILE IS THE BASELINE, NOT THE WHOLE SCHEMA.
+--
+-- It deliberately does not define contact_messages, rate_limit_hits, or
+-- the columns added since it was written. Those live in
+-- dbschema/migrations/ and are applied on top. Treating this file as the
+-- complete schema is what left a fresh install without rate_limit_hits -
+-- which silently disables EVERY rate limit in the application, because
+-- ancRateLimited() fails open on a missing table.
+--
+-- Install, in this order:
+--
+--   1. mysql -u <user> -p <db> < dbschema/aldernorth_create.sql
+--   2. php dbschema/migrate.php
+--
+-- Step 2 is not optional. Verify with `php dbschema/migrate.php --status`,
+-- which must report 0 pending before the site takes traffic.
+--
+-- On a database that already had the migrations applied by hand, run
+-- `php dbschema/migrate.php --baseline` once to populate the ledger
+-- without re-running them.
 -- ============================================================
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
@@ -61,7 +78,8 @@ DROP TABLE IF EXISTS `password_resets`;
 DROP TABLE IF EXISTS `login_logs`;
 DROP TABLE IF EXISTS `bank_details`;
 DROP TABLE IF EXISTS `wallets`;
-DROP TABLE IF EXISTS `settings`;
+DROP TABLE IF EXISTS `deposit_addresses`;
+DROP TABLE IF EXISTS `settings`;   -- legacy, retained so an old install drops cleanly
 DROP TABLE IF EXISTS `users`;
 DROP TABLE IF EXISTS `admins`;
 
@@ -73,15 +91,27 @@ DROP TABLE IF EXISTS `admins`;
 CREATE TABLE `users` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(100) NOT NULL,
+  -- Collected at sign-up and kept as discrete values. `full_name` remains the
+  -- display name; these two exist so the parts are not thrown away on insert.
+  `first_name` VARCHAR(60) DEFAULT NULL,
+  `last_name` VARCHAR(60) DEFAULT NULL,
   `full_name` VARCHAR(100) DEFAULT NULL,
   `email` VARCHAR(150) NOT NULL,
   `password` VARCHAR(255) NOT NULL,
   `email_verified` TINYINT(1) NOT NULL DEFAULT 0,
   `role` ENUM('user','admin') DEFAULT 'user',
   `status` ENUM('active','disabled') DEFAULT 'active',
+  -- Written on every successful sign-in by api/auth/login.php. The column was
+  -- missing, so that UPDATE was wrapped in a SHOW COLUMNS probe and never ran.
+  `last_login` DATETIME NULL DEFAULT NULL,
   `profile_picture` VARCHAR(255) DEFAULT '/assets/images/avatar/default.png',
   `phone` VARCHAR(40) DEFAULT NULL,
   `country` VARCHAR(80) DEFAULT NULL,
+  -- Collected at sign-up. NOT the same thing as login_logs.location, which is
+  -- the geo-IP string of a sign-in event. DEFAULT NULL, never '' - the profile
+  -- page must show an unfilled field as genuinely blank.
+  `location` VARCHAR(255) DEFAULT NULL,
+  -- Deliberately NOT collected at sign-up: optional, filled from the profile.
   `address` VARCHAR(255) DEFAULT NULL,
   `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -105,11 +135,36 @@ CREATE TABLE `admins` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
-CREATE TABLE `settings` (
-  `id` INT NOT NULL AUTO_INCREMENT,
-  `cash_mailing_address` TEXT,
-  `wallet_deposit_address` TEXT,
-  PRIMARY KEY (`id`)
+-- Replaced the old `settings` table (one cash_mailing_address + one
+-- wallet_deposit_address, hardcoded as columns on a single row). Members need
+-- an address per chain, and `settings` had nowhere to record which chain an
+-- address even belonged to. See dbschema/migrations/2026_07_30_deposit_addresses.sql
+-- for the upgrade path from an existing install.
+CREATE TABLE `deposit_addresses` (
+  `id`            INT NOT NULL AUTO_INCREMENT,
+  `asset`         VARCHAR(12)   NOT NULL COMMENT 'BTC, ETH, USDT',
+  `network`       VARCHAR(32)   NOT NULL COMMENT 'bitcoin, erc20, trc20, bep20, solana',
+  `label`         VARCHAR(80)   NOT NULL COMMENT 'What the member sees',
+  `address`       VARCHAR(255)  NOT NULL,
+  `memo_tag`      VARCHAR(120)  DEFAULT NULL,
+  `memo_label`    VARCHAR(40)   DEFAULT NULL COMMENT 'NULL hides the memo row',
+  `min_amount`    DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+  `confirmations` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  `instructions`  TEXT          DEFAULT NULL,
+  `qr_path`       VARCHAR(255)  DEFAULT NULL COMMENT 'Reserved',
+  `is_active`     TINYINT(1)    NOT NULL DEFAULT 1,
+  `sort_order`    SMALLINT      NOT NULL DEFAULT 0,
+  `created_by`    INT           DEFAULT NULL,
+  `updated_by`    INT           DEFAULT NULL,
+  `created_at`    TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at`    TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_asset_network` (`asset`, `network`),
+  KEY `idx_da_active_sort` (`is_active`, `sort_order`, `asset`),
+  CONSTRAINT `deposit_addresses_fk_created_by`
+    FOREIGN KEY (`created_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `deposit_addresses_fk_updated_by`
+    FOREIGN KEY (`updated_by`) REFERENCES `admins` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -151,7 +206,12 @@ CREATE TABLE `transactions` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `user_id` INT NOT NULL,
   `type` VARCHAR(50) NOT NULL,
-  `method` ENUM('secure_exchange','cash_mailing','wire_transfer','local_bank','wallet_address','wallet','system') DEFAULT NULL,
+  -- 'deposit_address' = manual crypto transfer to an address WE publish
+  -- (deposit_addresses). Distinct from 'wallet_address', which is the
+  -- member's OWN payout address on a withdrawal.
+  -- cash_mailing / wire_transfer are retired but retained: historical rows
+  -- still carry them.
+  `method` ENUM('secure_exchange','cash_mailing','wire_transfer','local_bank','wallet_address','wallet','system','deposit_address') DEFAULT NULL,
   `details` JSON DEFAULT NULL,
   `amount` DECIMAL(12,2) NOT NULL,
   `reference` VARCHAR(100) NOT NULL,
@@ -173,11 +233,32 @@ CREATE TABLE `password_resets` (
   `id` INT NOT NULL AUTO_INCREMENT,
   `user_id` INT NOT NULL,
   `otp` VARCHAR(10) NOT NULL,
+  -- Wrong-guess counter. api/auth/resetpassword.php burns the OTP after 5,
+  -- so a 6-digit code is not brute-forceable.
+  `otp_attempts` TINYINT UNSIGNED NOT NULL DEFAULT 0,
   `expires_at` DATETIME NOT NULL,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_reset_user` (`user_id`),
   CONSTRAINT `resets_fk_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- Admin side of password_resets.
+--
+-- This table used to exist ONLY because api/auth/admin_forgotpassword.php ran a
+-- CREATE TABLE IF NOT EXISTS at request time - it was absent from this file, so
+-- a fresh deploy had no such table until the first admin reset was attempted.
+CREATE TABLE `admin_password_resets` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `admin_id` INT NOT NULL,
+  `otp` VARCHAR(10) NOT NULL,
+  `otp_attempts` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  `expires_at` DATETIME NOT NULL,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_admin_reset` (`admin_id`),
+  CONSTRAINT `admin_resets_fk` FOREIGN KEY (`admin_id`) REFERENCES `admins` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
@@ -223,7 +304,7 @@ CREATE TABLE `announcements` (
 
 
 -- ============================================================
--- INVESTING — the platform's single product
+-- INVESTING - the platform's single product
 --
 -- Model: the member invests a lump sum into a plan. The plan
 -- defines a payout cadence (weekly or monthly), an ROI percent
@@ -283,15 +364,15 @@ CREATE TABLE `investments` (
 
 
 -- ============================================================
--- SEED DATA — settings (single row, blank deposit/mailing)
+-- SEED DATA - deposit_addresses
+-- Intentionally empty. An address is a live payment destination, so it has
+-- to be entered by a real admin rather than shipped as a fixture: a seeded
+-- placeholder that reached production would send members' funds nowhere.
 -- ============================================================
 
-INSERT INTO `settings` (`id`,`cash_mailing_address`,`wallet_deposit_address`) VALUES
-  (1, NULL, NULL);
-
 
 -- ============================================================
--- SEED DATA — plans
+-- SEED DATA - plans
 --
 -- roi_percent is PER PERIOD. Every duration_days is an exact multiple of
 -- its payout period (7 or 30), so no term ends with dead, unpaid days.
@@ -339,7 +420,7 @@ VALUES
 
   ('Aldercrest Monthly','monthly',7.20,720,25000.00,2000000.00,'High',
    'A 24-month position for the highest monthly rate we offer.',
-   'Two years, twenty-four payouts, and our strongest published rate — for members allocating serious capital.',
+   'Two years, twenty-four payouts, and our strongest published rate, for members allocating serious capital.',
    'A higher-risk vehicle built on structured products and growth equity. Capital is at risk and performance is disclosed before allocation. Monthly payouts run for the full term; principal returns at maturity.',
    'ph-crown-simple','orange','active');
 

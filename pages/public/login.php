@@ -30,7 +30,7 @@ include __DIR__ . '/_partials/head.php';
         <div class="form-field form-field--with-action">
           <label class="form-field__label" for="password">Password</label>
           <input id="password" name="password" type="password" class="form-field__input" placeholder="••••••••" required>
-          <button type="button" class="form-field__action" aria-label="Show / hide password" onclick="(function(b){const i=b.previousElementSibling;i.type=i.type==='password'?'text':'password';})(this)">
+          <button type="button" class="form-field__action" aria-label="Show / hide password" aria-pressed="false">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
         </div>
@@ -45,12 +45,12 @@ include __DIR__ . '/_partials/head.php';
         <button type="submit" class="btn btn--primary" style="width: 100%;">Sign in</button>
       </form>
 
-      <!-- Verify step — revealed when an unverified account tries to sign in -->
+      <!-- Verify step - revealed when an unverified account tries to sign in -->
       <form id="verify-form" class="form-stack hidden" autocomplete="off">
         <div class="form-field">
           <label class="form-field__label" for="verify-otp">Enter the 6-digit code</label>
           <input id="verify-otp" type="text" inputmode="numeric" class="form-field__input" placeholder="••••••" maxlength="6" required>
-          <p class="form-field__hint">Your email isn't verified yet. We emailed a code — check your inbox (and spam folder).</p>
+          <p class="form-field__hint">Your email isn't verified yet. We emailed a code. Check your inbox (and spam folder).</p>
         </div>
         <button type="submit" class="btn btn--primary" style="width: 100%;">Verify &amp; continue</button>
         <p style="text-align:center; font-size: var(--text-sm); margin-top: var(--space-3);">
@@ -71,6 +71,7 @@ include __DIR__ . '/_partials/head.php';
 
 <?php include __DIR__ . '/_partials/footer.php'; ?>
 
+<script src="<?= anc_asset('/assets/js/main.js') ?>" defer></script>
 <script src="<?= anc_asset('/assets/js/api.js') ?>" defer></script>
 </body>
 </html>

@@ -4,6 +4,92 @@
     ======================================================= */
 
 
+/* =======================================================
+   CSRF
+   -------------------------------------------------------
+   The token is rendered into <meta name="csrf-token"> by the page head
+   partials and sent back on every state-changing request.
+
+   It goes in a CUSTOM HEADER on purpose. A cross-site <form> can issue a
+   POST to any URL, but it cannot set X-CSRF-Token - doing so from script
+   requires a CORS preflight that this origin never approves. So the header
+   is doing two jobs: carrying the secret, and being a thing a forged
+   request structurally cannot produce.
+
+   ancCsrfToken() is read lazily rather than cached at load, so a page that
+   refreshes the meta tag (or a session that regenerates its token after
+   login) is picked up without a reload.
+   ======================================================= */
+function ancCsrfToken() {
+  const el = document.querySelector('meta[name="csrf-token"]');
+  return el ? el.getAttribute('content') || '' : '';
+}
+
+/**
+ * Merge the CSRF header into a fetch() headers object.
+ * Safe to call for GETs - the server ignores it on safe methods.
+ */
+function ancWithCsrf(headers = {}) {
+  const token = ancCsrfToken();
+  return token ? { ...headers, 'X-CSRF-Token': token } : headers;
+}
+
+/* =======================================================
+   Password show/hide
+   -------------------------------------------------------
+   Was an inline onclick="(function(b){...})(this)" repeated verbatim on
+   four auth pages. Inline handlers are exactly what CSP's script-src
+   'unsafe-inline' exists to permit, so they had to go before the policy
+   could be tightened - and one delegated listener is less code than four
+   copies of the same closure.
+
+   Delegated from document so it also covers markup rendered later.
+   ======================================================= */
+document.addEventListener('click', function (e) {
+  const btn = e.target.closest('.form-field__action');
+  if (!btn) return;
+  const input = btn.previousElementSibling;
+  if (!input || input.tagName !== 'INPUT') return;
+  input.type = input.type === 'password' ? 'text' : 'password';
+  btn.setAttribute('aria-pressed', input.type === 'text' ? 'true' : 'false');
+});
+
+/* Dashboard "Refresh Balances" links. Same reason: replaces
+   onclick="refreshDashboard()" on the member and admin dashboards.
+   window.refreshDashboard is assigned by dashboard.js / admin.js. */
+document.addEventListener('click', function (e) {
+  const link = e.target.closest('[data-refresh-dashboard]');
+  if (!link) return;
+  e.preventDefault();
+  if (typeof window.refreshDashboard === 'function') window.refreshDashboard();
+});
+
+/* Broken-image fallback. Replaces onerror="this.src='...'" on the avatar
+   images. Registered in the CAPTURE phase because `error` does not bubble -
+   a listener on document in the bubble phase would never see it. */
+document.addEventListener('error', function (e) {
+  const img = e.target;
+  if (!img || img.tagName !== 'IMG') return;
+  const fallback = img.getAttribute('data-fallback-src');
+  // Clear the attribute first: if the fallback itself 404s this would
+  // otherwise fire forever.
+  if (!fallback) return;
+  img.removeAttribute('data-fallback-src');
+  img.src = fallback;
+}, true);
+
+/* api.js is deferred, so an image can finish failing before the listener
+   above exists. Sweep for anything already broken once parsing is done. */
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('img[data-fallback-src]').forEach(function (img) {
+    if (img.complete && img.naturalWidth === 0) {
+      const fallback = img.getAttribute('data-fallback-src');
+      img.removeAttribute('data-fallback-src');
+      img.src = fallback;
+    }
+  });
+});
+
 function getApiPath(endpoint) {
   // Full URL already? return as is
   if (/^https?:\/\//i.test(endpoint)) return endpoint;
@@ -41,7 +127,7 @@ async function fetchApi(endpoint, payload = {}, method = 'POST') {
     const fullEndpoint = getApiPath(endpoint);
     const response = await fetch(fullEndpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: ancWithCsrf({ 'Content-Type': 'application/json' }),
       credentials: 'include',
       body: JSON.stringify(payload),
     });
@@ -73,7 +159,7 @@ async function fetchApi(endpoint, payload = {}, method = 'POST') {
 
   } catch (error) {
     console.error('API Error (POST):', error);
-    return { status: 'error', message: 'Network error — please try again.' };
+    return { status: 'error', message: 'Network error, please try again.' };
   } finally {
     loader?.classList.add('fade-out');
     setTimeout(() => loader?.classList.add('hidden'), 300);
@@ -150,7 +236,7 @@ function displayMessage(message, isError = true) {
     if (activeForm) activeForm.prepend(messageBox);
   }
 
-  messageBox.textContent = message; // textContent (not innerHTML) — never render messages as HTML
+  messageBox.textContent = message; // textContent (not innerHTML) - never render messages as HTML
   messageBox.className = `auth-message ${isError ? 'error' : 'success'}`;
   messageBox.style.display = 'block';
 }
@@ -238,7 +324,7 @@ if (loginForm) {
         window.location.href = res.data?.redirect || (isAdmin ? '/admin' : '/pages/user/dashboard.php');
       }, 600);
     } else if (res.data?.requires_verification) {
-      // Unverified account — reveal the OTP step instead of failing outright.
+      // Unverified account - reveal the OTP step instead of failing outright.
       pendingVerifyUserId = res.data.user_id;
       showToast(res.message || 'Please verify your email to continue.', 'info');
       revealVerifyStep(loginForm);
@@ -277,17 +363,27 @@ if (registerForm) {
         showToast('Please complete all fields.', 'error');
         return displayMessage('Please complete all fields.', true);
       }
-      data = { first_name: firstName, last_name: lastName, email, password };
+      // Country and location are OPTIONAL, so they are excluded from the
+      // required check above and sent as-is. An empty string reaches
+      // register.php, which stores NULL - the profile field then renders blank
+      // rather than showing something the member never typed.
+      //
+      // The admin branch above is untouched: admins live in a separate table
+      // with no profile fields.
+      const country  = (document.getElementById('country')  || registerForm.querySelector('input[name="country"]'))?.value.trim()  || '';
+      const location = (document.getElementById('location') || registerForm.querySelector('input[name="location"]'))?.value.trim() || '';
+
+      data = { first_name: firstName, last_name: lastName, email, password, country, location };
     }
 
     const res = await fetchApi(getAuthEndpoint('register'), data);
     if (res.status === 'success' && res.data?.requires_verification) {
-      // Email verification required — reveal the OTP step.
+      // Email verification required - reveal the OTP step.
       pendingVerifyUserId = res.data.user_id;
       showToast(res.message || 'Check your email for a 6-digit code.', 'success');
       revealVerifyStep(registerForm);
     } else if (res.status === 'success') {
-      // Fallback (e.g. admin register) — straight redirect.
+      // Fallback (e.g. admin register) - straight redirect.
       showToast('Registration successful! Redirecting...', 'success');
       setTimeout(() => {
         window.location.href = res.data?.redirect || (isAdmin ? '/admin' : '/pages/user/dashboard.php');
@@ -350,9 +446,10 @@ const step1Form = document.getElementById('forgot-step1');
 const step2Form = document.getElementById('forgot-step2');
 const step3Form = document.getElementById('forgot-step3');
 
-let tempUserId = null;
+// The reset flow is keyed by email, not by a server-issued user_id.
+let tempResetEmail = null;
 
-// STEP 1 — Send OTP
+// STEP 1 - Send OTP
 if (step1Form) {
   step1Form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -361,9 +458,12 @@ if (step1Form) {
 
     const res = await fetchApi(getAuthEndpoint('forgotpassword'), { email });
     if (res.status === 'success') {
-      showToast('OTP sent successfully!', 'success');
-      tempUserId = res.data?.user_id;
-      localStorage.setItem('reset_user_id', tempUserId);
+      showToast(res.message || 'If that email has an account, a code is on its way.', 'success');
+      // The flow is keyed by EMAIL now. The endpoint used to hand back a
+      // user_id, which combined with a 6-digit OTP was half a credential pair
+      // being given to an unauthenticated caller.
+      tempResetEmail = email;
+      localStorage.setItem('reset_email', email);
       step1Form.classList.add('hidden');
       step2Form.classList.remove('hidden');
     } else {
@@ -372,15 +472,15 @@ if (step1Form) {
   });
 }
 
-// STEP 2 — Verify OTP
+// STEP 2 - Verify OTP
 if (step2Form) {
   step2Form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const otp = document.getElementById('otp').value.trim();
-    const user_id = tempUserId || localStorage.getItem('reset_user_id');
+    const email = tempResetEmail || localStorage.getItem('reset_email');
     if (!otp) return showToast('Please enter the OTP.', 'error');
 
-    const res = await fetchApi(getAuthEndpoint('resetpassword'), { user_id, otp, verify_only: true });
+    const res = await fetchApi(getAuthEndpoint('resetpassword'), { email, otp, verify_only: true });
     if (res.status === 'success') {
       showToast('OTP verified successfully!', 'success');
       step2Form.classList.add('hidden');
@@ -391,22 +491,25 @@ if (step2Form) {
   });
 }
 
-// STEP 3 — Reset Password
+// STEP 3 - Reset Password
 if (step3Form) {
   step3Form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const new_password = document.getElementById('new_password').value.trim();
-    const user_id = tempUserId || localStorage.getItem('reset_user_id');
+    const email = tempResetEmail || localStorage.getItem('reset_email');
     const otp = document.getElementById('otp').value.trim();
 
     if (!new_password) return showToast('Please enter your new password.', 'error');
     if (new_password.length < 8) return showToast('Password must be at least 8 characters long.', 'error');
 
-    const res = await fetchApi(getAuthEndpoint('resetpassword'), { user_id, otp, new_password });
+    const res = await fetchApi(getAuthEndpoint('resetpassword'), { email, otp, new_password });
     if (res.status === 'success') {
       showToast('Password updated successfully! Redirecting...', 'success');
-      localStorage.removeItem('reset_user_id');
-      setTimeout(() => window.location.href = '/login.php', 1500);
+      localStorage.removeItem('reset_email');
+      // Was /login.php, which .htaccess does not route - it 404'd. The public
+      // route is /login for members and /admin.login for admins.
+      const isAdmin = window.location.pathname.includes('/admin');
+      setTimeout(() => window.location.href = isAdmin ? '/admin.login' : '/login', 1500);
     } else {
       showToast(res.message || 'Failed to update password.', 'error');
     }
@@ -434,10 +537,15 @@ if (logoutBtn) {
     // Store a flag in localStorage to persist loader state after redirect
     localStorage.setItem('showLoaderAfterRedirect', 'true');
 
+    // Destination comes from the markup: the admin and member topbars share
+    // this handler, and hardcoding the member path used to sign admins out
+    // through the member route (no admin email, wrong login page).
+    const target = logoutBtn.dataset.logoutUrl || '/dashboard.logout';
+
     // Ensure loader paints before navigating
     requestAnimationFrame(() => {
       setTimeout(() => {
-        window.location.href = '/pages/user/logout.php';
+        window.location.href = target;
       }, 800); // 0.8s visible before redirect
     });
   });

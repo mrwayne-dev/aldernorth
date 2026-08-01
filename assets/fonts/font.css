@@ -1,9 +1,9 @@
 /* ==============================
-   Switzer — Aldernorth Capital brand face
+   Switzer - Aldernorth Capital brand face
    Self-hosted (Fontshare, free licence). Stands in for Neue
    Montreal from the brand sheet: same neo-grotesk proportions,
    same Regular / Medium / Semibold set.
-   Self-hosted deliberately — the CSP has no font CDN allowance.
+   Self-hosted deliberately - the CSP has no font CDN allowance.
    ============================== */
 @font-face {
   font-family: 'Switzer';
@@ -31,7 +31,7 @@
 
 
 /* ==============================
-   Host Grotesk — Local Font Setup (legacy fallback)
+   Host Grotesk - Local Font Setup (legacy fallback)
    ============================== */
 @font-face {
   font-family: 'Host Grotesk';

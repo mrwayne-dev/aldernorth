@@ -1,45 +1,12 @@
 <?php
-$page_title = 'Aldernorth Capital – Build Wealth on Autopilot';
-$page_description = 'Aldernorth Capital — invest a lump sum, choose weekly or monthly payouts, and get your principal back in full at maturity.';
+$page_title = 'Build Wealth on Autopilot | Aldernorth Capital';
+$page_description = 'Invest a lump sum with Aldernorth Capital, choose weekly or monthly payouts, and get your principal back in full at maturity.';
 $page_path = '/';
 include __DIR__ . '/_partials/head.php';
 ?>
 <body class="anc-redesign">
 
-<!-- =================== NAVBAR (Crestmark D.12 adapted) =================== -->
-<nav class="navbar" data-navbar>
-  <div class="container">
-    <div class="navbar__inner">
-      <a href="/" class="navbar__brand" aria-label="Aldernorth Capital home">
-        <img class="navbar__logo navbar__logo--light" src="/assets/images/logo/aldernorth-white.svg" width="1714" height="308" alt="Aldernorth Capital" loading="lazy">
-        <img class="navbar__logo navbar__logo--dark" src="/assets/images/logo/aldernorth-black.svg" width="1714" height="308" alt="Aldernorth Capital" loading="lazy">
-      </a>
-
-      <ul class="navbar__links">
-        <li><a href="/plans" class="navbar__link">Plans</a></li>
-        <li><a href="/platform" class="navbar__link">Platform</a></li>
-        <li><a href="/solutions" class="navbar__link">Solutions</a></li>
-        <li><a href="/about" class="navbar__link">About</a></li>
-        <li><a href="/contact" class="navbar__link">Contact</a></li>
-      </ul>
-
-      <div class="navbar__actions">
-        <button class="theme-toggle" data-theme-toggle type="button" aria-label="Switch to light theme" aria-pressed="false">
-          <i class="ph ph-sun"></i>
-        </button>
-        <a href="/login" class="btn btn--nav navbar__cta">Sign in</a>
-      </div>
-
-      <button class="navbar__toggle" aria-label="Toggle menu" data-nav-toggler>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <line x1="3" y1="6"  x2="21" y2="6"/>
-          <line x1="3" y1="12" x2="21" y2="12"/>
-          <line x1="3" y1="18" x2="21" y2="18"/>
-        </svg>
-      </button>
-    </div>
-  </div>
-</nav>
+<?php include __DIR__ . '/_partials/navbar.php'; ?>
 
 <!-- =================== HERO (Crestmark C.2 adapted) =================== -->
 <section class="hero" id="hero">
@@ -89,7 +56,7 @@ include __DIR__ . '/_partials/head.php';
         </p>
         <h2 class="section-header__title">Smarter investing.</h2>
         <p class="section-header__body">
-          Aldernorth Capital gives everyday savers a fixed, predictable income schedule on capital they commit for a set term — in one wallet, with one statement. Fund the wallet, pick a plan, and collect.
+          Aldernorth Capital gives everyday savers a fixed, predictable income schedule on capital they commit for a set term. One wallet, one statement. Fund the wallet, pick a plan, and collect.
         </p>
         <div class="section-header__cta">
           <a href="/platform" class="btn btn--primary">See how it works</a>
@@ -116,7 +83,7 @@ include __DIR__ . '/_partials/head.php';
       </p>
       <h2 class="section-header__title">One wallet. Every way to grow it.</h2>
       <p class="section-header__body">
-        Aldernorth Capital is a single platform with weekly and monthly plans — fixed-term savings, automated weekly investing, fractional equity, infrastructure co-investments, and a loyalty rewards layer. Fund the wallet once; route capital wherever your strategy needs it next.
+        Aldernorth Capital is a single platform with weekly and monthly plans: fixed-term savings, automated weekly investing, fractional equity, infrastructure co-investments, and a loyalty rewards layer. Fund the wallet once; route capital wherever your strategy needs it next.
       </p>
     </div>
 
@@ -179,7 +146,7 @@ include __DIR__ . '/_partials/head.php';
       <h2 class="section-header__title">Two rhythms. One wallet.</h2>
       <p class="section-header__body">
         You invest a lump sum once. From there it is simply a question of how
-        often you want to be paid — every week, or every month. Both return
+        often you want to be paid: every week, or every month. Both return
         your principal in full at the end of the term.
       </p>
       <div class="section-header__cta">
@@ -189,7 +156,7 @@ include __DIR__ . '/_partials/head.php';
 
     <div class="grid-2">
       <!-- Weekly -->
-      <a href="/plans#plans" class="card-image" aria-label="Weekly plans — a payout every week">
+      <a href="/plans#plans" class="card-image" aria-label="Weekly plans, a payout every week">
         <div class="card-image__media">
           <picture>
             <source type="image/avif" srcset="/assets/images/weekly.avif">
@@ -211,7 +178,7 @@ include __DIR__ . '/_partials/head.php';
       </a>
 
       <!-- Monthly -->
-      <a href="/plans#plans" class="card-image" aria-label="Monthly plans — a payout every month">
+      <a href="/plans#plans" class="card-image" aria-label="Monthly plans, a payout every month">
         <div class="card-image__media">
           <picture>
             <source type="image/avif" srcset="/assets/images/monthly.avif">
@@ -236,7 +203,7 @@ include __DIR__ . '/_partials/head.php';
 </section>
 
 
-<!-- =================== VISION 1 — Democratise Yield (Crestmark D.13 pull-quote) =================== -->
+<!-- =================== VISION 1 - Democratise Yield (Crestmark D.13 pull-quote) =================== -->
 <section class="section section--warm" id="vision">
   <div class="container">
     <div class="testimonial">
@@ -251,14 +218,14 @@ include __DIR__ . '/_partials/head.php';
       </div>
       <div>
         <p style="font-size: var(--text-body); line-height: var(--lh-body); color: var(--color-ink-muted);">
-          For decades, the best yields, the best terms, and the cleanest reporting have been reserved for clients with seven-figure balances. We built Aldernorth Capital to flatten that — a fixed, published rate and a clear payout schedule, available from $250 upwards, with the same reporting we would expect ourselves.
+          For decades, the best yields, the best terms, and the cleanest reporting have been reserved for clients with seven-figure balances. We built Aldernorth Capital to flatten that: a fixed, published rate and a clear payout schedule, available from $250 upwards, with the same reporting we would expect ourselves.
         </p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- =================== VISION 2 — Beat Idle Cash =================== -->
+<!-- =================== VISION 2 - Beat Idle Cash =================== -->
 <section class="section section--white">
   <div class="container">
     <div class="testimonial">
@@ -273,7 +240,7 @@ include __DIR__ . '/_partials/head.php';
       </div>
       <div>
         <p style="font-size: var(--text-body); line-height: var(--lh-body); color: var(--color-ink-muted);">
-          Idle cash is a slow tax. Inflation, bank-account drift, and the opportunity cost of "I'll figure it out later" cost UK households thousands every year. Aldernorth Capital turns payday surplus, an unspent bonus, or an emergency-fund overflow into a yield-generating position the moment it lands in your wallet — with the option to withdraw or rebalance on your schedule, not the bank's.
+          Idle cash is a slow tax. Inflation, bank-account drift, and the opportunity cost of "I'll figure it out later" cost US households thousands every year. Aldernorth Capital turns payday surplus, an unspent bonus, or an emergency-fund overflow into a yield-generating position the moment it lands in your wallet, with the option to withdraw or rebalance on your schedule, not the bank's.
         </p>
       </div>
     </div>
@@ -292,7 +259,7 @@ include __DIR__ . '/_partials/head.php';
       </p>
       <h2 class="section-header__title">Built for real capital. Measured in trust.</h2>
       <p class="section-header__body">
-        Aldernorth Capital was built for real people deploying real capital. These figures reflect what our members have built on the platform — and the trust that's let us keep building.
+        Aldernorth Capital was built for real people deploying real capital. These figures reflect what our members have built on the platform, and the trust that's let us keep building.
       </p>
     </div>
 
@@ -342,7 +309,7 @@ include __DIR__ . '/_partials/head.php';
       </p>
       <h2 class="section-header__title">No reinvention. Just less friction.</h2>
       <p class="section-header__body">
-        We don't reinvent investing — we remove the markup, the fragmentation, and the fine print, then return the difference to the people putting in the capital.
+        We don't reinvent investing. We remove the markup, the fragmentation, and the fine print, then return the difference to the people putting in the capital.
       </p>
       <div class="section-header__cta">
         <a href="/contact" class="btn btn--primary">Start a conversation</a>
@@ -418,7 +385,7 @@ include __DIR__ . '/_partials/head.php';
   <div class="container">
     <div class="testimonial">
       <h2 class="testimonial__quote">
-        I'd been parking my salary surplus in a 0.5% saver for years. Opening a weekly plan took me ten minutes — and now a payout lands in my wallet every Friday, with a maturity date I can see on the dashboard.
+        I'd been parking my salary surplus in a 0.5% saver for years. Opening a weekly plan took me ten minutes, and now a payout lands in my wallet every Friday, with a maturity date I can see on the dashboard.
       </h2>
       <div>
         <p class="eyebrow" style="margin-bottom: var(--space-4);">
@@ -483,7 +450,7 @@ include __DIR__ . '/_partials/head.php';
           <span class="accordion__icon" aria-hidden="true"></span>
         </summary>
         <div class="accordion__body">
-          Yes. We use end-to-end AES-256 encryption, multi-factor authentication, and CREST-tested security controls reviewed quarterly. The platform is UK GDPR-compliant, with a named Data Protection Officer and a transparent Privacy Notice.
+          Yes. We use end-to-end AES-256 encryption, multi-factor authentication, and CREST-tested security controls reviewed quarterly. The platform follows recognised US data-protection practice, with a named Data Protection Officer and a transparent Privacy Notice.
         </div>
       </details>
 
@@ -511,67 +478,21 @@ include __DIR__ . '/_partials/head.php';
 </section>
 
 
-<!-- =================== FOOTER (Crestmark C.12) =================== -->
-<footer class="footer">
-  <div class="container">
-    <div class="footer__top">
-      <a href="/" aria-label="Aldernorth Capital home">
-        <img src="/assets/images/logo/aldernorth-black.svg" width="1714" height="308" alt="Aldernorth Capital" loading="lazy" style="height: 30px;">
-      </a>
-      <h2 style="margin: var(--space-2) 0;">Your wealth, simplified in one place.</h2>
-      <p style="color: var(--color-ink-muted); max-width: 560px;">
-        Open an account in minutes. Fund the wallet. Deploy across weekly and monthly plans — and let Aldernorth Capital handle the compounding, the reporting, and the protections.
-      </p>
-      <a href="/register" class="btn btn--primary">Start a conversation</a>
-    </div>
-
-    <nav class="footer__nav" aria-label="Footer">
-      <a href="/plans">Plans</a><span class="footer__sep">·</span>
-      <a href="/platform">Platform</a><span class="footer__sep">·</span>
-      <a href="/solutions">Solutions</a><span class="footer__sep">·</span>
-      <a href="/about">About</a><span class="footer__sep">·</span>
-      <a href="/contact">Contact</a><span class="footer__sep">·</span>
-      <a href="/login">Sign in</a>
-    </nav>
-
-    <div class="footer__credits">
-      <span>© <?= date('Y') ?> Aldernorth Capital Ltd. All rights reserved.</span>
-      <span class="footer__socials" aria-label="Social links">
-        <a href="https://www.linkedin.com/company/aldernorthholdings" aria-label="LinkedIn" target="_blank" rel="noopener">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 0H5C2.2 0 0 2.2 0 5v14c0 2.8 2.2 5 5 5h14c2.8 0 5-2.2 5-5V5c0-2.8-2.2-5-5-5zM8 19H5V8h3v11zM6.5 6.7a1.8 1.8 0 1 1 0-3.6 1.8 1.8 0 0 1 0 3.6zM20 19h-3v-5.6c0-3.4-4-3.1-4 0V19h-3V8h3v1.8c1.4-2.6 7-2.8 7 2.5V19z"/></svg>
-        </a>
-        <a href="https://twitter.com/aldernorthholdings" aria-label="X (Twitter)" target="_blank" rel="noopener">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2H21l-6.46 7.387L22 22h-6.828l-4.77-6.246L4.804 22H2l6.91-7.892L1.5 2h6.957l4.31 5.713L18.244 2zM17.222 20.146h1.84L7.027 3.748H5.05L17.222 20.146z"/></svg>
-        </a>
-        <a href="https://www.facebook.com/aldernorthholdings" aria-label="Facebook" target="_blank" rel="noopener">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.99 3.66 9.13 8.44 9.88V14.9H7.9V12h2.54V9.8c0-2.51 1.49-3.89 3.78-3.89 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.77l-.44 2.9h-2.33v6.98C18.34 21.13 22 16.99 22 12z"/></svg>
-        </a>
-      </span>
-    </div>
-  </div>
-</footer>
+<?php // Was a byte-for-byte inline duplicate of _partials/footer.php, which is
+      // what every other public page includes - so footer edits silently missed
+      // the home page. One definition now. ?>
+<?php include __DIR__ . '/_partials/footer.php'; ?>
 
 
   <!-- Scripts -->
-  <script src="<?= anc_asset('../../assets/js/main.js') ?>" defer></script>
-  <script>
-    // ANC Redesign: toggle .is-scrolled on navbar once past hero
-    (function () {
-      const nav = document.querySelector('.anc-redesign .navbar');
-      if (!nav) return;
-      const threshold = 80;
-      const update = () => nav.classList.toggle('is-scrolled', window.scrollY > threshold);
-      update();
-      window.addEventListener('scroll', update, { passive: true });
-    })();
-  </script>
+  <script src="<?= anc_asset('/assets/js/main.js') ?>" defer></script>
   <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "Organization",
   "name": "Aldernorth Capital",
   "url": "https://aldernorthcapital.com",
-  "logo": "https://aldernorthcapital.com/assets/images/logo/aldernorth-black.svg",
+  "logo": "https://aldernorthcapital.com/assets/favicon/android-chrome-512x512.png",
   "sameAs": [
     "https://www.linkedin.com/company/aldernorthholdings",
     "https://twitter.com/aldernorthholdings",

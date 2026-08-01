@@ -1,4 +1,4 @@
-# Crestmark — Complete UI/Design Specification
+# Crestmark - Complete UI/Design Specification
 
 > Extracted from live site: `crestmark.framer.website` · Date: 2026-05-31 · Viewports analysed: 1440 px desktop (rendered container: 1041 px), 768 px tablet, 375 px mobile.
 
@@ -18,10 +18,10 @@
 | `--color-surface-card` | `#FFFFFF` | Stat cards, FAQ accordion items, result cards, form |
 | `--color-ink-primary` | `#1A1A1A` | Primary headings, dark text on light backgrounds |
 | `--color-ink-body` | `#0D0D0D` | Body text (near-black), form labels, nav links on scrolled state |
-| `--color-ink-muted` | `#636363` | Secondary/muted text — eyebrow labels, card descriptions, image captions, attribution roles |
+| `--color-ink-muted` | `#636363` | Secondary/muted text - eyebrow labels, card descriptions, image captions, attribution roles |
 | `--color-ink-white` | `#FFFFFF` | All text on dark/video backgrounds |
 | `--color-accent-dark` | `#1A1A1A` | CTA buttons (dark pill), carousel arrows, approach dots (active) |
-| `--color-accent-red` | `#C2001D` | Defined in token sheet — not visually prominent on surface; likely brand accent/alert |
+| `--color-accent-red` | `#C2001D` | Defined in token sheet - not visually prominent on surface; likely brand accent/alert |
 
 **Background cadence (section alternation, top → bottom):**
 * Hero: transparent (video) / dark `#0D0D0D`
@@ -42,7 +42,7 @@ The core rhythm is an alternation between pure white `#FFFFFF` and warm off-whit
 ### A.2 Typography
 
 **Font families loaded:**
-* **Primary (display + body):** `"Google Sans"` (also served as `"General Sans"` per font stack — variable font) · weights 400, 500, 600
+* **Primary (display + body):** `"Google Sans"` (also served as `"General Sans"` per font stack - variable font) · weights 400, 500, 600
 * **Fallback stack:** `sans-serif`
 * Loaded by the Framer runtime but unused visually: `Super Sans VF`, `Super Serif VF`, `Inter`, `Inter var`
 
@@ -73,7 +73,7 @@ The core rhythm is an alternation between pure white `#FFFFFF` and warm off-whit
 
 ### A.3 Spacing System
 
-**Base unit:** 4 px (implied — observed values are multiples of 4/8/10/12/16/20/24/40/60/120)
+**Base unit:** 4 px (implied - observed values are multiples of 4/8/10/12/16/20/24/40/60/120)
 
 | Context | Value |
 |---|---|
@@ -128,9 +128,9 @@ The core rhythm is an alternation between pure white `#FFFFFF` and warm off-whit
 | **White pill (nav CTA)** | `#FFFFFF` | `#0D0D0D` | 10 px / 16 px | 30 px | 16 px / 400 | "Partner with us" nav button |
 | **Dark rounded (form submit)** | `#636363` | `#FFFFFF` | 12 px / 28 px | 4 px | 16 px / 400 | "Send message" on contact page |
 | **White rounded (404 CTA)** | `#FFFFFF` | `#0D0D0D` | 10 px / 16 px | 30 px | 16 px / 400 | "Return to Homepage" on 404 page |
-| **Dark circle (carousel arrow)** | `#1A1A1A` | white SVG | 0 (40×40 px) | 40 px | — | Prev/Next arrows |
+| **Dark circle (carousel arrow)** | `#1A1A1A` | white SVG | 0 (40×40 px) | 40 px | - | Prev/Next arrows |
 
-**Hover states:** No CSS `transition` rules in the stylesheets — Framer handles hover via JS/inline style. Observed: the white nav button lightens slightly on hover; dark pills appear to darken. Exact easing not measurable (estimate `ease-out` ~150–200 ms).
+**Hover states:** No CSS `transition` rules in the stylesheets - Framer handles hover via JS/inline style. Observed: the white nav button lightens slightly on hover; dark pills appear to darken. Exact easing not measurable (estimate `ease-out` ~150–200 ms).
 
 ---
 
@@ -138,7 +138,7 @@ The core rhythm is an alternation between pure white `#FFFFFF` and warm off-whit
 
 | Element | Behaviour | Notes |
 |---|---|---|
-| Hero word marquee | Continuous horizontal scroll (`overflow: clip` container, flex-row of duplicated items) | No CSS `animation` found on DOM — driven by Framer Motion at runtime |
+| Hero word marquee | Continuous horizontal scroll (`overflow: clip` container, flex-row of duplicated items) | No CSS `animation` found on DOM - driven by Framer Motion at runtime |
 | Stats counter | Count-up from 0 to target on scroll-enter | Observed counting toward `15+` / `750M+` after entering viewport |
 | Scroll-triggered fade-in | Sections/cards fade up as they enter the viewport | Cards appear partially faded when just entering view |
 | FAQ accordion | Click toggles height; `+` icon (dark circle, white SVG) swaps to `×` on open | Row 60 px closed, expands to reveal answer |
@@ -177,7 +177,7 @@ The core rhythm is an alternation between pure white `#FFFFFF` and warm off-whit
 
 **Purpose:** Global navigation, persistent across all pages.
 
-**Layout:** Full-width flex row — `[Logo] … [Impact | Sectors | Approach | Results | About] … [Partner with us]`.
+**Layout:** Full-width flex row - `[Logo] … [Impact | Sectors | Approach | Results | About] … [Partner with us]`.
 
 * `nav` height 66 px, padding 12 px all sides.
 * Background: `rgba(13,13,13,0.40)` + `backdrop-filter: blur(6px)` on the hero page; transitions to solid `#FFFFFF` on contact/404 and after scrolling past the hero.
@@ -196,9 +196,9 @@ The core rhythm is an alternation between pure white `#FFFFFF` and warm off-whit
 
 **Layout:** Full-viewport-height section (`height: 989 px`), `position: relative`, three layered zones:
 
-1. **Background video** (`position: absolute`, `z-index: 1`) — looping, muted, autoplaying (`object-fit: cover`, fills 1041×989 px). Source: NYC skyline at dusk, Pexels id 5601649. No dark overlay div; the video's natural darkness gives contrast.
-2. **Scrolling word marquee** (`position: relative`, `z-index: 5`, height 80 px) — horizontal `overflow: clip` row of `h1` words: `Capital • Returns • Execution • Strategy • Trust` (duplicated for a seamless loop). Each word 58 px / 400 / `#FFFFFF`; bullets `•` same style; item gap 10 px; scrolls left continuously.
-3. **Bottom content strip** (`position: relative`, background `#FFFFFF`, height 122 px) — centered subtext (20 px / 400 / `#FFFFFF`) + small down-arrow SVG (31×30 px). The white strip creates a sharp cut between the video and the sections below.
+1. **Background video** (`position: absolute`, `z-index: 1`) - looping, muted, autoplaying (`object-fit: cover`, fills 1041×989 px). Source: NYC skyline at dusk, Pexels id 5601649. No dark overlay div; the video's natural darkness gives contrast.
+2. **Scrolling word marquee** (`position: relative`, `z-index: 5`, height 80 px) - horizontal `overflow: clip` row of `h1` words: `Capital • Returns • Execution • Strategy • Trust` (duplicated for a seamless loop). Each word 58 px / 400 / `#FFFFFF`; bullets `•` same style; item gap 10 px; scrolls left continuously.
+3. **Bottom content strip** (`position: relative`, background `#FFFFFF`, height 122 px) - centered subtext (20 px / 400 / `#FFFFFF`) + small down-arrow SVG (31×30 px). The white strip creates a sharp cut between the video and the sections below.
 
 **Padding:** 120 px top, 32 px bottom; gap between marquee and text strip 16 px.
 
@@ -222,8 +222,8 @@ The core rhythm is an alternation between pure white `#FFFFFF` and warm off-whit
 
 **Layout:** `background: #F8F7F5`, padding 40 px top / 60 px bottom / 40 px sides.
 
-* Left ~60%: pull-quote `<h2>` — 32 px / 500 / `#1A1A1A` / lh 40 / −1 px.
-* Right ~40%: attribution — portrait 40×40 px (`border-radius: 4px`, `object-fit: cover`) + name (14 px / 400 / `#1A1A1A`) + title/company (14 px / 400 / `#636363`), arranged in a horizontal flex row.
+* Left ~60%: pull-quote `<h2>` - 32 px / 500 / `#1A1A1A` / lh 40 / −1 px.
+* Right ~40%: attribution - portrait 40×40 px (`border-radius: 4px`, `object-fit: cover`) + name (14 px / 400 / `#1A1A1A`) + title/company (14 px / 400 / `#636363`), arranged in a horizontal flex row.
 
 **Rebuild:** 2-column flex layout; left block quote, right flex row with small portrait + stacked name/role.
 
@@ -260,7 +260,7 @@ The core rhythm is an alternation between pure white `#FFFFFF` and warm off-whit
 
 **Card anatomy** (flex column, `overflow: clip`, no outer bg/radius):
 * Image 470.5 × 250 px, `object-fit: cover`, no radius.
-* Info box: `background: #F8F7F5`, radius 8 px, padding 20 px, ~164 px tall — icon SVG (20×20 px `#1A1A1A`) + title (20 px / 400 / `#1A1A1A` / lh 24) + description (16 px / 400 / `#636363` / lh 22.4).
+* Info box: `background: #F8F7F5`, radius 8 px, padding 20 px, ~164 px tall - icon SVG (20×20 px `#1A1A1A`) + title (20 px / 400 / `#1A1A1A` / lh 24) + description (16 px / 400 / `#636363` / lh 22.4).
 
 **Sectors:** Healthcare, Industrial, Business services, Technology-enabled services, Financial services, Consumer essentials.
 
@@ -274,9 +274,9 @@ The core rhythm is an alternation between pure white `#FFFFFF` and warm off-whit
 
 **Layout:** `background: #F8F7F5`, 60 px vertical / 40 px horizontal. Flex column (gap 40 px):
 
-1. **Header** — same eyebrow + H2 + body + CTA pattern as Sectors.
+1. **Header** - same eyebrow + H2 + body + CTA pattern as Sectors.
 2. **Two-column flex row** (gap 16 px):
-   * **Left (354 px):** vertical tab list. Each tab = flex row, `align-items: center`, gap 12 px — bullet dot 10×10 px radius 8 px (active `#1A1A1A`, inactive `#636363`) + tab text 16 px / 400 (active `#1A1A1A`, inactive `#636363`). Tabs: Acquisition, Excellence, Partnership.
+   * **Left (354 px):** vertical tab list. Each tab = flex row, `align-items: center`, gap 12 px - bullet dot 10×10 px radius 8 px (active `#1A1A1A`, inactive `#636363`) + tab text 16 px / 400 (active `#1A1A1A`, inactive `#636363`). Tabs: Acquisition, Excellence, Partnership.
    * **Right (591 px):** stacked content blocks (one per tab, all in DOM). Each = image (550 × 360 px, `object-fit: cover`, radius 8 px) + info (icon SVG 20×20 px + title 20 px / 400 / `#1A1A1A` + description 16 px / 400 / `#636363` / lh 22.4).
 
 **Rebuild:** Left nav as `<ul>` with bullet dots; right panel via JS tab switching or scroll-spy with height animation.
@@ -295,7 +295,7 @@ The core rhythm is an alternation between pure white `#FFFFFF` and warm off-whit
 
 **Features:** Strategy, Discipline, Partnership, Capital, Governance, Performance.
 
-**Rebuild:** Identical to the Sectors card pattern — swap image-top for icon-top.
+**Rebuild:** Identical to the Sectors card pattern - swap image-top for icon-top.
 
 ---
 
@@ -311,7 +311,7 @@ The core rhythm is an alternation between pure white `#FFFFFF` and warm off-whit
 * Company logo top-left (120 × 30 px, `object-fit: contain`, white/inverted).
 * Metric block bottom-left: `h3` value (28 px / 600 / `#FFFFFF`) + label (16 px / 400 / `#FFFFFF`).
 * Background image fills the card (absolute, `object-fit: cover`).
-* Gradient overlay (absolute, full card, `z-index: 1`): `radial-gradient(100% 71% at 100% 47.2%, rgba(13,13,13,0.40) 0%, rgba(0,0,0,0.50) 100%)` — dark vignette for text legibility.
+* Gradient overlay (absolute, full card, `z-index: 1`): `radial-gradient(100% 71% at 100% 47.2%, rgba(13,13,13,0.40) 0%, rgba(0,0,0,0.50) 100%)` - dark vignette for text legibility.
 
 **Arrows:** Prev/Next `<button>`s, `background: #1A1A1A`, radius 40 px, 40×40 px, absolutely positioned in a `<fieldset>` (`justify-content: space-between`) at vertical center; white SVG arrows inside.
 
@@ -327,11 +327,11 @@ The core rhythm is an alternation between pure white `#FFFFFF` and warm off-whit
 
 **Layout:** `background: #FFFFFF`, 60 px vertical / 40 px horizontal.
 
-**Header:** centered flex column (gap 40 px) — eyebrow + centered H2 + centered body (16 px / 400 / `#636363`).
+**Header:** centered flex column (gap 40 px) - eyebrow + centered H2 + centered body (16 px / 400 / `#636363`).
 
 **Grid:** 2-column (`470.5px 470.5px`, gap 20 px); 3 cards, card 3 in the left column only.
 
-**Card anatomy** (`<a href="linkedin.com/feed/">`, `background: #F8F7F5`, radius 8 px, padding 20 px, ~354 px tall, flex column, gap 16 px, `overflow: clip`): portrait 430.5 × 250 px (`object-fit: cover`, no radius) + info row (`justify-content: space-between`) — name (18 px / 500 / `#1A1A1A` / lh 22) + role (16 px / 400 / `#636363`) + LinkedIn SVG (~22×28 px, `#1A1A1A`). The whole card is the `<a>`.
+**Card anatomy** (`<a href="linkedin.com/feed/">`, `background: #F8F7F5`, radius 8 px, padding 20 px, ~354 px tall, flex column, gap 16 px, `overflow: clip`): portrait 430.5 × 250 px (`object-fit: cover`, no radius) + info row (`justify-content: space-between`) - name (18 px / 500 / `#1A1A1A` / lh 22) + role (16 px / 400 / `#636363`) + LinkedIn SVG (~22×28 px, `#1A1A1A`). The whole card is the `<a>`.
 
 **Members:** Nowmy Su (Chief Tech Officer), Liam Rodriguez (Head of Sales), Ayesha Rahman (Founder & CEO).
 
@@ -345,7 +345,7 @@ The core rhythm is an alternation between pure white `#FFFFFF` and warm off-whit
 
 **Layout:** `background: #F8F7F5`, 60 px vertical / 40 px horizontal.
 
-**Header:** centered column (gap 16 px) — eyebrow "FAQs" + H2 "Frequently asked questions" + centered body (`#636363`) + dark pill CTA "Connect with our team".
+**Header:** centered column (gap 16 px) - eyebrow "FAQs" + H2 "Frequently asked questions" + centered body (`#636363`) + dark pill CTA "Connect with our team".
 
 **Accordion:** max-width ~640 px centered, flex column.
 
@@ -365,7 +365,7 @@ The core rhythm is an alternation between pure white `#FFFFFF` and warm off-whit
 
 1. **Upper area** (centered flex column, gap 16 px): logo → H2 tagline (32 px / 500 / `#1A1A1A`, centered, −1 px) → body (16 px / 400 / `#636363`, centered) → dark pill CTA "Start a conversation".
 2. **Nav link row** (centered flex row, `•` separators at 16 px / `#0D0D0D`): Impact · Sectors · Approach · Results · Partner with us · 404.
-3. **Credits bar** (flex row, `justify-content: space-between`, padding-top 20 px, ~74 px tall): "By Shahrukh Qureshi" (left) · 3 social icons (LinkedIn, Facebook, X — 22×28 px SVG, `#1A1A1A`, center) · "Powered by Framer" (right).
+3. **Credits bar** (flex row, `justify-content: space-between`, padding-top 20 px, ~74 px tall): "By Shahrukh Qureshi" (left) · 3 social icons (LinkedIn, Facebook, X - 22×28 px SVG, `#1A1A1A`, center) · "Powered by Framer" (right).
 
 **Rebuild:** Centered column with a clear divider between the upper CTA area and the nav/credits; nav links as a flex row with dot-separators.
 
@@ -374,7 +374,7 @@ The core rhythm is an alternation between pure white `#FFFFFF` and warm off-whit
 ## D. Component Inventory
 
 ### D.1 Eyebrow Label
-`flex-row`, `align-items: center`, gap 5 px — `[SVG 20×20 px, #636363]` + `[<p> 16px/400/#636363]`. Use any Phosphor/Lucide/Heroicons SVG at 20 px.
+`flex-row`, `align-items: center`, gap 5 px - `[SVG 20×20 px, #636363]` + `[<p> 16px/400/#636363]`. Use any Phosphor/Lucide/Heroicons SVG at 20 px.
 
 ### D.2 Section Header Block
 Flex column (gap 16–24 px): eyebrow → `<h2>` (32 px / 500 / `#1A1A1A` / lh 40 / −1 px) → body `<p>` (16 px / 400 / `#636363`) → optional dark pill CTA. Left-aligned (Sectors, Approach, Why Crestmark, Results); centered (About, FAQ).
@@ -454,7 +454,7 @@ background: rgba(13,13,13,0.40) [hero] | #FFFFFF [scrolled/other pages];
 backdrop-filter: blur(6px) [hero only];
 padding: 12px; height: 66px; position: sticky; top: 0; z-index: high;
 ```
-Internal: flex row `space-between` — logo (SVG) · center links (flex, gap ~24px) · right white-pill CTA.
+Internal: flex row `space-between` - logo (SVG) · center links (flex, gap ~24px) · right white-pill CTA.
 
 ### D.13 Testimonial Block
 Flex row (2 cols): quote `<h2>` (32px/500/#1A1A1A/lh40/−1px) left + attribution stack (portrait 40×40px/radius4px + name 14px/400/#1A1A1A + role 14px/400/#636363) right.
@@ -475,9 +475,9 @@ background: #636363; color: #FFFFFF; border-radius: 4px;
 padding: 12px 28px; font: 16px/400 "Google Sans";
 width: full (873px); height: ~46px;
 ```
-> The submit button uses `#636363` (muted grey) rather than the standard `#1A1A1A` dark pill — the only instance of this style.
+> The submit button uses `#636363` (muted grey) rather than the standard `#1A1A1A` dark pill - the only instance of this style.
 
-**Fields (5):** Name, Email, Company, Phone, Message — single flex column, 20 px gaps, each label a flex column with 10 px gap to its input.
+**Fields (5):** Name, Email, Company, Phone, Message - single flex column, 20 px gaps, each label a flex column with 10 px gap to its input.
 
 ### D.15 Approach Image + Content Block
 ```
@@ -494,7 +494,7 @@ Blocks stack vertically in the 591 px right column; scrolling reveals each.
 ## E. Imagery & Iconography
 
 ### E.1 Background Video
-All three pages (home, contact, 404) use the **same looping NYC skyline video** (Pexels id 5601649), `autoplay muted loop playsinline`, rendered `100vw × 100vh` (1041×989 px), `object-fit: cover`. No explicit dark overlay div — the video's darkness provides contrast; on the homepage the nav adds a `rgba(13,13,13,0.40)` blurred glass tint over the video edge.
+All three pages (home, contact, 404) use the **same looping NYC skyline video** (Pexels id 5601649), `autoplay muted loop playsinline`, rendered `100vw × 100vh` (1041×989 px), `object-fit: cover`. No explicit dark overlay div - the video's darkness provides contrast; on the homepage the nav adds a `rgba(13,13,13,0.40)` blurred glass tint over the video edge.
 
 ### E.2 Sector & Approach Photography
 * **Aspect ratio:** sector images 470.5×250 px ≈ **1.88:1** (~16:9); approach images 550×360 px ≈ **1.53:1** (~3:2).
@@ -507,7 +507,7 @@ All three pages (home, contact, 404) use the **same looping NYC skyline video** 
 * **Testimonial portrait:** 40×40 px square, radius 4 px (rounded square, not circle), full colour.
 
 ### E.4 Result Card Images
-Full card background, 310×300 px, `object-fit: cover`, absolute. Overlay: `radial-gradient(100% 71% at 100% 47.2%, rgba(13,13,13,0.40) 0%, rgba(0,0,0,0.50) 100%)` — darkening radial stronger toward right/center. Text sits above at `z-index > 1`.
+Full card background, 310×300 px, `object-fit: cover`, absolute. Overlay: `radial-gradient(100% 71% at 100% 47.2%, rgba(13,13,13,0.40) 0%, rgba(0,0,0,0.50) 100%)` - darkening radial stronger toward right/center. Text sits above at `z-index > 1`.
 
 ### E.5 Partner / Company Logos
 * **Homepage marquee:** ~88–101 px × 24 px, `object-fit: contain`, monochrome/dark-on-light.
@@ -518,7 +518,7 @@ Full card background, 310×300 px, `object-fit: cover`, absolute. Overlay: `radi
 * **Style:** outlined/linear SVG from **Phosphor Icons** (`viewBox="0 0 256 256"`).
 * **Size:** 20×20 px (eyebrow, section, card icons); 24×35 px (stat card icon); 20×20 px (FAQ icon inside the 26 px circle).
 * **Color:** `#636363` (eyebrow icons); `#1A1A1A` / `#0D0D0D` (card, social, stat icons); white (carousel arrows, FAQ toggle).
-* **No icon fonts** — all inline SVG.
+* **No icon fonts** - all inline SVG.
 
 ### E.7 Logo (Crestmark Wordmark)
 SVG wordmark: small abstract chain/link icon + "Crestmark" text. Two color contexts: white (nav on hero/404) and dark `#1A1A1A` (white-bg nav, footer). Rendered ~130–140 px wide.
@@ -532,8 +532,8 @@ SVG wordmark: small abstract chain/link icon + "Crestmark" text. Two color conte
 **Hero:** full-screen (989 px), `background: #F8F7F5`, NYC video behind content (`z-index: 1` beneath content `z-index: 9`). Centered column: `<h1>` "Contact us" (58 px / 400 / `#FFFFFF`, centered, −1.1 px) + body (20 px / 400 / `#FFFFFF`, centered), overlaid on the video without a dedicated overlay div.
 
 **Form block:** inside a `background: #F8F7F5`, radius 8 px, padding 20 px wrapper; form within a `#FFFFFF` radius 8 px card, padding 24 px. Full block 921 × 938 px:
-1. The form (flex column, gap 20 px) — Name, Email, Company, Phone, Message + Submit (see D.14).
-2. **Below-form row** (flex row, gap 80 px, two 420.5 px columns): **Left** — testimonial (quote-mark SVG + body 16 px / 400 / `#1A1A1A` + attribution name/role 14 px / `#636363` + portrait 40×40 px / radius 4 px); **Right** — "Trusted by leading companies" heading (20 px / 400 / `#1A1A1A`) + 2-column logo grid (`206.25px 206.25px`, gap `16px 8px`, 8 logos).
+1. The form (flex column, gap 20 px) - Name, Email, Company, Phone, Message + Submit (see D.14).
+2. **Below-form row** (flex row, gap 80 px, two 420.5 px columns): **Left** - testimonial (quote-mark SVG + body 16 px / 400 / `#1A1A1A` + attribution name/role 14 px / `#636363` + portrait 40×40 px / radius 4 px); **Right** - "Trusted by leading companies" heading (20 px / 400 / `#1A1A1A`) + 2-column logo grid (`206.25px 206.25px`, gap `16px 8px`, 8 logos).
 
 **Footer:** identical to homepage.
 
@@ -547,7 +547,7 @@ SVG wordmark: small abstract chain/link icon + "Crestmark" text. Two color conte
 
 **Hero:** full-screen (989 px), `background: #FFFFFF`, `display: flex; align-items: center; justify-content: center`. Same NYC video behind (`z-index: 1`).
 
-**Content block** (centered flex column, gap 16 px): no large "404" numeral — `<h1>` "Not Found" (58 px / 400 / `#FFFFFF`, centered, −1.1 px) + subtext (20 px / 400 / `#636363`, centered) + CTA "Return to Homepage" (**white pill** variant).
+**Content block** (centered flex column, gap 16 px): no large "404" numeral - `<h1>` "Not Found" (58 px / 400 / `#FFFFFF`, centered, −1.1 px) + subtext (20 px / 400 / `#636363`, centered) + CTA "Return to Homepage" (**white pill** variant).
 
 **No footer** on this page.
 
@@ -592,7 +592,7 @@ SVG wordmark: small abstract chain/link icon + "Crestmark" text. Two color conte
 | FAQ expand animation | Height transition managed by Framer. Visually ~200–300 ms, `ease-out`. |
 | Scroll-fade details | Framer scroll triggers. Likely Y offset 20–40 px, opacity 0→1, ~400–600 ms. |
 | Approach tab transition | Crossfade timing Framer-driven, not measurable. |
-| "Google Sans" / "General Sans" licensing | "Google Sans" is proprietary. For a non-Google rebuild, **General Sans** (Fontshare, free) is the closest match — same geometric humanist sans character. |
+| "Google Sans" / "General Sans" licensing | "Google Sans" is proprietary. For a non-Google rebuild, **General Sans** (Fontshare, free) is the closest match - same geometric humanist sans character. |
 | Logo asset files | Partner logos are Framer template placeholders; real replacements needed. |
 | Exact video file | Pexels video 5601649 is public and reusable. |
 | Nav scroll transition timing | Dark-glass → white threshold and duration not measurable. |

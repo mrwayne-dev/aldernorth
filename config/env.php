@@ -1,6 +1,6 @@
 <?php
 // ============================================================
-// ENVIRONMENT CONFIGURATION — Aldernorth Capital
+// ENVIRONMENT CONFIGURATION - Aldernorth Capital
 //
 // This file no longer stores any secrets. It's a thin loader
 // that reads .env at the project root and exposes those values
@@ -69,24 +69,59 @@ define('SMTP_FROM',      $require('SMTP_FROM'));
 define('SMTP_FROM_NAME', $envv('SMTP_FROM_NAME', 'Aldernorth Capital'));
 define('SMTP_SECURE',    $envv('SMTP_SECURE', 'ssl'));
 
-// --- NOWPayments (optional — only required for deposits) ----------------
-define('NOWPAY_API_KEY',    $envv('NOWPAYMENTS_API_KEY', ''));
-define('NOWPAY_PUBLIC_KEY', $envv('NOWPAYMENTS_PUBLIC_KEY', ''));
-define('NOWPAY_IPN_SECRET', $envv('NOWPAYMENTS_IPN_SECRET', ''));
+// --- NOWPayments --------------------------------------------------------
+// Required, not optional.
+//
+// These used to default to '' on a missing key. An empty NOWPAY_IPN_SECRET
+// means now_webhook.php computes its HMAC under an empty key - it still fails
+// closed, so nothing is forgeable, but every real IPN 403s and deposits sit
+// pending forever with no signal anywhere. A truncated .env should stop the
+// app at boot instead of quietly breaking payments.
+define('NOWPAY_API_KEY',    $require('NOWPAYMENTS_API_KEY'));
+define('NOWPAY_IPN_SECRET', $require('NOWPAYMENTS_IPN_SECRET'));
 define('NOWPAY_CA_BUNDLE',  __DIR__ . '/certs/cacert.pem');
+
+// Opt-in escape hatch for create_crypto_payment.php's TLS fallback. Absent or
+// anything other than the exact string "true" leaves verification ON.
+define('NOWPAY_INSECURE_FALLBACK', strtolower(trim($envv('NOWPAY_INSECURE_FALLBACK', ''))) === 'true');
 
 // --- Admin --------------------------------------------------------------
 define('ADMIN_CONTACT_EMAIL', $envv('SMTP_TO', $envv('SMTP_FROM', 'support@aldernorthcapital.com')));
 define('ADMIN_INVITE_CODE',   $envv('ADMIN_INVITE_CODE', ''));
 
-// --- Error Display ------------------------------------------------------
+// --- Error Display and Logging ------------------------------------------
+//
+// Production used to run error_reporting(0), which does not just hide errors
+// from the visitor - it stops PHP RECORDING them at all. Warnings, notices and
+// uncaught fatals were silently discarded, so the only things that ever
+// reached a log were the handful of explicit error_log() calls in the code.
+// After launch that means a failing deposit, a broken query or a fatal in the
+// IPN handler leaves no trace anywhere.
+//
+// The correct split is: report and log everything, display nothing.
+error_reporting(E_ALL);
+ini_set('log_errors', '1');
+
 if (APP_ENV === 'local') {
     ini_set('display_errors', 1);
     ini_set('display_startup_errors', 1);
-    error_reporting(E_ALL);
 } else {
     ini_set('display_errors', 0);
-    error_reporting(0);
+    ini_set('display_startup_errors', 0);
+
+    // One file instead of the host default, which is the bare relative name
+    // "error_log" - that scatters a separate log into whichever directory the
+    // entry script happened to live in, and drops those files inside the web
+    // root. logs/ is denied by .htaccess (RedirectMatch 403 on ^/logs).
+    //
+    // Silent no-op if the directory is not writable: PHP falls back to the
+    // server default rather than failing the request. Verify after deploy with
+    //   php -r 'error_log("deploy check");' && tail logs/php-error.log
+    $logDir = dirname(__DIR__) . '/logs';
+    if (is_dir($logDir) && is_writable($logDir)) {
+        ini_set('error_log', $logDir . '/php-error.log');
+    }
+    unset($logDir);
 }
 
 // --- Cleanup loader locals so callers don't see them --------------------

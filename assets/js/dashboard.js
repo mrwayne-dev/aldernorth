@@ -18,7 +18,7 @@
             "<img src='%i'/> %s"
               .replace(/%i/, imgURL)
               .replace(/%s/, selectOption.text())
-          );a
+          );
         }
       });
       selectIMG.selectpicker();
@@ -198,29 +198,35 @@
 
   
   /* ===================== Utilities (new) ===================== */
-  // Show modal (simple) - with accessibility focus
+  // Modal open/close. Kept behaviourally identical to the admin copy in
+  // assets/js/admin/admin.js: both close hooks are bound (.button-close-modal
+  // is the admin markup dialect, [data-modal-close] the member one) and body
+  // scroll is locked while open, which matters most for the phone sheet.
   function showModal(selector) {
     const modal = $(selector);
     if (!modal.length) return;
     modal.attr('aria-hidden', 'false').addClass('open').addClass('is-open');
-    modal.find('[data-modal-close]').off('click').on('click', () => closeModal(selector));
-    modal.find('.modal-overlay').off('click').on('click', () => closeModal(selector));
+    modal.find('[data-modal-close], .button-close-modal, .modal-overlay')
+         .off('click.ancModal').on('click.ancModal', () => closeModal(selector));
     // Accessibility: Focus the first focusable element in the modal
     setTimeout(() => {
         modal.find('input, button, select, textarea').first().focus();
     }, 10); // Small delay to allow modal to be visually ready
+    $('body').css('overflow', 'hidden');
   }
   // Close modal - with fade-out sync delay
   function closeModal(selector) {
     const modal = $(selector);
     if (!modal.length) return;
-    // Add a class to trigger fade-out animation (if not already handled by CSS on .modal.open)
-    // Then remove the main classes after the animation completes
     modal.attr('aria-hidden', 'true');
-    // Use a delay slightly longer than the CSS animation duration (e.g., 300ms if CSS is 250ms)
+    // Delay slightly longer than the CSS exit animation.
     setTimeout(() => {
         modal.removeClass('open').removeClass('is-open');
     }, 300);
+    // Only release the scroll lock once nothing else is open.
+    if (!$('.modal.is-open').not(modal).length) {
+      $('body').css('overflow', '');
+    }
   }
   // Copy input value to clipboard and show toast
   function copyToClipboard(selector) {
@@ -253,11 +259,127 @@
     if (amount == null || isNaN(Number(amount))) return '0.00';
     return Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
+  // Mirrors formatPaymentMethod() in api/utilities/helpers.php so a slug reads
+  // the same whether the label is built server-side or here.
+  function formatMethodLabel(method) {
+    const slug = String(method || '').trim().toLowerCase();
+    const labels = {
+      secure_exchange: 'Crypto Checkout',
+      // Manual transfer to an address we publish. Not 'wallet_address',
+      // which is the member's own payout address on a withdrawal.
+      deposit_address: 'Deposit Address',
+      local_bank: 'Local Bank',
+      wallet_address: 'Wallet Address',
+      wallet: 'Wallet',
+      system: 'System',
+      wire_transfer: 'Wire Transfer',
+      cash_mailing: 'Cash Mailing',
+    };
+    if (labels[slug]) return labels[slug];
+    if (!slug) return 'N/A';
+    // Global regex, not a string pattern: String.replace('_', ' ') swaps only
+    // the first underscore, which left "wallet address_extra" style leftovers.
+    return slug.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+  /* ===================== Shared transaction table ======================
+   * There used to be THREE renderers for one dataset: the wallet <ul>, the
+   * dashboard <tr> and the transactions page <tr>. They disagreed on the
+   * field name (tx.date vs tx.created_at), on what drove the colour (type in
+   * two of them, status in the third) and on whether the amount was passed
+   * through formatCurrency at all - so the same row read differently
+   * depending on which page you were looking at.
+   *
+   * One renderer, colouring by status, always formatting currency.
+   * ==================================================================== */
+  function escapeHtml(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function statusBadgeClass(status) {
+    const s = String(status || '').toLowerCase();
+    if (s === 'completed' || s === 'success') return 'bg-Green';
+    if (s === 'pending' || s === 'processing') return 'bg-Orange';
+    return 'bg-Salmon';
+  }
+
+  /**
+   * @param {Array}  rows
+   * @param {jQuery} $tbody
+   * @param {{columns?: string[], emptyText?: string}} [opts]
+   *        columns defaults to the full five-column transactions layout.
+   */
+  function ancRenderTransactionRows(rows, $tbody, opts) {
+    if (!$tbody || !$tbody.length) return;
+
+    const options = opts || {};
+    const columns = options.columns || ['reference', 'date', 'type', 'amount', 'status'];
+    const emptyText = options.emptyText || 'No transactions found.';
+
+    $tbody.empty();
+
+    if (!rows || !rows.length) {
+      $tbody.append(
+        `<tr><td class="anc-empty" colspan="${columns.length}">${escapeHtml(emptyText)}</td></tr>`
+      );
+      return;
+    }
+
+    rows.forEach(function (tx) {
+      // The two endpoints spell the timestamp differently; accept both rather
+      // than making one of them lie about its own shape.
+      const date = tx.date || tx.created_at || '';
+      const cells = columns.map(function (col) {
+        switch (col) {
+          case 'reference':
+            return `<td class="anc-td-muted">#${escapeHtml(tx.reference || '')}</td>`;
+          case 'date':
+            return `<td class="anc-td-muted">${escapeHtml(date)}</td>`;
+          case 'type':
+            return `<td>${escapeHtml(tx.type || '')}</td>`;
+          case 'amount':
+            return `<td class="anc-td-amount ${amountDirection(tx.type)}">$${formatCurrency(tx.amount)}</td>`;
+          case 'status':
+            return `<td><div class="box-status ${statusBadgeClass(tx.status)}">` +
+                   `<span class="font-poppins">${escapeHtml(String(tx.status || '').toUpperCase())}</span></div></td>`;
+          default:
+            return '<td></td>';
+        }
+      });
+      // A pending deposit row is a second, free entry point back to its
+      // transfer instructions - no extra chrome anywhere on the page.
+      const pending = String(tx.status || '').toLowerCase() === 'pending'
+        && String(tx.type || '').toLowerCase().includes('deposit')
+        && tx.reference;
+      const rowAttrs = pending
+        ? ` class="is-actionable" data-pending-ref="${escapeHtml(tx.reference)}" title="View transfer instructions"`
+        : '';
+      $tbody.append(`<tr${rowAttrs}>${cells.join('')}</tr>`);
+    });
+  }
+
+  // Money leaving the account reads orange, money arriving reads green.
+  // Matches against the HUMAN label the API sends (formatTransactionType).
+  function amountDirection(type) {
+    const t = String(type || '').toLowerCase();
+    // "Principal Released" is capital coming back, so it must not ride the
+    // 'investment' branch the way its old investment_release slug did.
+    if (t.includes('withdraw')) return 'is-out';
+    if (t.includes('investment') && !t.includes('principal')) return 'is-out';
+    return 'is-in';
+  }
+
   /* ===================== Icon Helper for Activity ===================== */
+  // NOTE: matches run against the HUMAN label the API now sends
+  // (formatTransactionType in api/utilities/helpers.php), not the raw slug.
+  // "Principal Released" is why 'principal'/'release' are matched explicitly:
+  // the old slug was investment_release and rode the 'investment' branch.
   function getIconForType(type) {
     const t = (type || '').toLowerCase();
     if (t.includes('deposit')) return 'ph-arrow-circle-down';
     if (t.includes('withdraw')) return 'ph-arrow-circle-up';
+    if (t.includes('principal') || t.includes('release')) return 'ph-arrow-u-left-up';
     if (t.includes('investment')) return 'ph-chart-line';
     if (t.includes('roi') || t.includes('payout')) return 'ph-trend-up';
     if (t.includes('infrastructure')) return 'ph-buildings';
@@ -315,7 +437,7 @@ function getAmountClass(type) {
 var loadDashboardData = async function () {
   try {
     // The wallet page is routed as /dashboard.wallet (dot-separated, see .htaccess),
-    // so a '/wallet' substring check never matched — match the trailing page segment.
+    // so a '/wallet' substring check never matched - match the trailing page segment.
     const onWalletPage = /wallet\/?$/.test(window.location.pathname.toLowerCase());
 
     // 🟩 When on the wallet page, fetch summary directly from wallet backend
@@ -325,7 +447,8 @@ var loadDashboardData = async function () {
         const w = walletRes.data;
 
         // --- Update Wallet Card Values (IDs from wallet.php) ---
-        $('#total-balance').text(formatCurrency(w.balance ?? 0));
+        setSplitAmount('#total-balance', w.balance ?? 0);
+        $('#withdraw-available').text(formatCurrency(w.balance ?? 0));
         $('#pending-withdrawals').text(formatCurrency(w.pending_withdrawals ?? 0));
         $('#total-deposited').text(formatCurrency(w.total_deposited ?? 0));
         $('#total-withdrawn').text(formatCurrency(w.total_withdrawn ?? 0));
@@ -345,7 +468,7 @@ var loadDashboardData = async function () {
         $('#next-payout-date').text(w.next_payout_date ?? '—');
         $('#next-payout-amount').text(formatCurrency(w.next_payout_amount ?? 0));
 
-        // NOTE: do not return early — fall through so the unified loader
+        // NOTE: do not return early - fall through so the unified loader
         // also populates #wallet-activity (recent_activity from dashboard.php).
       } else {
         console.warn('Wallet summary failed:', walletRes.message);
@@ -368,11 +491,12 @@ var loadDashboardData = async function () {
 
       // --- Update Wallet Card Values (shared structure) ---
       // On the wallet page the dedicated wallet.php summary above is the source
-      // of truth (correct $ figures); skip these so we don't clobber it — notably
+      // of truth (correct $ figures); skip these so we don't clobber it - notably
       // dashboard.php returns pending_withdrawals as a COUNT, not a $ amount.
       // (onWalletPage computed once at the top of this function.)
       if (!onWalletPage) {
-        $('#total-balance').text(formatCurrency(parseNum(w.balance ?? 0)));
+        setSplitAmount('#total-balance', parseNum(w.balance ?? 0));
+        $('#withdraw-available').text(formatCurrency(parseNum(w.balance ?? 0)));
         $('#pending-withdrawals').text(Math.round(parseNum(w.pending_withdrawals ?? 0)));
         $('#total-deposited').text(formatCurrency(parseNum(w.total_deposited ?? 0)));
         $('#total-withdrawn').text(formatCurrency(parseNum(w.total_withdrawn ?? 0)));
@@ -380,50 +504,9 @@ var loadDashboardData = async function () {
         $('#total-earnings').text(formatCurrency(parseNum(w.total_earnings ?? 0)));
       }
 
-      // --- Wallet Activity List (wallet.php) ---
-      const list = $('#wallet-activity');
-      list.empty();
-      const activity = res.data.recent_activity || [];
-      if (activity.length === 0) {
-        list.append(`
-          <li class="wallet-activity-empty">
-            <i class="ph ph-arrows-left-right" style="font-size:28px"></i>
-            <div class="f14-bold text-Primary">No activity yet</div>
-            <div class="f12-regular text-Gray">Your deposits, withdrawals and payouts will appear here.</div>
-          </li>`);
-      }
-      activity.forEach(tx => {
-        const iconName = getIconForType(tx.type);
-        const txTypeLower = (tx.type || '').toLowerCase();
-
-        let colorClass = '';
-        if (txTypeLower.includes('deposit')) colorClass = 'accent-green';
-        else if (txTypeLower.includes('withdraw')) colorClass = 'accent-red';
-        else if (txTypeLower.includes('investment')) colorClass = 'accent-blue';
-        else if (txTypeLower.includes('roi') || txTypeLower.includes('payout')) colorClass = 'accent-green';
-        else if (txTypeLower.includes('infrastructure')) colorClass = 'accent-gray';
-        else if (txTypeLower.includes('maintenance')) colorClass = 'accent-yellow';
-
-        const li = `
-          <li class="wallet-item ${colorClass}">
-            <div class="wallet-item-left">
-              <div class="wallet-item-icon">
-                <i class="ph ${iconName}" style="font-size:20px"></i>
-              </div>
-              <div>
-                <div class="wallet-item-title f14-regular">${tx.type}</div>
-                <div class="wallet-item-date f12-regular text-Gray">${tx.date || tx.created_at || ''}</div>
-              </div>
-            </div>
-            <div class="wallet-item-right">
-              <div class="wallet-item-amount f14-bold ${getAmountClass(tx.type)}">
-                $${formatCurrency(tx.amount)}
-              </div>
-              <div class="wallet-item-status f12-regular text-Gray">${tx.status || ''}</div>
-            </div>
-          </li>`;
-        list.append(li);
-      });
+      // Wallet activity now uses the shared table renderer and is loaded from
+      // the transactions endpoint by loadWalletActivity(), so nothing to do
+      // here - see ancRenderTransactionRows below.
 
       // --- Dashboard Overview (dashboard.php) ---
       $('#wallet-balance').text(formatCurrency(parseNum(w.balance ?? 0)));
@@ -440,27 +523,9 @@ var loadDashboardData = async function () {
 
 
       // --- Recent Activity Table (dashboard.php) ---
-      const tableBody = $('#recent-activity');
-      tableBody.empty();
-      (res.data.recent_activity || []).forEach(tx => {
-        const txTypeLower = (tx.type || '').toLowerCase();
-        let colorClass = '';
-        if (txTypeLower.includes('deposit')) colorClass = 'accent-green';
-        else if (txTypeLower.includes('withdraw')) colorClass = 'accent-red';
-        else if (txTypeLower.includes('investment')) colorClass = 'accent-blue';
-        else if (txTypeLower.includes('roi') || txTypeLower.includes('payout')) colorClass = 'accent-green';
-        else if (txTypeLower.includes('infrastructure')) colorClass = 'accent-gray';
-        else if (txTypeLower.includes('maintenance')) colorClass = 'accent-yellow';
-
-        const row = `
-          <tr class="${colorClass}">
-            <td class="f14-regular">${tx.date || tx.created_at || ''}</td>
-            <td class="f14-regular">${tx.type}</td>
-            <td class="f14-regular ${getAmountClass(tx.type)}">
-              $${formatCurrency(tx.amount)}
-            </td>
-          </tr>`;
-        tableBody.append(row);
+      ancRenderTransactionRows(res.data.recent_activity, $('#recent-activity'), {
+        columns: ['date', 'type', 'amount'],
+        emptyText: 'No activity yet. Deposits, withdrawals and payouts appear here.',
       });
 
       // --- Pending count badge ---
@@ -497,8 +562,108 @@ var loadDashboardData = async function () {
     clearInterval(autoRefreshTimer);
     autoRefreshTimer = null;
   }
-  /* ===================== Wallet: Deposit Flow ===================== */
-  // Deposit form handler
+  /* ===================== Wallet: Deposit Flow =====================
+   * Two routes:
+   *   secure_exchange  - hands off to the crypto checkout, which issues its
+   *                      own address and redirects.
+   *   deposit_address  - manual transfer to an address WE publish. The
+   *                      transaction stays pending until an admin confirms.
+   * ================================================================ */
+
+  // Filled by loadDepositNetworks(). Cached so the method picker and the
+  // network <select> share one fetch rather than making a second request.
+  let depositNetworks = [];
+  // The pending rows currently on screen, so re-opening a deposit's
+  // instructions needs no round trip.
+  let pendingDeposits = [];
+
+  function parseTxDetails(row) {
+    try { return JSON.parse(row.details || '{}') || {}; } catch (e) { return {}; }
+  }
+
+  // One key. The old code probed six (deposit_address || address ||
+  // wallet_address || payment_address || created_invoice_url ||
+  // details.data.*) and then fell back to a get_deposit_details endpoint
+  // that no longer exists. initiate_deposit now writes exactly one shape.
+  function depositSnapshotOf(row) {
+    const s = parseTxDetails(row).deposit_address;
+    return (s && typeof s === 'object') ? s : null;
+  }
+
+  async function loadDepositNetworks() {
+    // Needed by the deposit modal even though the read-only address card
+    // it used to fill has been removed.
+    if (!$('#deposit-form').length) return;
+    try {
+      const res = await fetchApi('/api/backend/wallet.php', { action: 'get_deposit_networks' });
+      depositNetworks = (res && res.status === 'success' && res.data.networks) || [];
+    } catch (err) {
+      console.error('Deposit networks error', err);
+      depositNetworks = [];
+    }
+
+    const $manual = $('#deposit-method-manual');
+    const $select = $('#deposit-network');
+    if (!depositNetworks.length) {
+      // Nowhere to send: don't offer the route at all.
+      $manual.attr('hidden', true);
+      return;
+    }
+
+    $manual.removeAttr('hidden');
+    $select.empty();
+    depositNetworks.forEach(function (n) {
+      $select.append(
+        $('<option>').val(n.id).text(n.label)
+          .attr('data-min', n.min_amount)
+          .attr('data-confirmations', n.confirmations)
+      );
+    });
+    syncDepositNetworkHint();
+  }
+
+  // Mirrors the server-side minimum check so the member sees it before
+  // spending a round trip on it.
+  function syncDepositNetworkHint() {
+    const id = Number($('#deposit-network').val() || 0);
+    const n = depositNetworks.find(function (x) { return x.id === id; });
+    if (!n) return;
+
+    const bits = [];
+    if (n.min_amount > 0) bits.push('Min $' + formatCurrency(n.min_amount));
+    if (n.confirmations > 0) bits.push(n.confirmations + ' confirmation' + (n.confirmations === 1 ? '' : 's'));
+    $('#deposit-network-hint').text(bits.join(' · '));
+
+    const min = n.min_amount > 0 ? n.min_amount : 1;
+    $('#deposit-amount').attr('min', min);
+    $('#deposit-min-hint').html('Minimum <strong>$' + formatCurrency(min) + '</strong>');
+  }
+
+  function bindDepositMethodPicker() {
+    const $segment = $('#deposit-method-segment');
+    if (!$segment.length) return;
+
+    $segment.on('click', '.anc-segment__btn', function () {
+      const method = $(this).data('method');
+      $segment.find('.anc-segment__btn')
+        .removeClass('is-active').attr('aria-checked', 'false');
+      $(this).addClass('is-active').attr('aria-checked', 'true');
+      $('#deposit-method').val(method);
+
+      const manual = method === 'deposit_address';
+      $('#deposit-network-field').toggleClass('hidden', !manual).attr('aria-hidden', String(!manual));
+      $('#deposit-summary-time').text(manual ? 'Credited after we confirm receipt' : 'Instant for crypto');
+
+      if (manual) syncDepositNetworkHint();
+      else {
+        $('#deposit-amount').attr('min', 1);
+        $('#deposit-min-hint').html('Minimum <strong>$1</strong>');
+      }
+    });
+
+    $('#deposit-network').on('change', syncDepositNetworkHint);
+  }
+
   function bindDepositForm() {
     const form = $('#deposit-form');
     if (!form.length) return;
@@ -514,233 +679,226 @@ var loadDashboardData = async function () {
         showToast('Select a payment method', 'error');
         return;
       }
-      // Call wallet API
-      try {
-        // Show minimal loader via toast
-        showToast('Processing deposit...', 'info', 2000);
-        const res = await fetchApi('/api/backend/wallet.php', { action: 'initiate_deposit', amount, method });
-        if (res.status === 'success') {
-          // If secure_exchange returned redirect_url (create_crypto_payment will return it)
-          const redirect = res.data?.redirect_url || res.data?.payment_url || res.data?.redirect || null;
-          if (redirect) {
-            showToast('Redirecting to payment provider...', 'success', 2000);
-            // Small delay to allow toast to show
-            setTimeout(() => { window.location.href = redirect; }, 600);
-            return;
-          }
-          // Manual methods (wire_transfer, cash_mailing)
-          showToast('Deposit request submitted. Support will provide details shortly.', 'success');
-          // Clear input
-          $('#deposit-amount').val('');
-          $('#deposit-method').val('');
-          // Refresh pending deposits & dashboard immediately
-          await loadPendingDeposits(); // This now populates the list but doesn't show modal
-          await loadDashboardData();
-        } else {
-          showToast(res.message || 'Deposit failed', 'error');
+
+      const payload = { action: 'initiate_deposit', amount, method };
+      if (method === 'deposit_address') {
+        payload.deposit_address_id = Number($('#deposit-network').val() || 0);
+        if (!payload.deposit_address_id) {
+          showToast('Choose the coin and network you want to send', 'error');
+          return;
         }
+      }
+
+      try {
+        showToast('Processing deposit...', 'info', 2000);
+        const res = await fetchApi('/api/backend/wallet.php', payload);
+        if (res.status !== 'success') {
+          showToast(res.message || 'Deposit failed', 'error');
+          return;
+        }
+
+        // secure_exchange: the provider issues the address, so we leave.
+        const redirect = res.data?.redirect_url || res.data?.payment_url || res.data?.redirect || null;
+        if (redirect) {
+          showToast('Redirecting to payment provider...', 'success', 2000);
+          setTimeout(() => { window.location.href = redirect; }, 600);
+          return;
+        }
+
+        closeModal('#deposit-modal');
+        $('#deposit-amount').val('');
+
+        if (res.data?.deposit_address) {
+          // Rendered straight from the response - no second round trip.
+          renderDepositInstructions({
+            reference: res.data.reference,
+            amount: res.data.amount,
+            deposit_address: res.data.deposit_address,
+            marked_paid: false,
+          });
+          showModal('#deposit-instructions-modal');
+        } else {
+          showToast('Deposit request submitted. Support will provide details shortly.', 'success');
+        }
+
+        await loadPendingDeposits();
+        await loadDashboardData();
       } catch (err) {
         console.error('Deposit error', err);
         showToast('Failed to initiate deposit', 'error');
       }
     });
   }
-  /* ===================== Wallet: Pending Deposits Modal ===================== */
-async function loadPendingDeposits() {
-  try {
-    const res = await fetchApi('/api/backend/wallet.php', { action: 'get_pending_deposits' });
-    if (res.status === 'success') {
-      const deposits = res.data.deposits || [];
-      const modalBody = $('#pending-actions-modal .modal-body');
-      modalBody.find('.pending-list, .note.no-pending').remove(); // Clear old content
 
-      const listWrapper = $('<div class="pending-list"></div>');
+  /* ===================== Wallet: Deposit instructions ===================== */
 
-      if (!deposits.length) {
-        listWrapper.append('<p class="note no-pending">You have no pending deposits.</p>');
-      } else {
-        deposits.forEach(d => {
-          let details = {};
-          try { details = JSON.parse(d.details || '{}'); } catch (e) { details = {}; }
+  // The address panel is a receipt, not a form step, so ONE renderer serves
+  // both "just created" and "re-opened from the pending card".
+  function renderDepositInstructions(d) {
+    const s = d.deposit_address || {};
 
-const item = $(`
-  <div class="pending-item" data-ref="${d.reference}">
-    <div class="top">
-      <div class="details">
-        <div class="amount">$${formatCurrency(d.amount)}</div>
-        <div class="method">${d.method.replace('_', ' ')}</div>
-        <div class="ref">Ref: ${d.reference}</div>
-        <div class="date">Created: ${d.created_at}</div>
-      </div>
-      <div class="actions">
-        <button class="complete-deposit" data-ref="${d.reference}">
-          Complete
-        </button>
-      </div>
-    </div>
-  </div>
-`);
+    $('#di-amount').text(formatCurrency(d.amount));
+    // Asset ticker only. Appending the raw network slug here printed things
+    // like "XLM · other", and the address card directly below already carries
+    // the human network name in its label.
+    $('#di-network-label').text(s.asset ? 'in ' + s.asset : '');
+    $('#di-label').text(s.label || 'Deposit address');
 
-          listWrapper.append(item);
-        });
-      }
+    const meta = [];
+    if (s.min_amount > 0) meta.push('Min $' + formatCurrency(s.min_amount));
+    $('#di-meta').text(meta.join(' · '));
 
-      modalBody.prepend(listWrapper);
+    // .attr AND .data together: the delegated copy handler reads
+    // $(this).data('copy-text'), and jQuery caches .data() on first read -
+    // .attr() alone would leave a stale value on the second open.
+    setCopyTarget($('#di-address-copy'), s.address || '');
+    $('#di-address').text(s.address || '');
 
-      // Bind Complete buttons
-      $('#pending-actions-modal')
-        .find('.complete-deposit')
-        .off('click')
-        .on('click', function () {
-          const ref = $(this).data('ref');
-          openPendingDepositDetails(ref, deposits);
-        });
-
+    if (s.memo_tag) {
+      $('#di-memo-row').removeClass('hidden');
+      $('#di-memo-label').text(s.memo_label || 'Memo');
+      $('#di-memo').text(s.memo_tag);
+      setCopyTarget($('#di-memo-copy'), s.memo_tag);
     } else {
-      showToast(res.message || 'Failed to load pending deposits', 'error');
+      $('#di-memo-row').addClass('hidden');
     }
-  } catch (err) {
-    console.error('Error loading pending deposits', err);
-    showToast('Failed to load pending deposits', 'error');
+
+    $('#di-instructions').toggleClass('hidden', !s.instructions).text(s.instructions || '');
+    $('#di-reference').text(d.reference || '');
+
+    const conf = Number(s.confirmations || 0);
+    $('#di-conf-row').toggleClass('hidden', conf <= 0);
+    $('#di-conf').text(conf + ' confirmation' + (conf === 1 ? '' : 's'));
+
+    // Reset the hash step every open, or a previous deposit's hash leaks in.
+    $('#di-tx-hash').val('');
+    $('#di-hash-field').addClass('hidden');
+
+    const $paid = $('#di-confirm-paid').data('reference', d.reference).removeData('armed');
+    if (d.marked_paid) {
+      $('#di-status').text('Marked as paid — awaiting confirmation');
+      $paid.prop('disabled', true).text('Marked as paid');
+    } else {
+      $('#di-status').text('Awaiting your transfer');
+      $paid.prop('disabled', false).text('I have paid');
+    }
+
+    $('#deposit-instructions-modal .modal-body').scrollTop(0);
   }
-}
 
-
-
-
-async function openPendingDepositDetails(reference, deposits) {
-  const deposit = (deposits || []).find(d => d.reference === reference);
-  if (!deposit) {
-    showToast('Deposit not found. Please refresh and try again.', 'error');
-    return;
+  function setCopyTarget($btn, value) {
+    $btn.attr('data-copy-text', value).data('copy-text', value);
   }
 
-  const methodInput = $('#pending-deposit-method');
-  const amountInput = $('#pending-deposit-amount');
-  const addressGroup = $('#pending-deposit-address-group');
-  const addressInput = $('#pending-deposit-address');
-  const instruction = $('#pending-deposit-instruction');
+  /* ===================== Wallet: Pending deposits ===================== */
 
-  // Helper function to safely parse and extract address
-  const getAddressFromDetails = (d) => {
-    let details = {};
+  async function loadPendingDeposits() {
+    const $box = $('#pending-deposits-box');
+    const $list = $('#pending-deposits-list');
+    if (!$list.length) return;
+
     try {
-      details = JSON.parse(d.details || '{}');
-    } catch (e) {
-      details = {};
+      const res = await fetchApi('/api/backend/wallet.php', { action: 'get_pending_deposits' });
+      pendingDeposits = (res.status === 'success' && res.data.deposits) || [];
+    } catch (err) {
+      console.error('Pending deposits error', err);
+      pendingDeposits = [];
     }
-    // Check all possible address keys (common variations)
-    return {
-      address: details.deposit_address ||
-        details.address ||
-        details.wallet_address ||
-        details.payment_address ||
-        details.created_invoice_url ||
-        (details.data && (details.data.address || details.data.deposit_address)) ||
-        '',
-      instruction: details.instruction || details.note || details.message || ''
-    };
-  };
 
-  // Reset fields before filling
-  addressInput.val('');
-  addressGroup.addClass('hidden');
-  instruction.addClass('hidden').text('');
+    // Only manual transfers give the member something to do. A pending
+    // secure_exchange row is the provider's problem, not a to-do item.
+    const actionable = pendingDeposits.filter(function (d) { return d.method === 'deposit_address'; });
+    if (!actionable.length) { $box.attr('hidden', true); return; }
 
-  methodInput.prop('disabled', true).val(deposit.method || '');
-  amountInput.prop('disabled', true).val(formatCurrency(deposit.amount || 0));
-
-  let { address: addressVal, instruction: note } = getAddressFromDetails(deposit);
-
-  // 🚨 START NEW LOGIC: Check if address is missing and fetch from global settings
-  if (!addressVal && (deposit.method === 'cash_mailing' || deposit.method === 'wallet_address')) {
-    showToast('Attempting to retrieve payment details...', 'info', 1000);
-    try {
-      const settingsRes = await fetchApi('/api/backend/wallet.php', {
-        action: 'get_deposit_details',
-        method: deposit.method
-      });
-
-      if (settingsRes.status === 'success' && settingsRes.data?.details) {
-        addressVal = settingsRes.data.details.trim();
-        // Override instruction with a generic message if one wasn't in the transaction already
-        if (!note) {
-          note = 'The deposit details below have been provided by Administration. Please complete payment promptly.';
-        }
-      } else {
-        // Global settings are empty or API returned error
-        addressVal = '';
-        showToast(
-          'Support details not yet configured. Support will provide details shortly.',
-          'warning'
-        );
-      }
-    } catch (e) {
-      console.error('Error fetching settings details:', e);
-      showToast('Failed to retrieve payment details.', 'error');
-      addressVal = '';
-    }
-  }
-  // 🚨 END NEW LOGIC
-
-  // Final check and display logic
-  if (addressVal && typeof addressVal === 'string' && addressVal.trim() !== '') {
-    // ✅ Address provided (either from txn details or settings) → show field
-    addressInput.val(addressVal.trim());
-    addressGroup.removeClass('hidden');
-  } else {
-    // ❌ No address provided (and toast was already shown by new logic if applicable)
-    addressGroup.addClass('hidden');
-    // If it was a 'secure_exchange' (handled by NOWPayments), we need a warning here.
-    if (deposit.method === 'secure_exchange') {
-      showToast(
-        'Payment provider details (Secure Exchange) are not yet available. Please try again from the main deposit form.',
-        'warning'
+    $list.empty();
+    actionable.forEach(function (d) {
+      const s = depositSnapshotOf(d);
+      const paid = !!parseTxDetails(d).user_marked_paid;
+      $list.append(
+        '<li class="anc-address">' +
+          '<div class="anc-address__head">' +
+            '<span class="anc-address__label">$' + formatCurrency(d.amount) + ' · ' +
+              escapeHtml(s ? s.label : 'Deposit') + '</span>' +
+            '<span class="anc-address__meta">' + (paid ? 'Marked as paid' : 'Awaiting transfer') + '</span>' +
+          '</div>' +
+          '<div class="anc-address__row">' +
+            '<code class="anc-address__value">' + escapeHtml(d.reference) + '</code>' +
+            '<button type="button" class="anc-address__copy pending-open" data-ref="' +
+              escapeHtml(d.reference) + '" aria-label="View deposit instructions">' +
+              '<i class="ph ph-arrow-right"></i></button>' +
+          '</div>' +
+        '</li>'
       );
-    }
+    });
+    $box.removeAttr('hidden');
   }
 
-  // Optional instruction/note from admin/defaulted
-  // Ensure we only display a note if the address is available OR if a fallback note was provided
-  if (note) {
-    instruction.removeClass('hidden').text(note);
-  }
-
-  // Store reference for "I Have Paid"
-  $('#pending-confirm-paid-btn').data('reference', deposit.reference);
-
-  // Show the modal with data populated
-  showModal('#pending-actions-modal');
-}
-
-
-  // Pending deposit: "I Have Paid" button handler
-function bindPendingConfirmPaid() {
-  $('#pending-confirm-paid-btn').on('click', async function () {
-    const ref = $(this).data('reference');
-    if (!ref) {
-      showToast('No deposit selected', 'error');
+  function openDepositInstructions(reference) {
+    const d = pendingDeposits.find(function (x) { return x.reference === reference; });
+    const s = d && depositSnapshotOf(d);
+    if (!s) {
+      showToast('This deposit has no transfer instructions. Contact support with the reference.', 'error');
       return;
     }
+    renderDepositInstructions({
+      reference: d.reference,
+      amount: d.amount,
+      deposit_address: s,
+      marked_paid: !!parseTxDetails(d).user_marked_paid,
+    });
+    showModal('#deposit-instructions-modal');
+  }
 
-    try {
-      showToast('Marking deposit as paid...', 'info');
-      const res = await fetchApi('/api/backend/wallet.php', { action: 'confirm_deposit_payment', reference: ref });
+  function bindPendingDeposits() {
+    $(document).on('click', '.pending-open', function () {
+      openDepositInstructions($(this).data('ref'));
+    });
+    // Pending deposit rows in the Wallet Activity table are a second, free
+    // entry point - no extra chrome on the page.
+    $(document).on('click', '[data-pending-ref]', function () {
+      openDepositInstructions($(this).data('pending-ref'));
+    });
+  }
 
-      if (res.status === 'success') {
-        showToast(res.message || 'Marked as paid. Awaiting verification.', 'success');
-        closeModal('#pending-actions-modal');
-        await loadPendingDeposits();  // Refresh the pending list
-        await loadDashboardData();    // Refresh wallet stats
-      } else {
-        showToast(res.message || 'Failed to mark deposit paid', 'error');
+  // "I have paid" is two-stage: the first press reveals the optional hash
+  // field, the second submits. One button, no extra dialog.
+  function bindPendingConfirmPaid() {
+    $('#di-confirm-paid').on('click', async function () {
+      const $btn = $(this);
+      const ref = $btn.data('reference');
+      if (!ref) {
+        showToast('No deposit selected', 'error');
+        return;
       }
-    } catch (err) {
-      console.error('Confirm deposit error', err);
-      showToast('Failed to mark deposit paid', 'error');
-    }
-  });
-}
+
+      if (!$btn.data('armed')) {
+        $btn.data('armed', true).text('Confirm payment');
+        $('#di-hash-field').removeClass('hidden');
+        $('#di-tx-hash').trigger('focus');
+        return;
+      }
+
+      const txHash = ($('#di-tx-hash').val() || '').trim();
+      try {
+        showToast('Marking deposit as paid...', 'info');
+        const res = await fetchApi('/api/backend/wallet.php', {
+          action: 'confirm_deposit_payment', reference: ref, tx_hash: txHash,
+        });
+
+        if (res.status === 'success') {
+          showToast(res.message || 'Marked as paid. Awaiting verification.', 'success');
+          closeModal('#deposit-instructions-modal');
+          await loadPendingDeposits();
+          await loadDashboardData();
+        } else {
+          showToast(res.message || 'Failed to mark deposit paid', 'error');
+        }
+      } catch (err) {
+        console.error('Confirm deposit error', err);
+        showToast('Failed to mark deposit paid', 'error');
+      }
+    });
+  }
 
   /* ===================== Wallet: Withdraw Flow (bankSuggestions integrated + fixes + polish) ===================== */
   // Bank suggestions map (from user-provided data)
@@ -835,21 +993,20 @@ function bindPendingConfirmPaid() {
       $('#modal-transaction-ref').val('');
       $('#modal-coin').val('btc'); // Default coin
       $('#modal-wallet-address').val('');
-      $('#modal-cash-details').val('');
       // Hide conditional fields
       $('.uk-only').hide();
       $('#local-bank-fields').addClass('hidden');
       $('#wallet-address-fields').addClass('hidden');
-      $('#cash-mailing-fields').addClass('hidden');
       // --- End Polish ---
 
       // Populate modal fields
       $('#modal-withdraw-amount').val(formatCurrency(amount));
-      $('#modal-method-name').text(method.replace('_', ' '));
+      // String.replace with a string pattern swaps only the FIRST match, so a
+      // three-word slug kept an underscore. formatMethodLabel handles them all.
+      $('#modal-method-name').text(formatMethodLabel(method));
       // reset fields visibility
       $('#local-bank-fields').addClass('hidden');
       $('#wallet-address-fields').addClass('hidden');
-      $('#cash-mailing-fields').addClass('hidden');
       // show correct fields
       if (method === 'local_bank') {
         $('#local-bank-fields').removeClass('hidden');
@@ -866,13 +1023,12 @@ function bindPendingConfirmPaid() {
         }
       } else if (method === 'wallet_address') {
         $('#wallet-address-fields').removeClass('hidden');
-      } else if (method === 'cash_mailing') {
-        $('#cash-mailing-fields').removeClass('hidden');
       }
       // store context on confirm button
       $('#confirm-withdraw').data('withdraw-amount', amount);
       $('#confirm-withdraw').data('withdraw-method', method);
-      // show modal
+      // Hand over to step 2 (payout details).
+      closeModal('#withdraw-start-modal');
       showModal('#withdraw-modal');
     });
   }
@@ -978,8 +1134,6 @@ function bindPendingConfirmPaid() {
       } else if (method === 'wallet_address') {
         details.coin = $('#modal-coin').val();
         details.address = $('#modal-wallet-address').val();
-      } else if (method === 'cash_mailing') {
-        details.mail = $('#modal-cash-details').val();
       }
       // Basic validation
       if (method === 'local_bank' && (!details.bank_name || !details.account_holder)) {
@@ -988,10 +1142,6 @@ function bindPendingConfirmPaid() {
       }
       if (method === 'wallet_address' && (!details.address || details.address.length < 6)) {
         showToast('Please provide a valid wallet address', 'error');
-        return;
-      }
-      if (method === 'cash_mailing' && !details.mail) {
-        showToast('Please provide mailing details', 'error');
         return;
       }
       // Send withdraw request
@@ -1030,6 +1180,141 @@ function bindPendingConfirmPaid() {
     });
   }
   /* ===================== Init & Wiring ===================== */
+  /* ===================== Wallet: quick actions & balance privacy ===================== */
+  // The deposit/withdraw forms used to be two inline panels on the page; they
+  // are now modals opened from the circular action row under the balance card.
+  /* ===================== Wallet page: activity + addresses ============= */
+
+  // Reads the SAME endpoint as /dashboard.transactions rather than the
+  // dashboard summary's recent_activity, so the wallet and the transactions
+  // page cannot show different histories for the same account.
+  async function loadWalletActivity() {
+    const $body = $('#wallet-activity');
+    if (!$body.length) return;
+
+    try {
+      const res = await fetchApi('/api/backend/transactions.php', {
+        page: 1, limit: 8, status: 'all', search: '',
+      });
+      if (res.status !== 'success') {
+        ancRenderTransactionRows([], $body, { emptyText: 'Could not load activity.' });
+        return;
+      }
+      ancRenderTransactionRows(res.data.transactions, $body, {
+        emptyText: 'No activity yet. Deposits, withdrawals and payouts appear here.',
+      });
+    } catch (err) {
+      console.error('Wallet activity error', err);
+      ancRenderTransactionRows([], $body, { emptyText: 'Could not load activity.' });
+    }
+  }
+
+  // The read-only "Deposit addresses" card this used to fill is gone: the
+  // addresses now appear inside the deposit modal, where they are actionable.
+  // The fetch itself lives in loadDepositNetworks() above, which feeds the
+  // method picker's network <select>.
+
+  function bindWalletActions() {
+    $(document).on('click', '[data-open-modal]', function (e) {
+      e.preventDefault();
+      showModal($(this).data('open-modal'));
+    });
+
+    // Copies any literal string: the wallet reference on the balance card, and
+    // the deposit addresses and memo tags in the address list. data-copy-label
+    // names what was copied, since "Wallet reference copied" is wrong for both
+    // of the latter.
+    $(document).on('click', '[data-copy-text]', function () {
+      const $btn = $(this);
+      const text = String($btn.data('copy-text') || '');
+      if (!text) return;
+      const label = String($btn.data('copy-label') || 'Wallet reference');
+
+      /* Swap the icon to a tick for ~1.6s alongside the toast.
+       *
+       * The toast is transient and appears in a corner; the confirmation people
+       * actually look for is on the control they just pressed. The icon swap is
+       * the same idiom as the balance-eye toggle below, plus a timer.
+       *
+       * The timer id lives on the element, so a second click clears the pending
+       * revert instead of letting the first timer fire mid-way through the
+       * second confirmation and leave the button stuck on the copy icon. */
+      const showTick = () => {
+        const $icon = $btn.find('i').first();
+        if (!$icon.length) return;
+
+        const prior = $btn.data('copyTimer');
+        if (prior) {
+          clearTimeout(prior);
+        } else {
+          // Only capture the resting class on the FIRST click of a burst -
+          // otherwise the second click would record "ph ph-check" as the
+          // resting state and the button would never go back.
+          $btn.data('copyIconClass', $icon.attr('class'));
+        }
+
+        $icon.attr('class', 'ph ph-check');
+        $btn.addClass('is-copied');
+
+        $btn.data('copyTimer', setTimeout(() => {
+          $icon.attr('class', $btn.data('copyIconClass') || 'ph ph-copy');
+          $btn.removeClass('is-copied').removeData('copyTimer');
+        }, 1600));
+      };
+
+      const done = () => {
+        showTick();
+        showToast(`${label} copied`, 'success');
+      };
+
+      // execCommand is the fallback, not the alternative: the async Clipboard
+      // API rejects when the document lacks focus or the permission is denied,
+      // so a rejection has to fall through here rather than surface an error.
+      const legacyCopy = () => {
+        const tmp = $('<textarea>').val(text)
+          .css({ position: 'fixed', top: 0, left: 0, opacity: 0 }).appendTo('body');
+        tmp[0].select();
+        let ok = false;
+        try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
+        tmp.remove();
+        ok ? done() : showToast('Could not copy', 'error');
+      };
+
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(done).catch(legacyCopy);
+      } else {
+        legacyCopy();
+      }
+    });
+  }
+
+  // Eye toggle on the balance card. Masking is presentational only - the
+  // figure stays in the DOM so the auto-refresh keeps updating it.
+  function bindBalanceVisibility() {
+    const card = $('[data-balance-card]');
+    if (!card.length) return;
+    $(document).on('click', '[data-balance-toggle]', function () {
+      const btn = $(this);
+      const hidden = card.toggleClass('is-masked').hasClass('is-masked');
+      btn.attr('aria-pressed', String(hidden))
+         .attr('aria-label', hidden ? 'Show balance' : 'Hide balance')
+         .attr('title', hidden ? 'Show balance' : 'Hide balance');
+      btn.find('i').attr('class', hidden ? 'ph ph-eye-slash' : 'ph ph-eye');
+    });
+  }
+
+  // Render an amount with de-emphasised decimals (see .amt-dec in the CSS).
+  function setSplitAmount(selector, value) {
+    const el = $(selector);
+    if (!el.length) return;
+    const s = formatCurrency(value);
+    const dot = s.lastIndexOf('.');
+    if (dot === -1) { el.text(s); return; }
+    el.empty()
+      .append($('<span>').addClass('amt-int').text(s.slice(0, dot)))
+      .append($('<span>').addClass('amt-dec').text(s.slice(dot)));
+  }
+
   $(function () {
     selectImages();
     menuleft();
@@ -1047,27 +1332,41 @@ function bindPendingConfirmPaid() {
     // Wallet & Dashboard specific
     loadDashboardData(); // This now updates both wallet.php and dashboard.php elements
     bindDepositForm();
+    bindDepositMethodPicker();
     bindWithdrawForm(); // This now includes logic for populating countries on 'local_bank' + UX polish
     bindBankUI();       // This handles country change and bank search
     bindConfirmWithdraw();
     bindPendingConfirmPaid();
+    bindPendingDeposits();
     bindCopyButtons();
     // Dynamic population - Call populateCountryDropdown to fill the select on page load
     populateCountryDropdown();
     // Start the auto-refresh timer
     startAutoRefresh();
-    // pending deposits button in header - loads list and shows modal
-    $('#pending-deposits-btn').on('click', function (e) {
-      e.preventDefault();
-      loadPendingDeposits(); // Load the list
-      showModal('#pending-actions-modal'); // Show the modal with the list
-    });
-    // close modals when escape pressed
+    /* The #pending-deposits-btn binding that lived here targeted an id that
+       existed in no page, so a member had no way back to a pending deposit at
+       all. The #pending-deposits-box card on the wallet page replaces it. */
+    bindWalletActions();
+    bindBalanceVisibility();
+    // Wallet page only - all three are no-ops when their containers are absent.
+    loadWalletActivity();
+    loadDepositNetworks();
+    loadPendingDeposits();
+
+    // NOWPayments sends the member back here via success_url / cancel_url after
+    // the hosted invoice. Nothing read those parameters, so a member who had
+    // just paid landed on an unchanged wallet with no acknowledgement at all -
+    // the natural reading of which is "it failed", and the natural response is
+    // to pay again. The credit itself is asynchronous (it lands on the IPN, not
+    // on this redirect), so the copy promises confirmation rather than funds.
+    handleDepositReturn();
+
+    // close modals when escape pressed. Was a fixed list of two ids, so newer
+    // dialogs ignored Escape; close whatever is actually open instead.
     $(document).on('keydown', function (e) {
-      if (e.key === 'Escape') {
-        closeModal('#withdraw-modal');
-        closeModal('#pending-actions-modal');
-      }
+      if (e.key !== 'Escape') return;
+      const open = $('.modal.is-open');
+      if (open.length) closeModal('#' + open.last().attr('id'));
     });
     // Ensure auto refresh stops on page unload
     window.addEventListener('beforeunload', function () {
@@ -1075,7 +1374,45 @@ function bindPendingConfirmPaid() {
     });
     // make refreshDashboard available on window (already defined above)
     window.refreshDashboard = loadDashboardData;
+    window.refreshWalletActivity = loadWalletActivity;
   });
+
+  /* ===================== Deposit return from NOWPayments =============== */
+  // Strips its own query parameters afterwards via replaceState, so a refresh
+  // or a back-navigation does not replay the toast.
+  function handleDepositReturn() {
+    // Same guard loadWalletActivity() uses. #wallet-balance is NOT on this page
+    // - it belongs to the dashboard summary - so guarding on it made this a
+    // silent no-op everywhere.
+    if (!$('#wallet-activity').length) return;   // wallet page only
+
+    const params = new URLSearchParams(window.location.search);
+    const outcome = params.get('deposit');
+    if (outcome !== 'success' && outcome !== 'cancel') return;
+
+    if (outcome === 'success') {
+      showToast(
+        'Payment received. Your deposit is confirming on-chain and your balance ' +
+        'updates automatically once the network confirms it.',
+        'success', 7000
+      );
+      // The IPN may already have landed while the member was on the invoice.
+      loadPendingDeposits();
+      loadWalletActivity();
+    } else {
+      showToast('Deposit cancelled. Nothing was charged.', 'info', 5000);
+    }
+
+    params.delete('deposit');
+    params.delete('ref');
+    const qs = params.toString();
+    window.history.replaceState({}, '', window.location.pathname + (qs ? '?' + qs : ''));
+  }
+
+  // transaction.js loads after this file (both deferred, so order holds) and
+  // renders the same rows. Exporting the renderer is what keeps the wallet,
+  // the dashboard and the transactions page from drifting apart again.
+  window.ancRenderTransactionRows = ancRenderTransactionRows;
 })(jQuery);
 
 /* =========================================================
@@ -1101,7 +1438,25 @@ window.ancRenderPlanPanel = function (data) {
     if (el) el.textContent = (val == null || val === '') ? '—' : val;
   };
   set('pdp-name', data.name);
-  set('pdp-roi', data.roi);
+
+  // The rate arrives as one string ("1.45% per week"). Rendering it whole put
+  // the qualifier at the same 38px as the figure, so the period is split off
+  // into a <small>. Built with DOM nodes rather than innerHTML.
+  const roiEl = document.getElementById('pdp-roi');
+  if (roiEl) {
+    roiEl.textContent = '';
+    const raw = (data.roi == null || data.roi === '') ? '—' : String(data.roi);
+    const at = raw.search(/\s+per\s+/i);
+    if (at === -1) {
+      roiEl.textContent = raw;
+    } else {
+      roiEl.appendChild(document.createTextNode(raw.slice(0, at)));
+      const small = document.createElement('small');
+      small.textContent = raw.slice(at);
+      roiEl.appendChild(small);
+    }
+  }
+
   const roiLabel = document.getElementById('pdp-roi-label');
   if (roiLabel) roiLabel.textContent = data.roiLabel || 'Expected ROI';
 

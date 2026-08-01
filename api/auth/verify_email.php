@@ -1,6 +1,6 @@
 <?php
 // ========================================
-// EMAIL VERIFICATION — Aldernorth Capital
+// EMAIL VERIFICATION - Aldernorth Capital
 // Verifies the OTP issued at registration (or resends it),
 // then opens the logged-in session on success.
 // ========================================
@@ -12,16 +12,20 @@ ob_start();
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/constants.php';
 require_once __DIR__ . '/../backend/email.php';
+require_once __DIR__ . '/../../api/utilities/security.php';   // OTP throttling + sessions
 
-session_start([
-    'cookie_lifetime' => 86400,
-    'cookie_httponly' => true,
-    'cookie_secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
-    'cookie_samesite' => 'Strict',
-]);
+// Hardened + proxy-aware - see the note in login.php.
+ancSessionStart();
+
+// CSRF. Safe methods return immediately; anything else must present the
+// session token as X-CSRF-Token (assets/js/api.js sends it on every POST).
+ancCsrfEnforce();
 
 ob_clean();
 header('Content-Type: application/json; charset=utf-8');
+
+// Wrong codes before the OTP is burned and a fresh one must be requested.
+const MAX_OTP_ATTEMPTS = 5;
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['status' => 'error', 'message' => 'Invalid request']);
@@ -53,7 +57,7 @@ try {
 
     $displayName = $user['full_name'] ?: ($user['name'] ?? 'User');
 
-    // Already verified — nothing to do.
+    // Already verified - nothing to do.
     if ((int)$user['email_verified'] === 1) {
         echo json_encode(['status' => 'error', 'message' => 'This account is already verified. Please sign in.']);
         exit;
@@ -97,17 +101,43 @@ try {
         exit;
     }
 
-    $vstmt = $pdo->prepare("SELECT * FROM email_verifications WHERE user_id = ? AND otp = ? LIMIT 1");
-    $vstmt->execute([$user_id, $otp]);
+    // Throttle the endpoint itself, then count wrong guesses against the code.
+    //
+    // This was the sharpest hole in the system: a 6-digit code with NO attempt
+    // counter, where success opens a fully privileged session. 10^6 is minutes
+    // of work unattended. resetpassword.php already had this cap; verification
+    // did not.
+    ancEnforceRateLimit($pdo, 'otp');
+    ancRecordAttempt($pdo, 'otp', ancClientIp());
+
+    // Loaded by user_id ALONE, not user_id+otp, so a wrong guess is still
+    // found and can be counted.
+    $vstmt = $pdo->prepare("SELECT * FROM email_verifications WHERE user_id = ? ORDER BY id DESC LIMIT 1");
+    $vstmt->execute([$user_id]);
     $verify = $vstmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$verify) {
-        echo json_encode(['status' => 'error', 'message' => 'Invalid verification code.']);
+        echo json_encode(['status' => 'error', 'message' => 'Invalid or expired code.']);
+        exit;
+    }
+
+    if ((int) $verify['otp_attempts'] >= MAX_OTP_ATTEMPTS) {
+        $pdo->prepare("DELETE FROM email_verifications WHERE user_id = ?")->execute([$user_id]);
+        echo json_encode(['status' => 'error', 'message' => 'Too many incorrect codes. Please request a new one.']);
         exit;
     }
 
     if (strtotime($verify['expires_at']) < time()) {
-        echo json_encode(['status' => 'error', 'message' => 'This code has expired. Please request a new one.']);
+        $pdo->prepare("DELETE FROM email_verifications WHERE user_id = ?")->execute([$user_id]);
+        echo json_encode(['status' => 'error', 'message' => 'Invalid or expired code.']);
+        exit;
+    }
+
+    // Constant-time compare, and count the miss.
+    if (!hash_equals((string) $verify['otp'], $otp)) {
+        $pdo->prepare("UPDATE email_verifications SET otp_attempts = otp_attempts + 1 WHERE id = ?")
+            ->execute([$verify['id']]);
+        echo json_encode(['status' => 'error', 'message' => 'Invalid or expired code.']);
         exit;
     }
 
@@ -116,6 +146,11 @@ try {
     $pdo->prepare("DELETE FROM email_verifications WHERE user_id = ?")->execute([$user_id]);
 
     // --- Open the logged-in session (same fields as login.php) ---
+    //
+    // Regenerate first: this request goes from anonymous to fully
+    // authenticated, and it was previously reusing whatever session id the
+    // caller arrived with.
+    ancSessionElevate();
     $_SESSION['user_id'] = $user['id'];
     $_SESSION['email'] = $user['email'];
     $_SESSION['full_name'] = $displayName;

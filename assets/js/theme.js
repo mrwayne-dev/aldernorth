@@ -1,6 +1,6 @@
 /* =================================================================
  * FILE: /assets/js/theme.js
- * Aldernorth Capital — light/dark theme toggle
+ * Aldernorth Capital - light/dark theme toggle
  *
  * The theme is applied by a tiny inline script in each <head>
  * partial BEFORE paint (see _partials/head.php), so this file only
@@ -22,12 +22,23 @@
     return root.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
   }
 
+  // Must match --Bg in anc-dashboard.css / --color-bg-page in anc-design.css.
+  var THEME_COLOR = { dark: '#161316', light: '#FAF8F7' };
+
+  // The <meta name="theme-color"> is hardcoded to the dark ink in every head
+  // partial, so the mobile browser chrome stayed dark in the light theme.
+  function syncThemeColor(theme) {
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', THEME_COLOR[theme] || THEME_COLOR.dark);
+  }
+
   function apply(theme, persist) {
     root.setAttribute('data-theme', theme);
     if (persist) {
       try { localStorage.setItem(STORAGE_KEY, theme); } catch (e) { /* private mode */ }
     }
     syncButtons(theme);
+    syncThemeColor(theme);
     document.dispatchEvent(new CustomEvent('anc:themechange', { detail: { theme: theme } }));
   }
 
@@ -54,6 +65,7 @@
 
   function init() {
     syncButtons(current());
+    syncThemeColor(current());
 
     document.addEventListener('click', function (e) {
       var btn = e.target.closest ? e.target.closest('[data-theme-toggle]') : null;

@@ -6,7 +6,7 @@
 // anc_asset('/assets/js/x.js') -> '/assets/js/x.js?v=<filemtime>'
 //
 // The version is the file's modification time, so editing a CSS/JS file
-// changes its URL and browsers re-fetch it — no manual version bumping,
+// changes its URL and browsers re-fetch it - no manual version bumping,
 // and unchanged files keep their long cache. Works for both absolute
 // ("/assets/..") and relative ("../../assets/..") URL forms.
 // ============================================================
@@ -15,7 +15,7 @@ if (!function_exists('anc_asset')) {
     function anc_asset(string $url): string {
         $pos = strpos($url, 'assets/');
         if ($pos === false) {
-            return $url; // not a local asset (e.g. a CDN URL) — leave untouched
+            return $url; // not a local asset (e.g. a CDN URL) - leave untouched
         }
         $fsPath = dirname(__DIR__) . '/' . substr($url, $pos); // <project root>/assets/...
         $mtime  = @filemtime($fsPath);

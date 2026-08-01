@@ -1,90 +1,25 @@
 <?php
-// pages/public/logout.php
+// ============================================================
+// FILE: /pages/user/logout.php
+// Signs a member out and returns them to the member login.
+// The sequence itself lives in api/utilities/logout.php, shared
+// with the admin equivalent.
+// ============================================================
+// Hardened + proxy-aware session cookie (HttpOnly, Secure, SameSite=Strict,
+// use_strict_mode). A bare session_start() inherited this box's ini defaults,
+// which set NONE of those - see api/utilities/security.php.
 
-session_start();
+require_once __DIR__ . '/../../api/utilities/security.php';
+ancSessionStart();
 
-// Store user data before destroying the session
-$user_id = $_SESSION['user_id'] ?? null;
-$user_name = $_SESSION['full_name'] ?? $_SESSION['name'] ?? 'User'; // Fallback to 'User' if names aren't set
-$user_email = null; // Initialize
+require_once __DIR__ . '/../../api/utilities/logout.php';
 
-if ($user_id) {
-    // Include database configuration
-    require_once __DIR__ . '/../../config/database.php'; // Adjust path if necessary
-    require_once __DIR__ . '/../../config/constants.php'; // Adjust path if necessary
-    require_once __DIR__ . '/../../config/env.php'; // Adjust path if necessary
+$userId = (int) ($_SESSION['user_id'] ?? 0);
+$actor  = ancResolveActor('users', $userId, $_SESSION['full_name'] ?? $_SESSION['name'] ?? 'User');
 
-    try {
-        $pdo = getPDO();
-        // Fetch user email using the stored user_id
-        $stmt = $pdo->prepare("SELECT email FROM users WHERE id = ?"); // Adjust 'id' and 'email' column names if different
-        $stmt->execute([$user_id]);
-        $user_data = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($user_data) {
-            $user_email = $user_data['email'];
-        } else {
-            error_log("Logout: User data not found for ID: $user_id");
-        }
-    } catch (Exception $e) {
-        error_log("Logout: Database error fetching user: " . $e->getMessage());
-    }
-}
-
-// --- Send Logout Notification Email (only if user data was found) ---
-if ($user_email) {
-    // Include the email sending function
-    require_once __DIR__ . '/../../api/backend/email.php';
-
-// Prepare email data using the 'logout_notification' template
-$emailData = [
-    'to' => $user_email,
-    'template' => 'logout_notification',
-    'variables' => [
-        'user_name'   => $user_name,
-        'logout_time' => date('Y-m-d H:i:s')
-    ]
-];
-
-
-    // Attempt to send the email
-    try {
-        $emailResult = sendEmail($emailData);
-        if ($emailResult['status'] !== 'success') {
-            error_log("Logout: Failed to send notification email to {$user_email}. Error: " . ($emailResult['message'] ?? 'Unknown error'));
-            // Decide: Log error, show message to user (if applicable), or just continue logout
-            // For now, we'll just log the error and continue with logout.
-        }
-        // If successful, $emailResult['status'] will be 'success', but we don't need its output here.
-    } catch (Exception $e) {
-        error_log("Logout: Exception sending notification email to {$user_email}. Error: " . $e->getMessage());
-        // Similar to above, log and continue logout.
-    }
-} else {
-    error_log("Logout: Could not determine user email for ID: $user_id. Email notification skipped.");
-    // Session destruction will still proceed.
-}
-
-// --- Destroy Session ---
-// Unset all session variables
-session_unset();
-
-// Delete session cookie if it exists
-if (ini_get('session.use_cookies')) {
-    $params = session_get_cookie_params();
-    setcookie(session_name(), '', time() - 42000,
-        $params['path'],
-        $params['domain'],
-        $params['secure'], // Ensure secure flag matches session config
-        $params['httponly'] // Ensure httponly flag matches session config
-    );
-}
-
-// Destroy the session data
-session_destroy();
-
-// --- Redirect to login ---
-$loginPage = '/login'; // Define the login page path, adjust if necessary
-header("Location: $loginPage");
-exit; // Always exit after a redirect
-?>
+ancPerformLogout(
+    $actor['email'],
+    $actor['name'],
+    'logout_notification',
+    '/login'
+);

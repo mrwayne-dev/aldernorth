@@ -10,12 +10,12 @@
 //      down for several periods),
 //   2. releases the principal once the maturity date has passed.
 //
-// SCHEDULE: run daily. Running it more than once a day is safe —
+// SCHEDULE: run daily. Running it more than once a day is safe -
 // nothing is due until next_payout_date arrives.
 //   0 2 * * *  php /path/to/api/cron/investment_cron.php
 // ============================================================
 
-// Restrict execution to CLI or localhost — prevents unauthenticated web
+// Restrict execution to CLI or localhost - prevents unauthenticated web
 // triggering of financial batch processing (payouts).
 if (php_sapi_name() !== 'cli' && !in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1'], true)) {
     http_response_code(403);
@@ -65,7 +65,7 @@ $releasedCount = 0;
 $errorCount = 0;
 
 // ------------------------------------------------------------
-// STEP 1 — pay every period that is due
+// STEP 1 - pay every period that is due
 // ------------------------------------------------------------
 $stmt = $pdo->query("
     SELECT inv.id, inv.user_id, inv.plan_name, inv.cadence, inv.amount, inv.roi_percent,
@@ -91,7 +91,7 @@ foreach ($due as $inv) {
     $per_payout = round($amount * $roi_pct / 100, 2);
 
     // Catch-up: if the cron missed runs, pay every period that has since
-    // come due — but never more than the plan's total payout count.
+    // come due - but never more than the plan's total payout count.
     $periodsDue = 0;
     $cursor     = $nextDate;
     while ($cursor <= $today && ($made + $periodsDue) < $total) {
@@ -163,7 +163,7 @@ foreach ($due as $inv) {
 }
 
 // ------------------------------------------------------------
-// STEP 2 — release principal on matured positions
+// STEP 2 - release principal on matured positions
 // ------------------------------------------------------------
 $stmt = $pdo->query("
     SELECT inv.id, inv.user_id, inv.plan_name, inv.amount, inv.roi_earned,
@@ -184,7 +184,7 @@ foreach ($matured as $inv) {
     try {
         $pdo->beginTransaction();
 
-        // Only the principal moves here — ROI was credited period by period
+        // Only the principal moves here - ROI was credited period by period
         // in STEP 1, so adding it again would pay the member twice.
         // The status guard also makes a concurrent run a no-op.
         $upd = $pdo->prepare("UPDATE investments SET status = 'completed' WHERE id = ? AND status = 'active'");
@@ -235,6 +235,6 @@ foreach ($matured as $inv) {
     }
 }
 
-cronLog(sprintf('Cron finished — %d period(s) paid, %d position(s) released, %d error(s)',
+cronLog(sprintf('Cron finished - %d period(s) paid, %d position(s) released, %d error(s)',
                 $paidPeriods, $releasedCount, $errorCount));
 exit($errorCount > 0 ? 1 : 0);

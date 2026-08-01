@@ -1,31 +1,35 @@
-<?php require_once __DIR__ . '/../../config/assets.php'; ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="description" content="Aldernorth Capital Admin — reset your administrator password.">
-  <meta name="author" content="Aldernorth Capital">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="robots" content="noindex, nofollow">
-  <link rel="canonical" href="https://aldernorthcapital.com/admin.forgotpassword">
-  <title>Admin Password Reset | Aldernorth Capital</title>
-
-  <link rel="stylesheet" href="<?= anc_asset('/assets/css/anc-design.css') ?>">
-
-  <link rel="icon" type="image/png" href="/assets/favicon/favicon-32x32.png" sizes="32x32">
-  <link rel="shortcut icon" href="/assets/favicon/favicon.ico">
-  <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicon/apple-touch-icon.png">
-  <meta name="apple-mobile-web-app-title" content="Aldernorth Capital">
-</head>
+<?php
+// The hand-rolled <head> that used to live here loaded anc-design.css ALONE.
+// No data-theme attribute, so :root[data-theme="light"] could never match and
+// this page was locked to dark with no toggle; no phosphor.css, so every toast
+// icon rendered as tofu; no font.css, so Switzer never loaded. The public head
+// partial does all four and is now shared.
+$page_title       = 'Admin Password Reset | Aldernorth Capital';
+$page_description = 'Reset your Aldernorth Capital administrator password.';
+$page_path        = '/admin.forgotpassword';
+$page_robots      = 'noindex, nofollow';
+include __DIR__ . '/../public/_partials/head.php';
+?>
 
 <body class="anc-redesign">
+
+<?php // No navbar on these pages, so the toggle needs its own anchor.
+      // theme.js binds any [data-theme-toggle]. ?>
+<button type="button" class="theme-toggle auth-theme-toggle" data-theme-toggle aria-label="Toggle colour theme">
+  <i class="ph ph-sun" aria-hidden="true"></i>
+</button>
 
 <main class="auth-page">
   <div class="container">
     <div class="form-card">
       <div class="form-card__header">
-        <a href="/" aria-label="Aldernorth Capital home" style="margin-bottom: var(--space-2);">
-          <img src="/assets/images/logo/aldernorth-black.svg" alt="Aldernorth Capital" style="height: 30px;">
+        <a href="/" class="auth-brand" aria-label="Aldernorth Capital home">
+          <?php // Two-image swap on the mark. A single ink mark was invisible
+                // against the dark .form-card; the name is text so it follows
+                // --color-ink-primary and is readable in both themes. ?>
+          <img class="auth-logo auth-logo--light" src="/assets/images/logo/anc-mark-orange.png" width="128" height="128" alt="">
+          <img class="auth-logo auth-logo--dark" src="/assets/images/logo/anc-mark-ink.png" width="128" height="128" alt="">
+          <span class="auth-wordmark">Aldernorth Capital</span>
         </a>
         <p class="eyebrow">
           <span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>
@@ -35,7 +39,7 @@
         <p>Enter your admin email to receive a one-time code.</p>
       </div>
 
-      <!-- Step 1 — request OTP -->
+      <!-- Step 1 - request OTP -->
       <form id="forgot-step1" class="form-stack" autocomplete="off">
         <div class="form-field">
           <label class="form-field__label" for="forgot-email">Admin email</label>
@@ -44,7 +48,7 @@
         <button type="submit" class="btn btn--primary" style="width: 100%;">Send code</button>
       </form>
 
-      <!-- Step 2 — verify OTP -->
+      <!-- Step 2 - verify OTP -->
       <form id="forgot-step2" class="form-stack hidden" autocomplete="off" style="margin-top: var(--space-5);">
         <div class="form-field">
           <label class="form-field__label" for="otp">Enter the 6-digit code</label>
@@ -54,7 +58,7 @@
         <button type="submit" class="btn btn--primary" style="width: 100%;">Verify code</button>
       </form>
 
-      <!-- Step 3 — set new password -->
+      <!-- Step 3 - set new password -->
       <form id="forgot-step3" class="form-stack hidden" autocomplete="off" style="margin-top: var(--space-5);">
         <div class="form-field">
           <label class="form-field__label" for="new_password">New password</label>

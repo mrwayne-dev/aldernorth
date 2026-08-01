@@ -33,5 +33,7 @@ include __DIR__ . '/_partials/head.php';
 </section>
 
 <?php include __DIR__ . '/_partials/footer.php'; ?>
+
+<script src="<?= anc_asset('/assets/js/main.js') ?>" defer></script>
 </body>
 </html>

@@ -1,12 +1,11 @@
 <?php
 // pages/user/profile.php
 
-session_start([
-    'cookie_lifetime' => 86400,
-    'cookie_httponly' => true,
-    'cookie_secure'   => true,
-    'cookie_samesite' => 'Strict',
-]);
+require_once __DIR__ . '/../../api/utilities/security.php';
+// Hardened + proxy-aware (use_strict_mode, and cookie_secure that survives
+// a TLS-terminating proxy - the inline options this replaced tested
+// $_SERVER['HTTPS'] === 'on', which is unset there).
+ancSessionStart();
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: /login');
@@ -31,6 +30,7 @@ $avatar    = htmlspecialchars($_SESSION['profile_picture'] ?? '/assets/images/av
                 </div>
 
                 <?php $active = "profile"; include __DIR__ . "/_partials/sidebar.php"; ?>
+                <?php include __DIR__ . "/_partials/dock.php"; ?>
 
                 <div class="section-content-right">
                     <?php $page_heading = "Profile"; include __DIR__ . "/_partials/topbar.php"; ?>
@@ -50,7 +50,7 @@ $avatar    = htmlspecialchars($_SESSION['profile_picture'] ?? '/assets/images/av
                                                 </div>
                                                 <div class="profile-avatar-wrap">
                                                     <img id="avatar-preview" src="<?= $avatar ?>" alt="Profile photo"
-                                                         onerror="this.src='/assets/images/avatar/default.png';">
+                                                         data-fallback-src="/assets/images/avatar/default.png">
                                                 </div>
                                                 <form id="avatar-form" enctype="multipart/form-data">
                                                     <input type="file" id="avatar-input" name="avatar" accept="image/png,image/jpeg,image/webp" hidden>
@@ -62,7 +62,7 @@ $avatar    = htmlspecialchars($_SESSION['profile_picture'] ?? '/assets/images/av
                                                             Upload photo
                                                         </button>
                                                     </div>
-                                                    <p class="f12-regular text-Gray profile-avatar-hint">PNG, JPG or WEBP. Max 2&nbsp;MB.</p>
+                                                    <p class="f12-regular text-Gray profile-avatar-hint">PNG, JPG or WEBP. Max 10&nbsp;MB.</p>
                                                 </form>
                                             </div>
                                         </div>
@@ -92,9 +92,18 @@ $avatar    = htmlspecialchars($_SESSION['profile_picture'] ?? '/assets/images/av
                                                                 <label class="f14-regular text-Black mb-8">Country</label>
                                                                 <input class="form-control" type="text" id="pf-country" placeholder="United Kingdom">
                                                             </div>
+                                                            <?php // Collected at sign-up. Like every field here it ships with
+                                                                  // NO value attribute - profile.js fills it after get_profile, so
+                                                                  // an unset column renders blank rather than showing a default. ?>
                                                             <div class="col-md-6 mb-20">
-                                                                <label class="f14-regular text-Black mb-8">Address</label>
-                                                                <input class="form-control" type="text" id="pf-address" placeholder="Street, city, postcode">
+                                                                <label class="f14-regular text-Black mb-8" for="pf-location">Location</label>
+                                                                <input class="form-control" type="text" id="pf-location" placeholder="New York, NY" maxlength="255">
+                                                            </div>
+                                                            <?php // NOT collected at sign-up - optional, filled in here if the
+                                                                  // member wants to. ?>
+                                                            <div class="col-md-6 mb-20">
+                                                                <label class="f14-regular text-Black mb-8" for="pf-address">Address <span class="f12-regular text-Gray">(optional)</span></label>
+                                                                <input class="form-control" type="text" id="pf-address" placeholder="Street, city, postcode" maxlength="255">
                                                             </div>
                                                         </div>
                                                         <button type="submit" class="tf-button bg-Primary text-White f14-bold" id="profile-save-btn">

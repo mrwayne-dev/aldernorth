@@ -1,10 +1,9 @@
 <?php
-session_start([
-    'cookie_lifetime' => 86400,
-    'cookie_httponly' => true,
-    'cookie_secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
-    'cookie_samesite' => 'Strict',
-]);
+require_once __DIR__ . '/../../api/utilities/security.php';
+// Hardened + proxy-aware: use_strict_mode, and a cookie_secure that
+// survives a TLS-terminating proxy (the inline options this replaced
+// tested $_SERVER['HTTPS'] === 'on', which is unset behind one).
+ancSessionStart();
 if (!isset($_SESSION['admin_id'])) {
     header('Location: /admin.login');
     exit;
@@ -26,6 +25,7 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
 
             <!-- Sidebar -->
             <?php $active = "wallets"; include __DIR__ . "/_partials/sidebar.php"; ?>
+            <?php include __DIR__ . "/_partials/dock.php"; ?>
             <!-- /Sidebar -->
 
             <!-- Main Content -->
@@ -79,7 +79,7 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
                                             <input type="text" id="wallet-search" placeholder="Search by user, email, or wallet ID..." class="show-search style-1">
                                         </fieldset>
                                         <div class="button-submit">
-                                            <button type="submit"><i class="icon-search-normal1"></i></button>
+                                            <button type="submit"><i class="ph ph-magnifying-glass"></i></button>
                                         </div>
                                     </form>
                                     <div class="right">
@@ -91,28 +91,33 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
                                                 <li><a href="#" data-filter="all">All Wallets</a></li>
                                                 <li><a href="#" data-filter="active">Active Only</a></li>
                                                 <li><a href="#" data-filter="zero">Zero Balance</a></li>
+                                                <li><a href="#" data-filter="pending">Needs Attention</a></li>
                                             </ul>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- WALLETS TABLE -->
-                                <div class="table-list-transaction">
-                                    <div class="list-transaction-head title-sort bg-Primary">
-                                        <div class="f12-bold text-White">User</div>
-                                        <div class="f12-bold text-White">Wallet ID</div>
-                                        <div class="f12-bold text-White">Balance</div>
-                                        <div class="f12-bold text-White">Actions</div>
-                                    </div>
-                                    <table class="list-transaction-content content-sort w-100">
+                                <?php // See the note on the users table: the div-grid header
+                                      // and the table body were sized independently. ?>
+                                <div class="anc-scroll-table">
+                                    <table class="anc-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Member</th>
+                                                <th>Wallet ID</th>
+                                                <th>Balance</th>
+                                                <th>Pending</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
                                         <tbody id="wallets-table-body">
-                                            <!-- JS will populate -->
+                                            <tr><td class="anc-empty" colspan="5">Loading wallet data...</td></tr>
                                         </tbody>
                                     </table>
                                 </div>
 
                                 <!-- PAGINATION -->
-                                <div id="pagination" class="pagination mt-3 flex gap-2 justify-center"></div>
+                                <div id="pagination"></div>
                             </div>
                         </div>
                     </div>
@@ -121,34 +126,56 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
 
                 <!-- ====================== MODALS ====================== -->
 
-                <!-- Edit Wallet Balance Modal -->
-                <div class="modal" id="edit-balance-modal">
-                    <div class="modal-overlay"></div>
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h2>Edit Wallet Balance</h2>
-                            <button class="button-close-modal">&times;</button>
-                        </div>
+                <?php // Shared with the admin dashboard. Opened per-user from a wallet
+                      // row here, globally from the quick actions there. ?>
+                <?php include __DIR__ . '/_partials/pending-modals.php'; ?>
+
+                <?php /* Edit Wallet Balance.
+                         Was the legacy .form-group/.form-control dialect with two
+                         DISABLED inputs standing in for read-only text - which is
+                         why it rendered as three identical grey boxes where only
+                         the last one was editable. Member and current balance are
+                         facts, so they are stated in an .anc-summary; the one real
+                         control gets the only field card. */ ?>
+                <div class="modal anc-modal--compact" id="edit-balance-modal" role="dialog" aria-modal="true" aria-hidden="true">
+                    <div class="modal-overlay" data-modal-close></div>
+                    <div class="modal-content" tabindex="-1" aria-labelledby="edit-balance-title">
+                        <header class="modal-header">
+                            <div>
+                                <h2 id="edit-balance-title">Edit wallet balance</h2>
+                                <p class="modal-header__sub">Sets the balance outright, it is not an adjustment.</p>
+                            </div>
+                            <button type="button" class="modal-close button-close-modal" data-modal-close aria-label="Close dialog">&times;</button>
+                        </header>
                         <div class="modal-body">
-                            <form id="edit-balance-form">
-                                <input type="hidden" id="edit-wallet-id">
-                                <div class="form-group mb-3">
-                                    <label>User</label>
-                                    <input type="text" class="form-control" id="edit-wallet-user" disabled>
-                                </div>
-                                <div class="form-group mb-3">
-                                    <label>Current Balance</label>
-                                    <input type="text" class="form-control" id="edit-current-balance" disabled>
-                                </div>
-                                <div class="form-group mb-3">
-                                    <label>New Balance (USD)</label>
-                                    <input type="number" step="0.01" class="form-control" id="edit-new-balance" required>
-                                </div>
-                                <div class="d-flex justify-content-end gap-2">
-                                    <button type="button" class="button-close-modal tf-button bg-GrayLight text-Black">Cancel</button>
-                                    <button type="submit" class="modal-confirm-btn">Update Balance</button>
+                            <ul class="anc-summary">
+                                <li class="anc-summary__row">
+                                    <span class="k"><i class="ph ph-user"></i> Member</span>
+                                    <span class="v" id="edit-wallet-user"></span>
+                                </li>
+                                <li class="anc-summary__row anc-summary__row--total">
+                                    <span class="k">Current balance</span>
+                                    <span class="v" id="edit-current-balance">$0.00</span>
+                                </li>
+                            </ul>
+                            <form id="edit-balance-form" autocomplete="off">
+                                <input type="hidden" id="edit-wallet-id" value="">
+                                <div class="anc-field">
+                                    <div class="anc-field__top">
+                                        <label class="anc-field__label" for="edit-new-balance">New balance</label>
+                                        <span class="anc-field__hint">USD</span>
+                                    </div>
+                                    <div class="anc-field__row">
+                                        <span class="anc-field__chip">$</span>
+                                        <input type="number" step="0.01" min="0" class="anc-field__input anc-field__input--num" id="edit-new-balance" required>
+                                    </div>
                                 </div>
                             </form>
+                        </div>
+
+                        <div class="modal-footer-actions">
+                            <button type="button" class="button-close-modal tf-button" data-modal-close>Cancel</button>
+                            <button type="submit" form="edit-balance-form" class="modal-confirm-btn">Update balance</button>
                         </div>
                     </div>
                 </div>
@@ -168,6 +195,7 @@ $admin_name = htmlspecialchars($_SESSION['admin_name'] ?? 'Administrator');
 <script src="<?= anc_asset('../../assets/js/jquery.min.js') ?>"></script>
 <script src="<?= anc_asset('../../assets/js/bootstrap.min.js') ?>"></script>
 <script src="<?= anc_asset('../../assets/js/bootstrap-select.min.js') ?>" defer></script>
+<script src="<?= anc_asset('../../assets/js/anc-pagination.js') ?>" defer></script>
 <script src="<?= anc_asset('../../assets/js/admin/admin.js') ?>" defer></script>
 <script src="<?= anc_asset('../../assets/js/admin/wallet.js') ?>" defer></script>
 <script src="/assets/js/chart.min.js"></script>

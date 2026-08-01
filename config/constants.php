@@ -1,6 +1,6 @@
 <?php
 // ========================================
-// GLOBAL CONSTANTS — Aldernorth Capital Platform
+// GLOBAL CONSTANTS - Aldernorth Capital Platform
 // ========================================
 
 define('APP_NAME',     'Aldernorth Capital');

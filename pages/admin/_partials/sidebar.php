@@ -9,8 +9,11 @@ $is = static fn(string $s) => $active === $s ? ' active' : '';
 ?>
 <div class="section-menu-left">
     <div class="box-logo">
-        <a href="/admin.dashboard" id="site-logo-inner">
-            <img id="logo_header" alt="Aldernorth Capital Admin" src="/assets/images/logo/aldernorth-white.svg" width="150px">
+        <?php // See the member sidebar: .box-logo is brand orange in both themes,
+              // so the ink mark and ink name are the readable pairing here. ?>
+        <a href="/admin.dashboard" id="site-logo-inner" class="anc-brand" aria-label="Aldernorth Capital admin console">
+            <img id="logo_header" class="anc-brand__mark" src="/assets/images/logo/anc-mark-ink.png" width="128" height="128" alt="">
+            <span class="anc-brand__name">Aldernorth Capital</span>
         </a>
         <div class="button-show-hide">
             <i class="ph ph-caret-left"></i>
@@ -26,14 +29,14 @@ $is = static fn(string $s) => $active === $s ? ' active' : '';
             <div class="center-item">
                 <ul>
                     <!-- DASHBOARD -->
-                    <li class="menu-item has-children<?= $is('dashboard') ?>">
-                        <a href="javascript:void(0);" class="menu-item-button<?= $is('dashboard') ?>">
+                    <?php // Was a has-children dropdown wrapping a single "Overview" child. The
+                          // submenu had no CSS rule to reveal it, so PHP marked the item active
+                          // while it stayed display:none and the first click did nothing. ?>
+                    <li class="menu-item<?= $is('dashboard') ?>">
+                        <a href="/admin.dashboard" class="menu-item-button<?= $is('dashboard') ?>">
                             <div class="icon"><i class="ph ph-squares-four"></i></div>
                             <div class="text">Dashboard</div>
                         </a>
-                        <ul class="sub-menu">
-                            <li class="sub-menu-item<?= $is('dashboard') ?>"><a href="/admin.dashboard"><div class="text">Overview</div></a></li>
-                        </ul>
                     </li>
 
                     <!-- USERS -->
@@ -73,6 +76,14 @@ $is = static fn(string $s) => $active === $s ? ' active' : '';
                         <a href="/admin.plans" class="menu-item-button<?= $is('plans') ?>">
                             <div class="icon"><i class="ph ph-chart-line-up"></i></div>
                             <div class="text">Investment Plans</div>
+                        </a>
+                    </li>
+
+                    <!-- DEPOSIT ADDRESSES -->
+                    <li class="menu-item<?= $is('deposit_addresses') ?>">
+                        <a href="/admin.deposit-addresses" class="menu-item-button<?= $is('deposit_addresses') ?>">
+                            <div class="icon"><i class="ph ph-wallet"></i></div>
+                            <div class="text">Deposit Addresses</div>
                         </a>
                     </li>
                 </ul>

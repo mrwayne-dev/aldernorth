@@ -1,11 +1,10 @@
 <?php
 // pages/user/dashboard.php
-session_start([
-    'cookie_lifetime' => 86400, // Example: 24 hours
-    'cookie_httponly' => true,
-    'cookie_secure' => true, 
-    'cookie_samesite' => 'Strict',
-]);
+require_once __DIR__ . '/../../api/utilities/security.php';
+// Hardened + proxy-aware (use_strict_mode, and cookie_secure that survives
+// a TLS-terminating proxy - the inline options this replaced tested
+// $_SERVER['HTTPS'] === 'on', which is unset there).
+ancSessionStart();
 if (!isset($_SESSION['user_id'])) {
     // Redirect to login page if not logged in
     header('Location: /login');
@@ -38,6 +37,7 @@ $user_role = $_SESSION['role'] ?? 'user';
                 <!-- section-menu-left -->
                  <!-- testing my commit -->
                 <?php $active = "dashboard"; include __DIR__ . "/_partials/sidebar.php"; ?>
+                <?php include __DIR__ . "/_partials/dock.php"; ?>
                 <!-- section-content-right -->
                 <div class="section-content-right">
                     <!-- header-dashboard -->
@@ -58,7 +58,7 @@ $user_role = $_SESSION['role'] ?? 'user';
   <div class="wallet-overview">
     <div class="section-header flex justify-between items-center mb-16">
       <h6 class="label-01">Wallet Overview</h6>
-      <a href="#" class="f14-regular flex items-center gap8 text-Primary" onclick="refreshDashboard()">
+      <a href="#" class="f14-regular flex items-center gap8 text-Primary" data-refresh-dashboard>
         <i class="ph ph-arrows-clockwise"></i> Refresh Balances
       </a>
     </div>
@@ -217,7 +217,7 @@ $user_role = $_SESSION['role'] ?? 'user';
                                                     </table>
                                                     <a href="/dashboard.transactions" class="tf-button f12-bold w-100">
                                                         View All
-                                                        <i class="icon icon-send"></i>
+                                                        <i class="ph ph-paper-plane-tilt"></i>
                                                     </a>
                                                 </div>
                                             </div>

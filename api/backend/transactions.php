@@ -4,12 +4,21 @@
 // PURPOSE: Fetch all user transactions with pagination, search,
 // filtering (status/type), and export support.
 // ============================================================
+// Hardened + proxy-aware session cookie (HttpOnly, Secure, SameSite=Strict,
+// use_strict_mode). A bare session_start() inherited this box's ini defaults,
+// which set NONE of those - see api/utilities/security.php.
 
-session_start();
+require_once __DIR__ . '/../../api/utilities/security.php';
+ancSessionStart();
+
+// CSRF. Safe methods return immediately; anything else must present the
+// session token as X-CSRF-Token (assets/js/api.js sends it on every POST).
+ancCsrfEnforce();
 header('Content-Type: application/json');
 
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/env.php';
+require_once __DIR__ . '/../utilities/helpers.php';   // formatTransactionType()
 
 if (!isset($_SESSION['user_id'])) {
   http_response_code(401);
@@ -75,7 +84,7 @@ if ($export) {
     fputcsv($output, [
       $r['reference'],
       date('M d, Y h:i A', strtotime($r['created_at'])),
-      ucfirst($r['type']),
+      formatTransactionType($r['type']),
       number_format((float)$r['amount'], 2),
       strtoupper($r['status'])
     ]);
@@ -89,7 +98,7 @@ $formatted = array_map(fn($r) => [
   'id' => (int)$r['id'],
   'reference' => $r['reference'],
   'date' => date('M d, Y h:i A', strtotime($r['created_at'])),
-  'type' => ucfirst($r['type']),
+  'type' => formatTransactionType($r['type']),
   'amount' => number_format((float)$r['amount'], 2),
   'status' => ucfirst($r['status'])
 ], $rows);

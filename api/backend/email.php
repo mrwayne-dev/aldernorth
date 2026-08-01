@@ -1,6 +1,6 @@
 <?php
 // ========================================
-// EMAIL HANDLER — Aldernorth Capital (Finalized v2)
+// EMAIL HANDLER - Aldernorth Capital (Finalized v2)
 // ========================================
 
 require_once __DIR__ . '/../../vendor/autoload.php';
@@ -11,6 +11,24 @@ require_once __DIR__ . '/../utilities/helpers.php'; // ✅ helpers now available
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
+
+/**
+ * Append a line to logs/email.log, falling back to error_log() if that file is
+ * not writable.
+ *
+ * logs/ is owned by the deploying user, not by the web server, so every mail
+ * sent from an HTTP request wrote nothing at all - and because failures are
+ * logged the same way, a bounced deposit confirmation left no trace anywhere.
+ * The fallback keeps the record even when the directory is wrong.
+ */
+function ancMailLog(string $line): void
+{
+    $path = __DIR__ . '/../../logs/email.log';
+    $ok = @file_put_contents($path, $line, FILE_APPEND | LOCK_EX);
+    if ($ok === false) {
+        error_log('email.log not writable, entry: ' . rtrim($line));
+    }
+}
 
 /**
  * sendEmail()
@@ -24,7 +42,9 @@ use PHPMailer\PHPMailer\Exception;
  * 'body' => optional raw HTML override,
  * 'debug' => optional true to preview in browser,
  * 'cc_admin' => optional true to auto-send to admin,
- * 'admin_template' => optional template key for admin notification
+ * 'admin_template' => optional template key for admin notification,
+ * 'reply_to' => optional address to reply to instead of support,
+ * 'preheader' => optional inbox preview line
  * ]
  * @return bool|array
  */
@@ -64,6 +84,32 @@ function sendEmail($params)
         $bodyHtml
     );
 
+    // Preheader: the grey line an inbox shows next to the subject. Hidden in
+    // the rendered mail by the zero-height span in the wrapper. Without it,
+    // clients preview whatever text comes first - which used to be the logo
+    // alt text.
+    $preheader = $params['preheader'] ?? ($template['preheader'] ?? '');
+    $bodyHtml = str_replace(
+        '{{preheader}}',
+        htmlspecialchars((string) $preheader, ENT_QUOTES, 'UTF-8'),
+        $bodyHtml
+    );
+
+    // Any placeholder the caller forgot used to be DELIVERED VERBATIM - there
+    // was no fallback pass, so members received literal "{{user_email}}" in
+    // password-reset mail and "{{plan_name}}" in maturity mail. Blank the
+    // leftovers and log them so the gap surfaces in development instead of in
+    // someone's inbox.
+    if (preg_match_all('/\{\{([a-z0-9_]+)\}\}/i', $bodyHtml, $leftovers)) {
+        error_log(sprintf(
+            'sendEmail: unresolved placeholders in template "%s": %s',
+            $templateKey,
+            implode(', ', array_unique($leftovers[1]))
+        ));
+        $bodyHtml = preg_replace('/\{\{[a-z0-9_]+\}\}/i', '', $bodyHtml);
+    }
+    $subject = preg_replace('/\{\{[a-z0-9_]+\}\}/i', '', $subject);
+
     // Debug mode (template preview)
     if (!empty($params['debug'])) {
         header('Content-Type: text/html; charset=UTF-8');
@@ -88,13 +134,28 @@ function sendEmail($params)
 
         // Sender / Recipients
         $mail->setFrom(SMTP_FROM, SMTP_FROM_NAME);
-        $mail->addReplyTo(ADMIN_CONTACT_EMAIL, APP_NAME . ' Support');
+        // A contact-form copy should reply to the person who wrote in, not to
+        // our own support address.
+        if (!empty($params['reply_to']) && filter_var($params['reply_to'], FILTER_VALIDATE_EMAIL)) {
+            $mail->addReplyTo($params['reply_to']);
+        } else {
+            $mail->addReplyTo(ADMIN_CONTACT_EMAIL, APP_NAME . ' Support');
+        }
         $mail->addAddress($params['to']);
 
         // Message
         $mail->Subject = $subject;
         $mail->Body    = $bodyHtml;
-        $mail->AltBody = html_entity_decode(strip_tags($bodyHtml), ENT_QUOTES, 'UTF-8');
+        // strip_tags() alone leaves the CONTENTS of <style> and <title>, so the
+        // plain-text part of every message used to open with raw CSS rules -
+        // a real spam-score liability. Drop those elements wholesale first,
+        // then collapse the whitespace the table layout leaves behind.
+        $textSource = preg_replace('#<(style|script|head|title)\b[^>]*>.*?</\1>#is', ' ', $bodyHtml);
+        $textSource = preg_replace('#<(br|/p|/div|/tr|/h[1-6])\s*/?>#i', "\n", $textSource);
+        $altBody = html_entity_decode(strip_tags($textSource), ENT_QUOTES, 'UTF-8');
+        $altBody = preg_replace("/[ \t]+/", ' ', $altBody);
+        $altBody = preg_replace("/\n{3,}/", "\n\n", $altBody);
+        $mail->AltBody = trim($altBody);
 
         // Send
         $mail->send();
@@ -117,7 +178,7 @@ function sendEmail($params)
         $log = sprintf("[%s] SENT → %s | Template: %s | Subject: %s\n",
             date('Y-m-d H:i:s'), $params['to'], $templateKey, $subject
         );
-        file_put_contents(__DIR__ . '/../../logs/email.log', $log, FILE_APPEND);
+        ancMailLog($log);
 
         return [
             'success' => true,
@@ -133,7 +194,7 @@ function sendEmail($params)
             $e->getMessage(),
             $mail->ErrorInfo
         );
-        file_put_contents(__DIR__ . '/../../logs/email.log', $errorLog, FILE_APPEND);
+        ancMailLog($errorLog);
         error_log($errorLog);
 
         return [

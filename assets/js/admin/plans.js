@@ -1,5 +1,5 @@
 /**
- * FILE: /assets/js/admin/funds.js
+ * FILE: /assets/js/admin/plans.js
  * ============================================================
  * Aldernorth Capital Admin Funds.js
  * Purpose: Frontend logic for the Admin Fund Management (XYields) page.
@@ -41,20 +41,20 @@
         // Show loading indicators
         const plansBody = $('#plans-table-body');
         const activeBody = $('#active-investments-body');
-        plansBody.empty().html('<tr><td colspan="6" class="text-center text-Primary f14-regular">Loading plans...</td></tr>');
-        activeBody.empty().html('<tr><td colspan="9" class="text-center text-Primary f14-regular">Loading active investments...</td></tr>');
+        plansBody.empty().html('<tr><td class="anc-empty" colspan="6">Loading plans...</td></tr>');
+        activeBody.empty().html('<tr><td class="anc-empty" colspan="8">Loading active investments...</td></tr>');
         $('#active-pagination').empty();
 
         try {
-            const res = await fetchApi('/api/admin/funds.php', {
+            const res = await fetchApi('/api/admin/plans.php', {
                 search: currentSearchTerm,
                 active_page: currentActivePage
             }, "GET");
 
             if (res.status !== 'success') {
                 window.showToast(res.message || 'Failed to load dashboard data.', 'error');
-                plansBody.html('<tr><td colspan="6" class="text-center text-Red f14-regular">Error loading plans.</td></tr>');
-                activeBody.html('<tr><td colspan="9" class="text-center text-Red f14-regular">Error loading investments.</td></tr>');
+                plansBody.html('<tr><td class="anc-empty" colspan="6">Error loading plans.</td></tr>');
+                activeBody.html('<tr><td class="anc-empty" colspan="8">Error loading investments.</td></tr>');
                 return;
             }
 
@@ -71,8 +71,8 @@
         } catch (error) {
             console.error('API Error loading funds dashboard:', error);
             window.showToast('A network error occurred while fetching data.', 'error');
-            plansBody.html('<tr><td colspan="6" class="text-center text-Red f14-regular">Network error.</td></tr>');
-            activeBody.html('<tr><td colspan="9" class="text-center text-Red f14-regular">Network error.</td></tr>');
+            plansBody.html('<tr><td class="anc-empty" colspan="6">Network error.</td></tr>');
+            activeBody.html('<tr><td class="anc-empty" colspan="8">Network error.</td></tr>');
         }
     }
 
@@ -97,38 +97,30 @@
         tableBody.empty();
 
         if (!plans || plans.length === 0) {
-            tableBody.html('<tr><td colspan="6" class="text-center text-Gray f14-regular">No investment plans defined.</td></tr>');
+            tableBody.html('<tr><td class="anc-empty" colspan="6">No investment plans defined.</td></tr>');
             return;
         }
 
+        const esc = window.ancEsc;
+
         plans.forEach(plan => {
+            const nextStatus = plan.status === 'active' ? 'hidden' : 'active';
+            /* Inline buttons, not a Bootstrap dropdown - .anc-scroll-table is
+               `overflow-x: auto` and clips an absolutely positioned menu. */
             const row = `
-                <tr data-plan-id="${plan.id}" class="tf-table-item">
-                    <td class="f14-regular" data-label="Plan Name">
-                        <span class="f14-bold text-Primary">${plan.title}</span>
-                    </td>
-                    <td class="f14-regular" data-label="Term">${plan.term_display}</td>
-                    <td class="f14-regular" data-label="ROI Range"><span class="text-Green">${plan.roi_display_range}</span></td>
-                    <td class="f14-regular" data-label="Risk Level">${plan.risk}</td>
-                    <td class="f14-regular" data-label="Status">${renderStatusBadge(plan.status)}</td>
-                    <td class="f14-regular" data-label="Actions">
-                        <div class="dropdown default style-fill actions-dropdown">
-                            <button class="btn btn-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                Actions
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li>
-                                    <button type="button" class="dropdown-item action-edit-plan" data-id="${plan.id}">
-                                        Edit Plan
-                                    </button>
-                                </li>
-                                <li>
-                                    <button type="button" class="dropdown-item action-toggle-status" data-id="${plan.id}" data-status="${plan.status === 'active' ? 'hidden' : 'active'}">
-                                        ${plan.status === 'active' ? 'Hide Plan' : 'Activate Plan'}
-                                    </button>
-                                </li>
-                            </ul>
-                        </div>
+                <tr data-plan-id="${plan.id}"
+                    data-min="${plan.min_amount}" data-max="${plan.max_amount}"
+                    data-roi="${plan.roi_percent}" data-cadence="${esc(plan.cadence)}"
+                    data-duration="${plan.duration_days}" data-risk="${esc(plan.risk)}">
+                    <td><span class="f14-bold">${esc(plan.title)}</span></td>
+                    <td class="anc-td-muted">${esc(plan.term_display)}</td>
+                    <td class="anc-td-amount is-in">${esc(plan.roi_display)}</td>
+                    <td class="anc-td-muted">${esc(plan.risk)}</td>
+                    <td>${renderStatusBadge(plan.status)}</td>
+                    <td>
+                        <button type="button" class="tf-button f12-bold action-edit-plan" data-id="${plan.id}">Edit</button>
+                        <button type="button" class="tf-button f12-bold bg-Accent text-Black action-toggle-status"
+                            data-id="${plan.id}" data-status="${nextStatus}">${plan.status === 'active' ? 'Hide' : 'Activate'}</button>
                     </td>
                 </tr>
             `;
@@ -144,24 +136,28 @@
         tableBody.empty();
 
         if (!investments || investments.length === 0) {
-            tableBody.html('<tr><td colspan="9" class="text-center text-Gray f14-regular">No active investments found.</td></tr>');
+            tableBody.html('<tr><td class="anc-empty" colspan="8">No active investments found.</td></tr>');
             return;
         }
 
+        const esc = window.ancEsc;
+
         investments.forEach(inv => {
-            const termDisplay = inv.duration_days > 360 ? `${inv.duration_days / 365} Year(s)` : `${inv.duration_days} days`;
             const row = `
-                <tr data-inv-id="${inv.id}" class="tf-table-item">
-                    <td class="f14-regular" data-label="User">
-                        <span class="f14-bold">${inv.user_name}</span>
-                        <div class="f12-regular text-Gray">${inv.user_email}</div>
+                <tr data-inv-id="${inv.id}">
+                    <td>
+                        <span class="f14-bold">${esc(inv.user_name)}</span>
+                        <div class="f12-regular text-Gray">${esc(inv.user_email)}</div>
                     </td>
-                    <td class="f14-regular" data-label="Plan">${inv.plan_name}</td>
-                    <td class="f14-bold" data-label="Amount">$${window.formatCurrency(inv.amount)}</td>
-                    <td class="f14-regular" data-label="ROI">${inv.roi_percent}%</td>
-                    <td class="f14-regular" data-label="Status">${renderStatusBadge(inv.status)}</td>
-                    <td class="f14-regular text-Gray" data-label="Start Date">${inv.date_started}</td>
-                    <td class="f14-regular text-Gray" data-label="End Date">${inv.maturity_date}</td>
+                    <td>${esc(inv.plan_name)}</td>
+                    <td class="anc-td-amount">$${window.formatCurrency(inv.amount)}</td>
+                    <td class="anc-td-muted">${esc(inv.roi_percent)}%</td>
+                    <td>${renderStatusBadge(inv.status)}</td>
+                    <td class="anc-td-muted">${esc(inv.date_started)}</td>
+                    <td class="anc-td-muted">${esc(inv.maturity_date)}</td>
+                    <td>
+                        <button type="button" class="tf-button f12-bold action-edit-investment" data-id="${inv.id}">Edit</button>
+                    </td>
                 </tr>
             `;
             tableBody.append(row);
@@ -169,26 +165,17 @@
     }
     
     /**
-     * Renders the pagination for the Active XYields table.
+     * Renders the pagination for the Active Investments table.
+     * Shared renderer - the local one had no Previous/Next and no window.
      */
     function renderActivePagination(currentPage, totalPages) {
-        const paginationEl = $('#active-pagination');
-        paginationEl.empty();
-        if (totalPages <= 1) return;
-
-        // Render page links
-        for (let i = 1; i <= totalPages; i++) {
-            const activeClass = i === currentPage ? 'bg-Primary text-White' : 'bg-GrayLight text-Black';
-            // Use buttons with class page-link to attach event
-            paginationEl.append(`<button class="tf-button style-1 f12-bold px-3 py-1 page-link ${activeClass}" data-page="${i}">${i}</button>`);
-        }
-        
-        // Bind click events
-        paginationEl.find('.page-link').on('click', function(e) {
-            e.preventDefault();
-            const newPage = $(this).data('page');
-            currentActivePage = newPage;
-            loadFundsDashboard(); 
+        window.ancRenderPagination('#active-pagination', {
+            page: currentPage,
+            pages: totalPages,
+            onPage: function (n) {
+                currentActivePage = n;
+                loadFundsDashboard();
+            },
         });
     }
 
@@ -201,6 +188,7 @@
         $('#plan-id').val(''); 
         $('#plan-risk').val('low');
         $('#plan-status').val('active');
+        $('#plan-cadence').val('monthly');
         $('.modal-confirm-btn').text('Save Plan').removeClass('bg-Accent text-Black').addClass('bg-Primary text-White');
         window.showModal('#plan-modal');
     }
@@ -209,7 +197,7 @@
     async function setupEditPlanModal(id) {
         try {
             window.showToast('Loading plan details...', 'info');
-            const res = await fetchApi('/api/admin/funds.php', {
+            const res = await fetchApi('/api/admin/plans.php', {
                 fetch: 'plan_details',
                 id: id
             }, "GET");
@@ -222,8 +210,8 @@
                 $('#plan-name').val(plan.title);
                 $('#plan-min').val(plan.min_amount);
                 $('#plan-max').val(plan.max_amount);
-                $('#plan-roi-min').val(plan.roi_min);
-                $('#plan-roi-max').val(plan.roi_max);
+                $('#plan-roi').val(plan.roi_percent);
+                $('#plan-cadence').val((plan.cadence || 'monthly').toLowerCase());
                 $('#plan-duration').val(plan.duration_days);
                 $('#plan-risk').val(plan.risk.toLowerCase());
                 $('#plan-status').val(plan.status.toLowerCase());
@@ -240,41 +228,135 @@
         }
     }
 
-    /** Fetches investment data and populates the Edit XYield modal. */
+    /**
+     * Load a position into the manage dialog.
+     *
+     * The dialog shows the schedule as READ-ONLY facts and offers intents.
+     * The API derives payouts_total/maturity_date together, so nothing here
+     * can produce the combinations that corrupt the cron's catch-up loop.
+     */
     async function setupEditXYieldModal(id) {
         try {
-            window.showToast('Loading investment details...', 'info');
-            const res = await fetchApi('/api/admin/funds.php', {
+            const res = await fetchApi('/api/admin/plans.php', {
                 fetch: 'investment_details',
                 id: id
             }, "GET");
 
-            if (res.status === 'success') {
-                const inv = res.data;
-                
-                $('#inv-id').val(inv.id);
-                $('#inv-user').val(inv.user_display);
-                $('#inv-plan').val(inv.plan_name);
-                $('#inv-amount').val(inv.amount);
-                $('#inv-roi').val(inv.roi_percent);
-                $('#inv-status').val(inv.status.toLowerCase());
-
-                // Enable/disable fields based on status
-                const isFinal = inv.status.toLowerCase() !== 'active';
-                $('#inv-amount').prop('disabled', isFinal);
-                $('#inv-roi').prop('disabled', isFinal);
-                
-                window.showModal('#edit-investment-modal');
-                window.showToast('Plan details loaded.', 'success');
-            } else {
-                window.showToast(res.message || 'Failed to load investment details for editing.', 'error');
+            if (res.status !== 'success') {
+                window.showToast(res.message || 'Failed to load the position.', 'error');
+                return;
             }
+
+            const inv = res.data;
+            const esc = window.ancEsc;
+            const money = (v) => '$' + window.formatCurrency(v);
+            const isActive = String(inv.status).toLowerCase() === 'active';
+
+            $('#inv-id').val(inv.id);
+            $('#inv-subtitle').text(isActive
+                ? 'Active position. Changes apply from the next payout.'
+                : `This position is ${inv.status} - it is closed and the cron will not touch it.`);
+
+            $('#inv-user').text(inv.user_display || '');
+            $('#inv-plan').text(`${inv.plan_name} (${inv.cadence})`);
+            $('#inv-progress').text(`${inv.payouts_made} of ${inv.payouts_total} payouts`);
+            $('#inv-next').text(isActive ? formatDate(inv.next_payout_date) : '—');
+            $('#inv-maturity').text(formatDate(inv.maturity_date));
+            $('#inv-earned').text(money(inv.roi_earned));
+
+            $('#inv-roi').val(inv.roi_percent);
+            $('#inv-per-payout').text(`${money(inv.per_payout)} per payout`);
+            $('#inv-payouts-total').val(inv.payouts_total);
+            $('#inv-term-hint').text(`${inv.payouts_made} already paid`);
+            $('#inv-bonus').val('');
+
+            // Everything actionable is disabled on a closed position rather than
+            // hidden, so the dialog still explains what happened.
+            $('#inv-roi, #inv-bonus, #inv-payouts-total, #inv-save-rate, #inv-add-bonus, #inv-save-term, #inv-settle, #inv-cancel')
+                .prop('disabled', !isActive);
+            $('#inv-actions').prop('open', isActive);
+
+            window.showModal('#edit-investment-modal');
         } catch (error) {
             console.error('Error loading investment details:', error);
             window.showToast('Network error while fetching details.', 'error');
         }
     }
 
+    /** yyyy-mm-dd -> "Aug 07, 2026". Returns an em dash for a null date. */
+    function formatDate(d) {
+        if (!d) return '—';
+        const dt = new Date(d + 'T00:00:00');
+        if (isNaN(dt)) return d;
+        return dt.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' });
+    }
+
+    /**
+     * POST one position action and refresh the dialog in place, so the summary
+     * reflects what just happened without the admin reopening it.
+     */
+    async function runInvestmentAction(payload, opts) {
+        opts = opts || {};
+        const id = $('#inv-id').val();
+        if (!id) return;
+
+        try {
+            const res = await fetchApi('/api/admin/plans.php', Object.assign({ id: id }, payload), "POST");
+            if (res.status === 'success') {
+                window.showToast(res.message, 'success');
+                loadFundsDashboard();
+                if (opts.close) {
+                    window.closeModal('#edit-investment-modal');
+                } else {
+                    setupEditXYieldModal(id);   // re-read, do not guess
+                }
+            } else {
+                window.showToast(res.message || 'That action did not go through.', 'error');
+            }
+        } catch (err) {
+            console.error('Investment action error:', err);
+            window.showToast('Network error. Nothing was changed.', 'error');
+        }
+    }
+
+    /**
+     * Stage a close action in the confirm dialog.
+     *
+     * Reads the figures already on screen rather than refetching: the manage
+     * dialog was populated from the server moments ago, and the API re-checks
+     * everything under FOR UPDATE anyway.
+     */
+    let pendingCloseMode = null;
+
+    function stageInvestmentClose(mode) {
+        pendingCloseMode = mode;
+
+        const isCancel = mode === 'cancel';
+        $('#close-investment-sub').text(isCancel
+            ? 'The principal goes back to the wallet and the position is unwound.'
+            : 'The principal is released and the position is marked complete.');
+
+        $('#close-inv-user').text($('#inv-user').text());
+        $('#close-inv-plan').text($('#inv-plan').text());
+        $('#close-inv-label').text('Returns to wallet');
+        // The principal is not on screen as a field any more, so state what the
+        // member has already been paid, which is the figure that surprises people.
+        $('#close-inv-amount').text('Principal + ' + $('#inv-earned').text() + ' already paid');
+        $('#close-inv-note').text(isCancel
+            ? 'Recorded as a refund. Remaining scheduled payouts will not happen.'
+            : 'Recorded as a release. Payouts already made are not reversed.');
+        $('#close-investment-btn').text(isCancel ? 'Cancel & refund' : 'Settle now');
+
+        window.showModal('#close-investment-modal');
+    }
+
+    $(document).on('click', '#close-investment-btn', function () {
+        if (!pendingCloseMode) return;
+        const mode = pendingCloseMode;
+        pendingCloseMode = null;
+        window.closeModal('#close-investment-modal');
+        runInvestmentAction({ action: 'investment_close', mode: mode }, { close: true });
+    });
 
     // --- Interaction Binding ---
     function bindInteractions() {
@@ -310,23 +392,26 @@
 
              if (!confirm(`Are you sure you want to change the status of plan "${title}" to "${newStatus.toUpperCase()}"?`)) return;
 
-             // Minimal payload required to pass backend validation
+             // edit_plan is a full update, so the row's current values have to be
+             // resent or they would be overwritten with placeholders. They are read
+             // back from the rendered row via data attributes.
+             const $row = $(this).closest('tr');
              const payload = {
                  action: 'edit_plan',
                  id: id,
-                 title: title, 
-                 min_amount: 1, 
-                 max_amount: 9999999,
-                 roi_min: 1,
-                 roi_max: 50,
-                 duration: 365,
-                 risk: 'low',
+                 title: title,
+                 min_amount: parseFloat($row.data('min')),
+                 max_amount: parseFloat($row.data('max')),
+                 roi_percent: parseFloat($row.data('roi')),
+                 cadence: $row.data('cadence'),
+                 duration: parseInt($row.data('duration'), 10),
+                 risk: $row.data('risk'),
                  status: newStatus
              };
 
              window.showToast(`Updating plan status...`, 'info', 5000);
              
-             const res = await fetchApi('/api/admin/funds.php', payload, "POST");
+             const res = await fetchApi('/api/admin/plans.php', payload, "POST");
 
              if (res.status === 'success') {
                  window.showToast(res.message, 'success');
@@ -351,8 +436,8 @@
                 title: $('#plan-name').val(),
                 min_amount: parseFloat($('#plan-min').val()),
                 max_amount: parseFloat($('#plan-max').val()),
-                roi_min: parseFloat($('#plan-roi-min').val()),
-                roi_max: parseFloat($('#plan-roi-max').val()),
+                roi_percent: parseFloat($('#plan-roi').val()),
+                cadence: $('#plan-cadence').val(),
                 duration: parseInt($('#plan-duration').val()),
                 risk: $('#plan-risk').val(),
                 status: $('#plan-status').val()
@@ -360,7 +445,7 @@
 
             window.showToast(`${isEdit ? 'Updating' : 'Creating'} plan...`, 'info', 5000);
             
-            const res = await fetchApi('/api/admin/funds.php', payload, "POST");
+            const res = await fetchApi('/api/admin/plans.php', payload, "POST");
 
             if (res.status === 'success') {
                 window.showToast(res.message, 'success');
@@ -371,39 +456,46 @@
             }
         });
 
-        // 6. Edit XYield Form Submission
-        $('#edit-investment-form').on('submit', async function(e) {
-            e.preventDefault();
-            
-            const id = $('#inv-id').val();
-            const newStatus = $('#inv-status').val();
-            
-            if (!confirm(`Confirm changes for XYield ID ${id}. Status will be set to: ${newStatus.toUpperCase()}. Wallet will be adjusted if status changes to 'completed' or 'cancelled'.`)) {
-                 return;
+        // 6. Position actions.
+        //
+        // One button per intent. The API derives the schedule columns for each,
+        // so no combination an admin can produce here corrupts the payout
+        // schedule - which is why the raw fields are gone.
+
+        $(document).on('click', '#inv-save-rate', function () {
+            const roi = parseFloat($('#inv-roi').val());
+            if (isNaN(roi) || roi < 0 || roi > 999.99) {
+                return window.showToast('Enter a rate between 0 and 999.99.', 'error');
             }
-
-            const payload = {
-                action: 'edit_investment',
-                id: id,
-                amount: parseFloat($('#inv-amount').val()),
-                roi_percent: parseFloat($('#inv-roi').val()),
-                status: newStatus
-            };
-
-            window.showToast(`Updating investment ID ${id}...`, 'info', 5000);
-            
-            const res = await fetchApi('/api/admin/funds.php', payload, "POST");
-
-            if (res.status === 'success') {
-                window.showToast(res.message, 'success');
-                window.closeModal('#edit-investment-modal');
-                currentActivePage = 1; 
-                loadFundsDashboard(); 
-            } else {
-                window.showToast(res.message || `XYield update failed.`, 'error');
-            }
+            runInvestmentAction({ action: 'edit_investment', roi_percent: roi });
         });
-        
+
+        $(document).on('click', '#inv-add-bonus', function () {
+            const amount = parseFloat($('#inv-bonus').val());
+            if (isNaN(amount) || amount <= 0) {
+                return window.showToast('Enter a bonus amount greater than zero.', 'error');
+            }
+            runInvestmentAction({ action: 'investment_bonus', amount: amount });
+        });
+
+        $(document).on('click', '#inv-save-term', function () {
+            const total = parseInt($('#inv-payouts-total').val(), 10);
+            if (isNaN(total) || total < 1) {
+                return window.showToast('Enter a payout count of at least 1.', 'error');
+            }
+            runInvestmentAction({ action: 'investment_term', payouts_total: total });
+        });
+
+        // Both close actions move money, so they route through the shared
+        // confirm dialog rather than firing on a single click.
+        $(document).on('click', '#inv-settle', function () {
+            stageInvestmentClose('settle');
+        });
+
+        $(document).on('click', '#inv-cancel', function () {
+            stageInvestmentClose('cancel');
+        });
+
         // 7. General search handling (assuming it searches active investments)
         // Since there is no dedicated search bar in the provided HTML, 
         // this is commented out, but ready for implementation if a search input is added.

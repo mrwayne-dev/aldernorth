@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../../../config/assets.php'; // asset cache-busting
+require_once __DIR__ . '/../../../api/utilities/security.php'; // ancCsrfToken()
 
 
 // ============================================================
@@ -7,7 +8,7 @@ require_once __DIR__ . '/../../../config/assets.php'; // asset cache-busting
 //   $page_title (string), $page_description (string)
 // ============================================================
 $page_title = $page_title ?? 'Aldernorth Capital Dashboard';
-$page_description = $page_description ?? 'Your Aldernorth Capital dashboard — wallet, positions, and payout schedule.';
+$page_description = $page_description ?? 'Your Aldernorth Capital dashboard: wallet, positions, and payout schedule.';
 ?>
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
@@ -16,6 +17,10 @@ $page_description = $page_description ?? 'Your Aldernorth Capital dashboard — 
     <meta name="description" content="<?= htmlspecialchars($page_description) ?>">
     <meta name="author" content="Aldernorth Capital">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <?php // CSRF token for assets/js/api.js. ancCsrfToken() starts a session if
+          // one is not already open, so this works on anonymous pages (the
+          // public contact form) as well as authenticated ones. ?>
+    <meta name="csrf-token" content="<?= htmlspecialchars(ancCsrfToken(), ENT_QUOTES) ?>">
     <meta name="robots" content="noindex, nofollow">
     <meta name="theme-color" content="#161316">
     <title><?= htmlspecialchars($page_title) ?></title>
@@ -27,17 +32,31 @@ $page_description = $page_description ?? 'Your Aldernorth Capital dashboard — 
         try {
           var t = localStorage.getItem('anc-theme');
           document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark');
-        } catch (e) { /* private mode — keep the dark default */ }
+        } catch (e) { /* private mode - keep the dark default */ }
       })();
     </script>
 
-    <!-- Preload + Apply (critical CSS) -->
-    <link rel="preload" href="<?= anc_asset('/assets/css/bootstrap.css') ?>" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <link rel="preload" href="<?= anc_asset('/assets/css/dashboard.css') ?>" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <!-- Critical CSS -->
+    <?php // Plain stylesheets, not rel=preload + onload=this.rel='stylesheet'.
+          // Two reasons. The onload attribute is an inline event handler, which
+          // is precisely what CSP script-src 'unsafe-inline' had to keep
+          // allowing. And the trick made these two load ASYNCHRONOUSLY while
+          // every stylesheet below stayed blocking - so on a slow connection
+          // bootstrap.css and dashboard.css could apply AFTER
+          // anc-dashboard.css and silently override the re-skin that is
+          // supposed to win the cascade. Blocking is correct for critical CSS. ?>
+    <link rel="stylesheet" href="<?= anc_asset('/assets/css/bootstrap.css') ?>">
+    <link rel="stylesheet" href="<?= anc_asset('/assets/css/dashboard.css') ?>">
 
-    <!-- Fonts (self-hosted: Switzer brand face) -->
+    <!-- Fonts (self-hosted: Switzer brand face).
+         font.css sits immediately after the preloads on purpose: it holds the
+         @font-face rules, and until it parses the browser has no reason to use
+         the bytes it just fetched. Behind animation/bootstrap-select it landed
+         late enough for the "preloaded but not used" warning to fire. -->
     <link rel="preload" href="/assets/fonts/Switzer-400.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/assets/fonts/Switzer-500.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/assets/fonts/Switzer-600.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="<?= anc_asset('/assets/fonts/font.css') ?>">
 
     <!-- Phosphor icons (self-hosted) -->
     <link rel="stylesheet" href="<?= anc_asset('/assets/fonts/phosphor.css') ?>">
@@ -46,12 +65,12 @@ $page_description = $page_description ?? 'Your Aldernorth Capital dashboard — 
     <link rel="stylesheet" href="<?= anc_asset('/assets/css/animation.min.css') ?>">
     <link rel="stylesheet" href="<?= anc_asset('/assets/css/animation.css') ?>">
     <link rel="stylesheet" href="<?= anc_asset('/assets/css/bootstrap-select.min.css') ?>">
-    <link rel="stylesheet" href="<?= anc_asset('/assets/fonts/font.css') ?>">
 
     <!-- ANC design re-skin (loads last to win the cascade) -->
     <link rel="stylesheet" href="<?= anc_asset('/assets/css/anc-dashboard.css') ?>">
 
     <script src="<?= anc_asset('/assets/js/theme.js') ?>" defer></script>
+    <script src="<?= anc_asset('/assets/js/dock.js') ?>" defer></script>
 
     <noscript>
         <link rel="stylesheet" href="<?= anc_asset('/assets/css/bootstrap.css') ?>">

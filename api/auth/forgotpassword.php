@@ -1,6 +1,6 @@
 <?php
 // ========================================
-// FORGOT PASSWORD HANDLER — Aldernorth Capital
+// FORGOT PASSWORD HANDLER - Aldernorth Capital
 // ========================================
 
 ini_set('display_errors', 0);
@@ -10,9 +10,17 @@ ob_start();
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../config/constants.php';
 require_once __DIR__ . '/../backend/email.php';
+require_once __DIR__ . '/../utilities/security.php';   // rate limiting
 
 ob_clean();
 header('Content-Type: application/json; charset=utf-8');
+
+// These four never opened a session - they authenticate with an emailed OTP,
+// not a cookie. CSRF verification is session-bound though (the token lives in
+// $_SESSION), and the visitor already holds a session from the page that
+// rendered the form, so the session is resumed here purely to read it back.
+ancSessionStart();
+ancCsrfEnforce();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['status' => 'error', 'message' => 'Invalid request']);
@@ -36,13 +44,28 @@ try {
     // ✅ Establish database connection
     $pdo = getPDO();
 
+    // Throttle before doing any work. Scope 'reset' is independent of
+    // the login buckets, so abuse here cannot lock anyone out of signing in.
+    ancEnforceRateLimit($pdo, 'reset', $email);
+    ancRecordAttempt($pdo, 'reset', ancClientIp());
+
     // --- Verify User ---
     $stmt = $pdo->prepare("SELECT id, full_name FROM users WHERE email = :email LIMIT 1");
     $stmt->execute(['email' => $email]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
+    // Deliberately NOT reporting whether the account exists.
+    //
+    // This used to return "No account found with that email", which turns the
+    // endpoint into a user-enumeration oracle: anyone could check whether an
+    // address has an account here. The response below is now identical either
+    // way, and the flow simply stops without sending anything.
     if (!$user) {
-        echo json_encode(['status' => 'error', 'message' => 'No account found with that email']);
+        echo json_encode([
+            'status'  => 'success',
+            'message' => 'If that email has an account, a reset code is on its way.',
+            'data'    => new stdClass(),
+        ]);
         exit;
     }
 
@@ -52,7 +75,13 @@ try {
     $lastReset = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($lastReset && (time() - strtotime($lastReset['created_at'])) < 120) {
-        echo json_encode(['status' => 'error', 'message' => 'Please wait before requesting another code.']);
+        // Same shape as the unknown-address branch, so timing and wording give
+        // nothing away either.
+        echo json_encode([
+            'status'  => 'success',
+            'message' => 'If that email has an account, a reset code is on its way.',
+            'data'    => new stdClass(),
+        ]);
         exit;
     }
 
@@ -60,16 +89,10 @@ try {
     $otp = random_int(100000, 999999);
     $expiry = date('Y-m-d H:i:s', strtotime('+10 minutes'));
 
-    $pdo->exec("
-        CREATE TABLE IF NOT EXISTS password_resets (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            user_id INT NOT NULL,
-            otp VARCHAR(10) NOT NULL,
-            expires_at DATETIME NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-        ) ENGINE=InnoDB;
-    ");
+    // The runtime CREATE TABLE IF NOT EXISTS that used to sit here duplicated
+    // the schema in PHP and had already drifted from it - it did not know about
+    // otp_attempts. The table is defined in dbschema/aldernorth_create.sql and
+    // in dbschema/migrations/2026_07_31_auth_hardening.sql.
 
     // --- Clean up old OTPs ---
     $pdo->prepare("DELETE FROM password_resets WHERE user_id = :uid")->execute(['uid' => $user['id']]);
@@ -88,10 +111,13 @@ try {
         ],
     ]);
 
+    // user_id is no longer returned. Combined with a 6-digit OTP it was half
+    // of a credential pair being handed to an unauthenticated caller. The
+    // reset step looks the account up by email instead.
     echo json_encode([
-        'status' => 'success',
-        'message' => 'OTP sent to your email.',
-        'data' => ['user_id' => $user['id']]
+        'status'  => 'success',
+        'message' => 'If that email has an account, a reset code is on its way.',
+        'data'    => new stdClass(),
     ]);
 
 } catch (Exception $e) {

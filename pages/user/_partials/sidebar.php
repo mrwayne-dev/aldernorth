@@ -9,8 +9,13 @@ $is = static fn(string $slug) => $active === $slug ? ' active' : '';
 ?>
 <div class="section-menu-left">
     <div class="box-logo">
-        <a href="/dashboard" id="site-logo-inner">
-            <img class="" id="logo_header" alt="Aldernorth Capital" src="/assets/images/logo/aldernorth-white.svg" width="150px">
+        <?php // .box-logo keeps dashboard.css's `background: var(--Primary)`, so
+              // this bar is brand orange in BOTH themes - no theme swap needed,
+              // and the ink mark is the readable one on it (6.6:1, where the
+              // white wordmark this replaced was 2.8:1). ?>
+        <a href="/dashboard" id="site-logo-inner" class="anc-brand" aria-label="Aldernorth Capital dashboard">
+            <img id="logo_header" class="anc-brand__mark" src="/assets/images/logo/anc-mark-ink.png" width="128" height="128" alt="">
+            <span class="anc-brand__name">Aldernorth Capital</span>
         </a>
         <div class="button-show-hide">
             <i class="ph ph-caret-left"></i>

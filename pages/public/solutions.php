@@ -1,6 +1,6 @@
 <?php
 $page_title = 'Solutions | Tailored for every investor profile | Aldernorth Capital';
-$page_description = 'Aldernorth Capital solutions for every kind of investor — savers, income builders, portfolio diversifiers, and institutional allocators.';
+$page_description = 'Aldernorth Capital solutions for every kind of investor: savers, income builders, portfolio diversifiers, and institutional allocators.';
 $page_path = '/solutions';
 include __DIR__ . '/_partials/head.php';
 ?>
@@ -20,7 +20,7 @@ include __DIR__ . '/_partials/head.php';
     <div class="hero__content">
       <p class="eyebrow"><span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>Solutions</p>
       <h1 class="hero__title">Solutions for every kind of investor.</h1>
-      <p class="hero__subtitle">Whether you're parking salary surplus, building income, or diversifying a portfolio — there's a ANC path designed for it.</p>
+      <p class="hero__subtitle">Whether you're parking salary surplus, building income, or diversifying a portfolio, there's an ANC path designed for it.</p>
       <div class="hero__cta-row">
         <a href="#profiles" class="btn btn--primary">Find your profile</a>
         <a href="/register" class="btn btn--ghost">Open an account</a>
@@ -34,7 +34,7 @@ include __DIR__ . '/_partials/head.php';
     <div class="section-header" style="margin-bottom: var(--space-10);">
       <p class="eyebrow"><span class="eyebrow__icon"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg></span>Investor profiles</p>
       <h2 class="section-header__title">Tailored solutions for every investor profile.</h2>
-      <p class="section-header__body">Four common starting points — each maps to a primary ANC product and a sensible add-on stack.</p>
+      <p class="section-header__body">Four common starting points. Each maps to a primary ANC product and a sensible add-on stack.</p>
     </div>
 
     <div class="grid-2">
@@ -51,7 +51,7 @@ include __DIR__ . '/_partials/head.php';
       <article class="card-feature">
         <span class="card-feature__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg></span>
         <h3 class="card-feature__title">For portfolio diversifiers</h3>
-        <p class="card-feature__desc">Already have an ISA. Use a long monthly plan as the anchor and shorter weekly positions for the capital you want moving more often.</p>
+        <p class="card-feature__desc">Already have a retirement account. Use a long monthly plan as the anchor and shorter weekly positions for the capital you want moving more often.</p>
       </article>
       <article class="card-feature">
         <span class="card-feature__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 21h18M5 21V9l7-5 7 5v12"/></svg></span>
@@ -79,7 +79,7 @@ include __DIR__ . '/_partials/head.php';
       <article class="card-feature">
         <p style="font-family: var(--font-mono); font-size: 14px; color: var(--color-accent-red); margin-bottom: var(--space-3);">02 ·</p>
         <h3 class="card-feature__title">Pick a strategy</h3>
-        <p class="card-feference__desc">Single product or stacked. Every plan surfaces yield, risk, and lock-up before you commit a pound.</p>
+        <p class="card-feature__desc">Single product or stacked. Every plan surfaces yield, risk, and lock-up before you commit a dollar.</p>
       </article>
       <article class="card-feature">
         <p style="font-family: var(--font-mono); font-size: 14px; color: var(--color-accent-red); margin-bottom: var(--space-3);">03 ·</p>

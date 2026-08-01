@@ -1,6 +1,6 @@
 /**
  * ============================================================
- *  Aldernorth Capital — Transaction.js
+ *  Aldernorth Capital - Transaction.js
  *  Handles loading, searching, filtering, pagination & export
  * ============================================================
  */
@@ -18,9 +18,14 @@ $(document).ready(function () {
   async function loadTransactions(page = 1, status = currentStatus, search = '') {
     listEl.html('<tr><td colspan="5" class="text-center text-muted p-3">Loading transactions...</td></tr>');
     try {
+      // Predates fetchApi() and never adopted it, so the CSRF header has to be
+      // added here too. credentials:'include' was also missing - it happened to
+      // work because this is same-origin, but it is not optional now that the
+      // server rejects an unauthenticated POST.
       const res = await fetch('/api/backend/transactions.php', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: ancWithCsrf({ 'Content-Type': 'application/json' }),
+        credentials: 'include',
         body: JSON.stringify({ page, limit, status, search })
       }).then(r => r.json());
 
@@ -29,32 +34,18 @@ $(document).ready(function () {
       const data = res.data.transactions;
       const pagination = res.data.pagination;
 
-      listEl.empty();
+      // Shared with the wallet page and the dashboard overview. Exported by
+      // dashboard.js, which is loaded (deferred) immediately before this file.
+      // The local copy this replaced printed the amount raw - no currency
+      // formatting - so $1200.5 showed here and $1,200.50 everywhere else.
+      window.ancRenderTransactionRows(data, listEl, {
+        emptyText: 'No transactions found.',
+      });
 
       if (!data.length) {
-        listEl.append(`<tr><td colspan="5" class="text-center text-muted p-3">No transactions found</td></tr>`);
         paginationEl.empty();
         return;
       }
-
-      data.forEach(tx => {
-        const colorClass =
-          tx.status.toLowerCase() === 'completed'
-            ? 'bg-Green'
-            : tx.status.toLowerCase() === 'pending'
-            ? 'bg-Orange'
-            : 'bg-Salmon';
-
-        const row = `
-          <tr>
-            <td><div class="f12-medium">#${tx.reference}</div></td>
-            <td><div class="f12-medium">${tx.date}</div></td>
-            <td><div class="f12-bold">${tx.type}</div></td>
-            <td><div class="f12-medium">$${tx.amount}</div></td>
-            <td><div class="box-status ${colorClass}"><span class="font-poppins">${tx.status.toUpperCase()}</span></div></td>
-          </tr>`;
-        listEl.append(row);
-      });
 
       renderPagination(pagination);
     } catch (err) {
@@ -64,21 +55,18 @@ $(document).ready(function () {
     }
   }
 
-  // Render pagination buttons
+  // Shared with the four admin tables. The local renderer this replaced
+  // emitted .page-btn, had no Previous/Next and no window, so 40 pages meant
+  // 40 buttons in a row.
   function renderPagination({ page, pages }) {
-    paginationEl.empty();
-    pages = Math.max(1, pages);
-
-    if (pages <= 1) return;
-
-    for (let i = 1; i <= pages; i++) {
-      const btn = $(`<button class="page-btn ${i === page ? 'active' : ''}">${i}</button>`);
-      btn.on('click', () => {
-        currentPage = i;
-        loadTransactions(currentPage, currentStatus, searchInput.val().trim());
-      });
-      paginationEl.append(btn);
-    }
+    window.ancRenderPagination('#pagination', {
+      page: page,
+      pages: pages,
+      onPage: function (n) {
+        currentPage = n;
+        loadTransactions(n, currentStatus, searchInput.val().trim());
+      },
+    });
   }
 
   // Search form

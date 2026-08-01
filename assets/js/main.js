@@ -1,5 +1,5 @@
 // =============================
-// main.js — Aldernorth Capital
+// main.js - Aldernorth Capital
 // =============================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -10,50 +10,44 @@ document.addEventListener('DOMContentLoaded', () => {
    * ======================
    */
   const navToggler = document.querySelector('[data-nav-toggler]');
-  const navbar = document.getElementById('navbar');
+  const navbar = document.querySelector('[data-navbar]');
   const body = document.body;
 
+  // Must match the @media (max-width: 768px) breakpoint in anc-design.css.
+  const NAV_BREAKPOINT = 768;
+
   if (navToggler && navbar) {
-    navToggler.addEventListener('click', () => {
-      const isActive = navbar.classList.contains('navbar-mobile-active');
-      if (!isActive) {
-        navbar.classList.add('navbar-mobile-active');
-        body.style.overflow = 'hidden';
-        setTimeout(() => navbar.classList.add('appear'), 10);
-        navToggler.classList.add('active');
-      } else {
-        navbar.classList.remove('appear');
-        navToggler.classList.remove('active');
-        setTimeout(() => {
-          navbar.classList.remove('navbar-mobile-active');
-          body.style.overflow = '';
-        }, 400);
+    const setNavOpen = (open) => {
+      navbar.classList.toggle('navbar--open', open);
+      body.classList.toggle('has-nav-open', open);
+      navToggler.setAttribute('aria-expanded', String(open));
+      navToggler.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    };
+
+    const isNavOpen = () => navbar.classList.contains('navbar--open');
+
+    navToggler.addEventListener('click', () => setNavOpen(!isNavOpen()));
+
+    // Follow a link, then let the new page render with the menu closed.
+    navbar.querySelectorAll('.navbar__links a').forEach((link) => {
+      link.addEventListener('click', () => setNavOpen(false));
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && isNavOpen()) {
+        setNavOpen(false);
+        navToggler.focus();
       }
     });
 
-    // Close when clicking outside
     document.addEventListener('click', (e) => {
-      if (
-        navbar.classList.contains('navbar-mobile-active') &&
-        !navbar.contains(e.target) &&
-        !navToggler.contains(e.target)
-      ) {
-        navbar.classList.remove('appear');
-        navToggler.classList.remove('active');
-        setTimeout(() => {
-          navbar.classList.remove('navbar-mobile-active');
-          body.style.overflow = '';
-        }, 400);
-      }
+      if (isNavOpen() && !navbar.contains(e.target)) setNavOpen(false);
     });
 
-    // Close on resize to desktop
+    // The overlay only exists below the breakpoint; leaving it "open" past
+    // that point would strand the scroll lock.
     window.addEventListener('resize', () => {
-      if (window.innerWidth > 992) {
-        navbar.classList.remove('appear', 'navbar-mobile-active');
-        navToggler.classList.remove('active');
-        body.style.overflow = '';
-      }
+      if (window.innerWidth > NAV_BREAKPOINT && isNavOpen()) setNavOpen(false);
     });
   }
 
@@ -63,11 +57,23 @@ document.addEventListener('DOMContentLoaded', () => {
    * 2. Header Scroll Effect
    * ======================
    */
+
+  // Legacy .header markup, still used by non-redesign pages.
   const header = document.querySelector('.header');
   if (header) {
     window.addEventListener('scroll', () => {
       header.classList.toggle('scrolled', window.scrollY > 10);
     });
+  }
+
+  // Redesign nav: swap the hero scrim for a solid bar once past the fold.
+  // Previously duplicated inline in footer.php and index.php.
+  if (navbar && !navbar.classList.contains('navbar--solid')) {
+    const onScroll = () => {
+      navbar.classList.toggle('is-scrolled', window.scrollY > 80);
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
   }
 
 

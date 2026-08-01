@@ -1,12 +1,11 @@
 <?php
 // pages/user/wallet.php
 
-session_start([
-    'cookie_lifetime' => 86400, // Example: 24 hours
-    'cookie_httponly' => true,
-    'cookie_secure' => true, // Ensure HTTPS is used in production
-    'cookie_samesite' => 'Strict',
-]);
+require_once __DIR__ . '/../../api/utilities/security.php';
+// Hardened + proxy-aware (use_strict_mode, and cookie_secure that survives
+// a TLS-terminating proxy - the inline options this replaced tested
+// $_SERVER['HTTPS'] === 'on', which is unset there).
+ancSessionStart();
 
 if (!isset($_SESSION['user_id'])) {
     // Redirect to login page if not logged in
@@ -42,6 +41,7 @@ $user_role = $_SESSION['role'] ?? 'user';
                 <!-- /preload -->
                 <!-- section-menu-left -->
                 <?php $active = "wallet"; include __DIR__ . "/_partials/sidebar.php"; ?>
+                <?php include __DIR__ . "/_partials/dock.php"; ?>
                 <!-- section-content-right -->
                 <div class="section-content-right">
                     <!-- header-dashboard -->
@@ -59,15 +59,21 @@ $user_role = $_SESSION['role'] ?? 'user';
                                     <div class="row mb-32">
                                         <!-- Hero balance -->
                                         <div class="col-lg-8 col-md-12 mb-24">
-                                            <div class="wallet-card wallet-main wallet-hero">
+                                            <div class="wallet-card wallet-main wallet-hero" data-balance-card>
                                                 <div class="wallet-hero-top">
                                                     <div class="title-box flex items-center gap-2">
                                                         <i class="ph ph-wallet"></i>
                                                         <span class="f12-medium text-White">Total Balance (USD)</span>
                                                     </div>
-                                                    <span class="box-status bg-Green f12-medium flex items-center gap-2">
-                                                        <i class="ph ph-shield-check"></i> Active
-                                                    </span>
+                                                    <div class="flex items-center gap-2">
+                                                        <span class="box-status bg-Green f12-medium flex items-center gap-2">
+                                                            <i class="ph ph-shield-check"></i> Active
+                                                        </span>
+                                                        <button type="button" class="wallet-hero-eye" data-balance-toggle
+                                                                aria-pressed="false" aria-label="Hide balance" title="Hide balance">
+                                                            <i class="ph ph-eye" aria-hidden="true"></i>
+                                                        </button>
+                                                    </div>
                                                 </div>
 
                                                 <div class="wallet-hero-balance">
@@ -77,6 +83,11 @@ $user_role = $_SESSION['role'] ?? 'user';
                                                         +$<span id="total-earnings">0.00</span> earned to date
                                                     </div>
                                                 </div>
+
+                                                <button type="button" class="wallet-hero-ref" data-copy-text="ANC-MAIN-<?= str_pad((string)(int)$_SESSION['user_id'], 4, '0', STR_PAD_LEFT) ?>" title="Copy wallet reference">
+                                                    <i class="ph ph-copy" aria-hidden="true"></i>
+                                                    <span>ANC-MAIN-<?= str_pad((string)(int)$_SESSION['user_id'], 4, '0', STR_PAD_LEFT) ?></span>
+                                                </button>
 
                                                 <div class="wallet-hero-substats">
                                                     <div class="wallet-substat">
@@ -88,6 +99,27 @@ $user_role = $_SESSION['role'] ?? 'user';
                                                         <div class="f14-bold text-White">$<span id="pending-withdrawals">0.00</span></div>
                                                     </div>
                                                 </div>
+                                            </div>
+
+                                            <!-- Quick actions. Replaces the two inline deposit/withdraw
+                                                 form panels; both now open as modals. -->
+                                            <div class="wg-box wallet-actions mt-24">
+                                                <button type="button" class="wallet-action" data-open-modal="#deposit-modal">
+                                                    <span class="wallet-action__icon"><i class="ph ph-arrow-down"></i></span>
+                                                    <span class="wallet-action__label">Deposit</span>
+                                                </button>
+                                                <button type="button" class="wallet-action" data-open-modal="#withdraw-start-modal">
+                                                    <span class="wallet-action__icon"><i class="ph ph-arrow-up"></i></span>
+                                                    <span class="wallet-action__label">Withdraw</span>
+                                                </button>
+                                                <a href="/dashboard.invest" class="wallet-action">
+                                                    <span class="wallet-action__icon"><i class="ph ph-chart-line-up"></i></span>
+                                                    <span class="wallet-action__label">Invest</span>
+                                                </a>
+                                                <a href="/dashboard.transactions" class="wallet-action">
+                                                    <span class="wallet-action__icon"><i class="ph ph-clock-counter-clockwise"></i></span>
+                                                    <span class="wallet-action__label">History</span>
+                                                </a>
                                             </div>
                                         </div>
 
@@ -184,71 +216,23 @@ $user_role = $_SESSION['role'] ?? 'user';
                                     </div>
 
                                     <!-- ============================================================
-                                         ROW 3 · MOVE MONEY (deposit / withdraw)
+                                         ROW 3 · AWAITING YOUR TRANSFER
+                                         The read-only address list that used to sit here is gone:
+                                         the addresses are now shown inside the deposit flow, where
+                                         they are actionable, rather than as reference copy.
+                                         This card is the way back to a deposit already started -
+                                         revealed only when one exists, the same pattern the address
+                                         list used.
                                          ============================================================ -->
-                                    <div class="row mb-32">
-                                        <!-- Deposit Section -->
-                                        <div class="col-lg-6 col-md-12 mb-24" id="deposit-panel">
-                                            <div class="wg-box deposit-form">
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <div class="wg-box mb-32" id="pending-deposits-box" hidden>
                                                 <div class="title mb-16 flex justify-between items-center">
-                                                    <div class="label-01 text-Primary flex items-center gap-2">
-                                                        <i class="ph ph-arrow-down" style="color: var(--Green);"></i>
-                                                        Deposit Funds
-                                                    </div>
+                                                    <div class="label-01 text-Primary">Awaiting your transfer</div>
+                                                    <span class="f12-regular text-Gray">Credited once we confirm receipt</span>
                                                 </div>
                                                 <div class="content">
-                                                    <form id="deposit-form" class="form-style-1">
-                                                        <div class="mb-20 position-relative">
-                                                            <label class="f14-regular text-Black mb-8">Deposit Amount (USD)</label>
-                                                            <div class="input-group">
-                                                                <span class="input-icon">$</span>
-                                                                <input class="wallet-input form-control" type="number" placeholder="Enter amount" min="1" id="deposit-amount">
-                                                            </div>
-                                                        </div>
-                                                        <div class="mb-20">
-                                                            <label class="f14-regular text-Black mb-8">Payment Method</label>
-                                                            <select class="form-select custom-select" id="deposit-method">
-                                                                <option value="secure_exchange" selected>Secure Exchange</option>
-                                                            </select>
-                                                        </div>
-                                                        <button type="submit" class="tf-button style-default w-full f14-bold bg-Green text-White hover:bg-Primary transition-colors duration-300">
-                                                            Deposit Now
-                                                        </button>
-                                                    </form>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Withdraw Section -->
-                                        <div class="col-lg-6 col-md-12 mb-24" id="withdraw-panel">
-                                            <div class="wg-box withdraw-form">
-                                                <div class="title mb-16 flex justify-between items-center">
-                                                    <div class="label-01 text-Primary flex items-center gap-2">
-                                                        <i class="ph ph-arrow-up" style="color: var(--Primary);"></i>
-                                                        Withdraw Funds
-                                                    </div>
-                                                </div>
-                                                <div class="content">
-                                                    <form id="withdraw-form" class="form-style-1">
-                                                        <div class="mb-20 position-relative">
-                                                            <label class="f14-regular text-Black mb-8">Withdrawal Amount (USD)</label>
-                                                            <div class="input-group">
-                                                                <span class="input-icon">$</span>
-                                                                <input class="wallet-input form-control" type="number" placeholder="Enter amount" min="1" id="withdraw-amount">
-                                                            </div>
-                                                        </div>
-                                                        <div class="mb-20">
-                                                            <label class="f14-regular text-Black mb-8">Withdrawal Method</label>
-                                                            <select class="form-select custom-select" id="withdraw-method">
-                                                                <option selected disabled>Select Method</option>
-                                                                <option value="local_bank">Local Bank</option>
-                                                                <option value="wallet_address">Wallet Address</option>
-                                                            </select>
-                                                        </div>
-                                                        <button type="submit" class="tf-button style-default w-full f14-bold bg-Green text-White hover:bg-Primary transition-colors duration-300">
-                                                            Withdraw Now
-                                                        </button>
-                                                    </form>
+                                                    <ul class="anc-address-list" id="pending-deposits-list"></ul>
                                                 </div>
                                             </div>
                                         </div>
@@ -256,6 +240,10 @@ $user_role = $_SESSION['role'] ?? 'user';
 
                                     <!-- ============================================================
                                          ROW 4 · WALLET ACTIVITY
+                                         Same .anc-table markup and the same renderer as
+                                         /dashboard.transactions - previously this was a bespoke
+                                         <ul> with its own field names and colour rules, so the
+                                         two views of one dataset disagreed with each other.
                                          ============================================================ -->
                                     <div class="row">
                                         <div class="col-12">
@@ -270,9 +258,22 @@ $user_role = $_SESSION['role'] ?? 'user';
                                                     </div>
                                                 </div>
                                                 <div class="content">
-                                                    <ul class="list-wallet-activity" id="wallet-activity">
-                                                        <!-- Dynamic: Loaded via JS -->
-                                                    </ul>
+                                                    <div class="anc-scroll-table">
+                                                        <table class="anc-table">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Transaction ID</th>
+                                                                    <th>Date</th>
+                                                                    <th>Type</th>
+                                                                    <th>Amount (USD)</th>
+                                                                    <th>Status</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody id="wallet-activity">
+                                                                <tr><td class="anc-empty" colspan="5">Loading activity...</td></tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -303,7 +304,146 @@ $user_role = $_SESSION['role'] ?? 'user';
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
-<!-- Withdrawal Modal -->
+<!-- ============================================================
+     DEPOSIT MODAL
+     Holds the fields that used to sit in the inline deposit panel.
+     The IDs are unchanged, so bindDepositForm() in dashboard.js works
+     against it without modification.
+     ============================================================ -->
+<div id="deposit-modal" class="modal" role="dialog" aria-modal="true" aria-hidden="true" data-modal>
+  <div class="modal-overlay" data-modal-close></div>
+  <div class="modal-content" tabindex="-1" aria-labelledby="deposit-modal-title">
+    <header class="modal-header">
+      <h2 id="deposit-modal-title">Deposit Funds</h2>
+      <button class="modal-close" type="button" aria-label="Close modal" data-modal-close>&times;</button>
+    </header>
+    <div class="modal-body">
+      <form id="deposit-form">
+        <div class="anc-field">
+          <div class="anc-field__top">
+            <label class="anc-field__label" for="deposit-amount">Amount to deposit</label>
+            <span class="anc-field__hint" id="deposit-min-hint">Minimum <strong>$1</strong></span>
+          </div>
+          <div class="anc-field__row">
+            <input class="anc-field__input" type="number" placeholder="0.00" min="1" step="0.01" id="deposit-amount" inputmode="decimal">
+            <span class="anc-field__chip"><i class="ph ph-currency-dollar"></i> USD</span>
+          </div>
+        </div>
+
+        <?php // Two live routes. secure_exchange hands off to the crypto
+              // checkout, which issues its own address. deposit_address shows
+              // one of the addresses an admin publishes and leaves the
+              // transaction pending until they confirm the transfer.
+              // The hidden input keeps #deposit-method readable to
+              // bindDepositForm exactly as before. ?>
+        <div class="anc-field">
+          <div class="anc-field__top">
+            <span class="anc-field__label">Payment method</span>
+          </div>
+          <div class="anc-segment" id="deposit-method-segment" role="radiogroup" aria-label="Payment method">
+            <button type="button" class="anc-segment__btn is-active" data-method="secure_exchange"
+                    role="radio" aria-checked="true">
+              <i class="ph ph-lightning"></i> Crypto checkout
+            </button>
+            <button type="button" class="anc-segment__btn" data-method="deposit_address"
+                    role="radio" aria-checked="false" id="deposit-method-manual" hidden>
+              <i class="ph ph-qr-code"></i> Deposit address
+            </button>
+          </div>
+          <input type="hidden" id="deposit-method" value="secure_exchange">
+        </div>
+
+        <?php // Revealed only for deposit_address; options come from
+              // get_deposit_networks, the same fetch the flow already makes. ?>
+        <div class="anc-field hidden" id="deposit-network-field" aria-hidden="true">
+          <div class="anc-field__top">
+            <label class="anc-field__label" for="deposit-network">Coin and network</label>
+            <span class="anc-field__hint" id="deposit-network-hint"></span>
+          </div>
+          <div class="anc-field__row">
+            <select class="anc-field__input" id="deposit-network"></select>
+          </div>
+        </div>
+
+        <ul class="anc-summary">
+          <li class="anc-summary__row">
+            <span class="k"><i class="ph ph-clock"></i> Processing</span>
+            <span class="v" id="deposit-summary-time">Instant for crypto</span>
+          </li>
+          <li class="anc-summary__row">
+            <span class="k"><i class="ph ph-receipt"></i> Fee</span>
+            <span class="v">No deposit fee</span>
+          </li>
+        </ul>
+
+        <div class="modal-actions">
+          <button type="button" class="button-close-modal tf-button" data-modal-close>Cancel</button>
+          <button type="submit" class="modal-confirm-btn">Continue</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     WITHDRAW - STEP 1 (amount + method)
+     Step 2 is #withdraw-modal below, which collects the payout
+     details. bindWithdrawForm() validates here and hands over.
+     ============================================================ -->
+<div id="withdraw-start-modal" class="modal" role="dialog" aria-modal="true" aria-hidden="true" data-modal>
+  <div class="modal-overlay" data-modal-close></div>
+  <div class="modal-content" tabindex="-1" aria-labelledby="withdraw-start-title">
+    <header class="modal-header">
+      <h2 id="withdraw-start-title">Withdraw Funds</h2>
+      <button class="modal-close" type="button" aria-label="Close modal" data-modal-close>&times;</button>
+    </header>
+    <div class="modal-body">
+      <form id="withdraw-form">
+        <div class="anc-field">
+          <div class="anc-field__top">
+            <span class="anc-field__label">Amount to withdraw</span>
+            <span class="anc-field__hint">Available <strong>$<span id="withdraw-available">0.00</span></strong></span>
+          </div>
+          <div class="anc-field__row">
+            <input class="anc-field__input" type="number" placeholder="0.00" min="1" step="0.01" id="withdraw-amount" inputmode="decimal">
+            <span class="anc-field__chip"><i class="ph ph-currency-dollar"></i> USD</span>
+          </div>
+        </div>
+
+        <div class="anc-field">
+          <div class="anc-field__top">
+            <span class="anc-field__label">Withdrawal method</span>
+          </div>
+          <div class="anc-field__row">
+            <select class="anc-field__input" id="withdraw-method">
+              <option selected disabled value="">Select method</option>
+              <option value="local_bank">Local Bank</option>
+              <option value="wallet_address">Wallet Address</option>
+            </select>
+          </div>
+        </div>
+
+        <ul class="anc-summary">
+          <li class="anc-summary__row">
+            <span class="k"><i class="ph ph-clock"></i> Processing time</span>
+            <span class="v">1 to 3 business days</span>
+          </li>
+          <li class="anc-summary__row">
+            <span class="k"><i class="ph ph-shield-check"></i> Review</span>
+            <span class="v">Manually approved</span>
+          </li>
+        </ul>
+
+        <div class="modal-actions">
+          <button type="button" class="button-close-modal tf-button" data-modal-close>Cancel</button>
+          <button type="submit" class="modal-confirm-btn">Continue</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Withdrawal Modal (step 2: payout details) -->
 <div id="withdraw-modal" class="modal" role="dialog" aria-modal="true" aria-hidden="true" data-modal>
   <div class="modal-overlay" data-modal-close></div>
   <div class="modal-content" tabindex="-1" aria-labelledby="withdraw-modal-title">
@@ -426,13 +566,9 @@ $user_role = $_SESSION['role'] ?? 'user';
         </div>
       </div>
 
-      <!-- Cash Mailing Fields -->
-      <div id="cash-mailing-fields" class="hidden" aria-hidden="true">
-        <div class="form-group">
-          <label for="modal-cash-details">Cash Mailing Details</label>
-          <textarea id="modal-cash-details" placeholder="Enter mailing address and instructions"></textarea>
-        </div>
-      </div>
+      <?php // The cash-mailing branch was removed with the method itself. Its
+            // JS counterparts in bindWithdrawForm / bindConfirmWithdraw went
+            // with it, so nothing looks for #modal-cash-details any more. ?>
 
       <button type="button" class="modal-confirm-btn" id="confirm-withdraw">
         Confirm Withdrawal
@@ -441,49 +577,105 @@ $user_role = $_SESSION['role'] ?? 'user';
   </div>
 </div>
 
-    <!-- Pending Deposit Details Modal (Fixed & Enhanced Version) -->
-    <div id="pending-actions-modal" class="modal" role="dialog" aria-modal="true" aria-hidden="true" data-modal>
-        <div class="modal-overlay" data-modal-close></div>
-        <div class="modal-content" tabindex="-1" aria-labelledby="pending-actions-title">
-            <header class="modal-header">
-                <h2 id="pending-actions-title">Pending Deposit Details</h2>
-                <button class="modal-close" type="button" aria-label="Close modal" data-modal-close>&times;</button>
-            </header>
-            <div class="modal-body">
-                <form id="pending-deposit-form" autocomplete="off">
-                    <!-- Deposit Method -->
-                    <div class="form-group">
-                        <label for="pending-deposit-method">Deposit Method</label>
-                        <select id="pending-deposit-method" name="deposit_method" required disabled> <!-- Disabled as it's loaded from data -->
-                            <option value="" selected disabled>Select Method</option>
-                            <option value="cash_mailing">Cash Mailing</option> 
-                            <option value="wire_transfer">Wire Transfer</option>
-                        </select>
-                    </div>
-                    <!-- Deposit Amount -->
-                    <div class="form-group">
-                        <label for="pending-deposit-amount">Amount to Deposit (USD)</label>
-                        <input type="number" id="pending-deposit-amount" name="amount" placeholder="Enter amount" min="10" step="0.01" required disabled /> <!-- Disabled as it's loaded from data -->
-                    </div>
-                    <!-- Deposit Address / Details (dynamic) -->
-                    <div class="form-group hidden" id="pending-deposit-address-group">
-                        <label for="pending-deposit-address">Deposit Address / Details</label>
-                        <div style="position: relative;">
-                            <input type="text" id="pending-deposit-address" readonly />
-                            <button type="button" class="copy-btn" data-target="pending-deposit-address" aria-label="Copy address"
-                                    style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer;">
-                                <i class="ph ph-copy" style="font-size:20px; color: var(--Primary);"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <!-- Instruction Message -->
-                    <div id="pending-deposit-instruction" class="note hidden"></div>
-                </form>
-                <!-- Confirm Button -->
-                <button type="button" class="modal-confirm-btn" id="pending-confirm-paid-btn">I Have Paid</button>
-            </div>
+<!-- ============================================================
+     DEPOSIT INSTRUCTIONS  (manual transfer to a published address)
+
+     Replaces #pending-actions-modal, which had a single hardcoded
+     method option, used the legacy .form-group dialect and carried a
+     second, parallel clipboard mechanism (.copy-btn[data-target]).
+
+     Named "instructions", not "address": #deposit-address-modal is
+     already the admin CRUD dialog.
+
+     The address block reuses .anc-address*, which is already styled and
+     already wired to the delegated [data-copy-text] handler - no new
+     CSS and no new copy logic.
+     ============================================================ -->
+<div id="deposit-instructions-modal" class="modal" role="dialog" aria-modal="true" aria-hidden="true" data-modal>
+  <div class="modal-overlay" data-modal-close></div>
+  <div class="modal-content" tabindex="-1" aria-labelledby="deposit-instructions-title">
+    <header class="modal-header">
+      <div>
+        <h2 id="deposit-instructions-title">Send your deposit</h2>
+        <p class="modal-header__sub">Funds are credited once we confirm the transfer.</p>
+      </div>
+      <button class="modal-close" type="button" aria-label="Close modal" data-modal-close>&times;</button>
+    </header>
+    <div class="modal-body">
+
+      <div class="anc-field">
+        <div class="anc-field__top">
+          <span class="anc-field__label">Send exactly</span>
+          <span class="anc-field__hint" id="di-network-label"></span>
         </div>
+        <div class="anc-field__row">
+          <span class="anc-field__input" id="di-amount">0.00</span>
+          <span class="anc-field__chip"><i class="ph ph-currency-dollar"></i> USD</span>
+        </div>
+      </div>
+
+      <ul class="anc-address-list">
+        <li class="anc-address">
+          <div class="anc-address__head">
+            <span class="anc-address__label" id="di-label"></span>
+            <span class="anc-address__meta" id="di-meta"></span>
+          </div>
+          <div class="anc-address__row">
+            <code class="anc-address__value" id="di-address"></code>
+            <button type="button" class="anc-address__copy" id="di-address-copy"
+                    data-copy-label="Deposit address" aria-label="Copy deposit address">
+              <i class="ph ph-copy"></i>
+            </button>
+          </div>
+          <div class="anc-address__row hidden" id="di-memo-row">
+            <span class="anc-address__memo-label" id="di-memo-label">Memo</span>
+            <code class="anc-address__value" id="di-memo"></code>
+            <button type="button" class="anc-address__copy" id="di-memo-copy"
+                    data-copy-label="Memo" aria-label="Copy memo">
+              <i class="ph ph-copy"></i>
+            </button>
+          </div>
+          <p class="anc-address__note hidden" id="di-instructions"></p>
+        </li>
+      </ul>
+
+      <ul class="anc-summary">
+        <li class="anc-summary__row">
+          <span class="k"><i class="ph ph-hash"></i> Reference</span>
+          <span class="v" id="di-reference"></span>
+        </li>
+        <li class="anc-summary__row hidden" id="di-conf-row">
+          <span class="k"><i class="ph ph-check-circle"></i> Network confirmations</span>
+          <span class="v" id="di-conf"></span>
+        </li>
+        <li class="anc-summary__row">
+          <span class="k"><i class="ph ph-shield-check"></i> Status</span>
+          <span class="v" id="di-status">Awaiting your transfer</span>
+        </li>
+      </ul>
+
+      <?php // Revealed by "I have paid". Optional, but prompted: without a
+            // hash the admin is approving on the amount alone. ?>
+      <div class="anc-field anc-field--textarea hidden" id="di-hash-field">
+        <div class="anc-field__top">
+          <label class="anc-field__label" for="di-tx-hash">Transaction hash</label>
+          <span class="anc-field__hint">Optional, speeds up confirmation</span>
+        </div>
+        <div class="anc-field__row">
+          <textarea class="anc-field__input anc-field__input--mono" id="di-tx-hash" rows="2"
+                    maxlength="120" spellcheck="false" placeholder="Paste the hash from your wallet"></textarea>
+        </div>
+      </div>
+
+      <p class="note">Send only the named asset on the named network. Anything else is unrecoverable.</p>
+
+      <div class="modal-actions">
+        <button type="button" class="button-close-modal tf-button" data-modal-close>Close</button>
+        <button type="button" class="modal-confirm-btn" id="di-confirm-paid">I have paid</button>
+      </div>
     </div>
+  </div>
+</div>
 
 
 

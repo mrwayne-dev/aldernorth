@@ -1,6 +1,6 @@
 <?php
 // ========================================
-// HELPER FUNCTIONS — Aldernorth Capital
+// HELPER FUNCTIONS - Aldernorth Capital
 // ========================================
 
 /**
@@ -122,43 +122,27 @@ function getUserBrowser($userAgent) {
 }
 
 // ============================================================
-// Brute-force mitigation: lightweight per-IP login throttle.
-// Records only FAILED attempts; throttles by IP (NOT by account)
-// so an attacker can't lock a victim out by spamming their email.
-// Fails OPEN on infra error — a rate-limiter must never self-DoS.
+// Brute-force mitigation lives in api/utilities/security.php.
+//
+// ensureLoginAttemptsTable() / loginThrottleExceeded() /
+// recordLoginFailure() used to sit here. They were superseded on
+// 2026-08-01 by ancRateLimited() / ancRecordAttempt(), and by then
+// nothing called them - but ensureLoginAttemptsTable() still issued a
+// CREATE TABLE IF NOT EXISTS on every invocation, which is why
+// `login_attempts` exists on this machine while appearing in no schema
+// file or migration. That orphan is exactly the drift `migrate.php` and
+// the schema_migrations ledger now exist to prevent, so keeping dead
+// code capable of recreating it would defeat the point.
+//
+// The replacements are strictly better: scoped buckets (login,
+// admin_login, register, reset, otp, deposit, withdraw, invest,
+// contact) so member and admin logins no longer share one counter, and
+// per-IP AND per-account subjects rather than IP alone.
+//
+// `login_attempts` itself is left on disk - dropping a table is not
+// something a code change should do silently. Once this is deployed:
+//   DROP TABLE IF EXISTS `login_attempts`;
 // ============================================================
-function ensureLoginAttemptsTable($pdo) {
-    $pdo->exec("CREATE TABLE IF NOT EXISTS login_attempts (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        ip VARCHAR(45) NOT NULL,
-        email VARCHAR(255) DEFAULT NULL,
-        attempted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        KEY idx_ip_time (ip, attempted_at)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-}
-
-function loginThrottleExceeded($pdo, $ip, $maxPerIp = 10, $windowMinutes = 15) {
-    try {
-        ensureLoginAttemptsTable($pdo);
-        $since = date('Y-m-d H:i:s', time() - ($windowMinutes * 60));
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM login_attempts WHERE ip = ? AND attempted_at > ?");
-        $stmt->execute([$ip, $since]);
-        return (int) $stmt->fetchColumn() >= $maxPerIp;
-    } catch (Throwable $e) {
-        error_log('loginThrottleExceeded error: ' . $e->getMessage());
-        return false; // fail open
-    }
-}
-
-function recordLoginFailure($pdo, $ip, $email = null) {
-    try {
-        ensureLoginAttemptsTable($pdo);
-        $stmt = $pdo->prepare("INSERT INTO login_attempts (ip, email, attempted_at) VALUES (?, ?, NOW())");
-        $stmt->execute([$ip, ($email !== '' ? $email : null)]);
-    } catch (Throwable $e) {
-        error_log('recordLoginFailure error: ' . $e->getMessage());
-    }
-}
 
 /**
  * Append a structured security event to logs/security.log (A09).
@@ -177,5 +161,77 @@ function logSecurityEvent($event, array $context = []) {
     } catch (Throwable $e) {
         error_log('logSecurityEvent error: ' . $e->getMessage());
     }
+}
+
+/**
+ * Human label for a transactions.type slug.
+ *
+ * The column stores machine slugs (deposit, withdraw, investment, roi_payout,
+ * investment_release). Every consumer used to print them with ucfirst() alone,
+ * which surfaced "Roi_payout" in the UI and in CSV exports.
+ *
+ * Unknown slugs fall back to title-cased words so a new type added later still
+ * reads sensibly instead of leaking an underscore.
+ */
+function formatTransactionType($type) {
+    $slug = strtolower(trim((string) $type));
+
+    $labels = [
+        'deposit'            => 'Deposit',
+        'withdraw'           => 'Withdrawal',
+        'withdrawal'         => 'Withdrawal',
+        'investment'         => 'Investment',
+        'roi_payout'         => 'ROI Payout',
+        'roi'                => 'ROI Payout',
+        'payout'             => 'Payout',
+        'investment_release' => 'Principal Released',
+    ];
+
+    if (isset($labels[$slug])) {
+        return $labels[$slug];
+    }
+
+    if ($slug === '') {
+        return 'N/A';
+    }
+
+    return ucwords(str_replace('_', ' ', $slug));
+}
+
+/**
+ * Human label for a transactions.method slug.
+ *
+ * Sibling of formatTransactionType(). Callers were split between
+ * ucfirst(str_replace('_',' ',$m)) and a bare ucfirst($m) - the latter leaving
+ * "Wallet_address" in member and admin emails. One helper, one spelling.
+ *
+ * wire_transfer and cash_mailing are retired but stay mapped: historical rows
+ * still carry them and must not suddenly render as raw slugs.
+ */
+function formatPaymentMethod($method) {
+    $slug = strtolower(trim((string) $method));
+
+    $labels = [
+        'secure_exchange' => 'Crypto Checkout',
+        // Manual transfer to an address we publish. Not the same thing as
+        // 'wallet_address', which is the member's own payout address.
+        'deposit_address' => 'Deposit Address',
+        'local_bank'      => 'Local Bank',
+        'wallet_address'  => 'Wallet Address',
+        'wallet'          => 'Wallet',
+        'system'          => 'System',
+        'wire_transfer'   => 'Wire Transfer',
+        'cash_mailing'    => 'Cash Mailing',
+    ];
+
+    if (isset($labels[$slug])) {
+        return $labels[$slug];
+    }
+
+    if ($slug === '') {
+        return 'N/A';
+    }
+
+    return ucwords(str_replace('_', ' ', $slug));
 }
 ?>

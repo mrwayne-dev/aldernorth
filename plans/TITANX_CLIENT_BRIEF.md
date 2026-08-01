@@ -1,14 +1,14 @@
-# Titan X Holdings — Client Brief & Website Scope
+# Titan X Holdings - Client Brief & Website Scope
 
 > **Document Type:** Client Brief  
 > **Audience:** Business stakeholders, non-technical decision-makers  
-> **Version:** 2.0 — Updated scope (investment-focused)
+> **Version:** 2.0 - Updated scope (investment-focused)
 
 ---
 
 ## 1. Executive Summary
 
-Titan X Holdings is a Tesla-affiliated investment platform built for high-conviction investors. It offers a focused suite of structured investment products — spanning fixed-term plans, locked savings, infrastructure-backed ventures, weekly auto-invest programs, and direct ownership of real-world shares — all managed through a single, sleek investor dashboard.
+Titan X Holdings is a Tesla-affiliated investment platform built for high-conviction investors. It offers a focused suite of structured investment products - spanning fixed-term plans, locked savings, infrastructure-backed ventures, weekly auto-invest programs, and direct ownership of real-world shares - all managed through a single, sleek investor dashboard.
 
 Unlike broader fintech platforms, Titan X Holdings does one thing: **grow investor wealth**. Every product, feature, and dollar on the platform is oriented around returns.
 
@@ -21,19 +21,19 @@ Unlike broader fintech platforms, Titan X Holdings does one thing: **grow invest
 Abbreviated brand mark: **TXH**
 
 The name communicates ownership, scale, and ambition:
-- **Titan** — commanding, institutional, dominant
-- **X** — Tesla's DNA; acceleration, unknown potential, multiplier
-- **Holdings** — permanence; assets held and compounding over time
+- **Titan** - commanding, institutional, dominant
+- **X** - Tesla's DNA; acceleration, unknown potential, multiplier
+- **Holdings** - permanence; assets held and compounding over time
 
 ### 2.2 Tagline
 > *"Own More. Hold Stronger. Grow Faster."*
 
 ### 2.3 Brand Positioning
-Titan X Holdings positions itself as a Tesla-affiliated wealth platform — an institution that carries Tesla's culture of precision, bold thinking, and long-horizon vision into the investment space. It is not a trading app. It is a structured asset and yield platform for investors who think in years, not days.
+Titan X Holdings positions itself as a Tesla-affiliated wealth platform - an institution that carries Tesla's culture of precision, bold thinking, and long-horizon vision into the investment space. It is not a trading app. It is a structured asset and yield platform for investors who think in years, not days.
 
 **Brand personality:**
 - Institutional authority
-- Controlled aggression — confident about returns
+- Controlled aggression - confident about returns
 - Premium, but data-led rather than decorative
 
 ### 2.4 Color Palette
@@ -48,16 +48,16 @@ Titan X Holdings positions itself as a Tesla-affiliated wealth platform — an i
 | Primary Text | Off-White | `#F5F5F5` |
 | Secondary Text | Muted | `#888888` |
 
-**Overall feel:** High-contrast, institutional dark theme. Tesla product-grade aesthetic — sharp, minimal, data-precise.
+**Overall feel:** High-contrast, institutional dark theme. Tesla product-grade aesthetic - sharp, minimal, data-precise.
 
 ### 2.5 Typography Direction
-- **Headlines:** Heavy, condensed geometric — commanding presence
-- **Body:** Clean sans-serif — readable and professional
-- **Numbers & Stats:** Tabular/monospace — precise, trustworthy
+- **Headlines:** Heavy, condensed geometric - commanding presence
+- **Body:** Clean sans-serif - readable and professional
+- **Numbers & Stats:** Tabular/monospace - precise, trustworthy
 
 ### 2.6 Tone of Voice
 - Institutional and direct
-- Numbers-forward — let returns speak
+- Numbers-forward - let returns speak
 - No hype language, no vague promises
 - Short sentences. Active voice.
 
@@ -89,14 +89,14 @@ Titan X Holdings operates **five investment products** and **one investor reward
 
 **Key features:**
 - Automatic weekly ROI accrual into wallet
-- Full dashboard tracking — active and matured holdings
+- Full dashboard tracking - active and matured holdings
 - Early unlock available (subject to plan terms)
 
 ---
 
 ### 3.2 X-Lock *(Locked Capital Savings)*
 
-**What it is:** High-yield locked savings. Investors lock capital for a fixed term in exchange for premium returns. An early-exit penalty exists but is small — the product rewards those who commit.
+**What it is:** High-yield locked savings. Investors lock capital for a fixed term in exchange for premium returns. An early-exit penalty exists but is small - the product rewards those who commit.
 
 **Who it's for:** Investors with available capital who want above-market rates and are disciplined enough to hold.
 
@@ -124,7 +124,7 @@ Titan X Holdings operates **five investment products** and **one investor reward
 **Who it's for:** Investors who want their money linked to tangible, trackable outcomes.
 
 **How it works:**
-1. Titan X admin lists infrastructure projects — each with a funding goal, timeline, and ROI
+1. Titan X admin lists infrastructure projects - each with a funding goal, timeline, and ROI
 2. Investors browse open projects and contribute any qualifying amount
 3. Returns accrue as the project progresses toward its funding target
 4. Live progress bar shows "X of Y raised" per project
@@ -136,9 +136,9 @@ Titan X Holdings operates **five investment products** and **one investor reward
 
 ---
 
-### 3.4 X-Weekly *(Weekly Investment Program)* — **NEW**
+### 3.4 X-Weekly *(Weekly Investment Program)* - **NEW**
 
-**What it is:** A recurring, automated investment product. Investors enrol at a fixed weekly contribution amount and Titan X automatically moves those funds into a growing yield pool every seven days. Think of it as dollar-cost averaging into a yield-bearing plan — fully automated.
+**What it is:** A recurring, automated investment product. Investors enrol at a fixed weekly contribution amount and Titan X automatically moves those funds into a growing yield pool every seven days. Think of it as dollar-cost averaging into a yield-bearing plan - fully automated.
 
 **Who it's for:** Investors who want to build position size over time without making manual investment decisions weekly. Set it and let it compound.
 
@@ -149,7 +149,7 @@ Titan X Holdings operates **five investment products** and **one investor reward
 4. Investor can pause, adjust, or close the program at any time
 
 **Key features:**
-- Fully automated — no action required after setup
+- Fully automated - no action required after setup
 - Weekly debit and accrual visible in transaction history
 - Pause / resume / cancel controls on dashboard
 - Ideal for building a portfolio steadily over months
@@ -157,9 +157,9 @@ Titan X Holdings operates **five investment products** and **one investor reward
 
 ---
 
-### 3.5 X-Shares *(Stock & Share Ownership)* — **NEW**
+### 3.5 X-Shares *(Stock & Share Ownership)* - **NEW**
 
-**What it is:** A direct asset ownership product. Investors can purchase and hold positions in listed equities — specifically **Tesla (TSLA)** and **Meta (META)** stock — and earn from price appreciation and dividends on those positions over time.
+**What it is:** A direct asset ownership product. Investors can purchase and hold positions in listed equities - specifically **Tesla (TSLA)** and **Meta (META)** stock - and earn from price appreciation and dividends on those positions over time.
 
 This is not a trading product. Investors buy and hold a share position through Titan X Holdings, and their wallet reflects earnings from that position on a schedule.
 
@@ -188,11 +188,11 @@ This is not a trading product. Investors buy and hold a share position through T
 
 ---
 
-### 3.6 X-Rewards *(Tesla Product Rewards Hub)* — **NEW**
+### 3.6 X-Rewards *(Tesla Product Rewards Hub)* - **NEW**
 
-**What it is:** The investor rewards program. Active Titan X Holdings investors earn access to the X-Rewards Hub — a gated section of the platform where they can order a curated selection of Tesla products at **40% below retail price**. This is a loyalty and retention feature, not an investment product.
+**What it is:** The investor rewards program. Active Titan X Holdings investors earn access to the X-Rewards Hub - a gated section of the platform where they can order a curated selection of Tesla products at **40% below retail price**. This is a loyalty and retention feature, not an investment product.
 
-**Who it's for:** Active investors on the platform. Access may be gated by investment tier, portfolio size, or time as a member — admin-configurable.
+**Who it's for:** Active investors on the platform. Access may be gated by investment tier, portfolio size, or time as a member - admin-configurable.
 
 **What's in the hub:**
 - Curated catalogue of Tesla merchandise and accessories
@@ -203,7 +203,7 @@ This is not a trading product. Investors buy and hold a share position through T
 **Key features:**
 - 40% discount on all listed Tesla products
 - Access gated to qualifying investors (admin-controlled)
-- Order management — investor can view order status
+- Order management - investor can view order status
 - New products added by admin over time
 - Builds loyalty and differentiates Titan X from generic investment platforms
 
@@ -229,7 +229,7 @@ The Titan X Holdings website has three surfaces:
 |------|---------|
 | **Home (`/`)** | Hero, brand statement, product overview, key stats, register CTA |
 | **About (`/about`)** | Company story, Tesla affiliation, mission |
-| **Platform (`/platform`)** | How Titan X works — deposits, products, returns, withdrawals |
+| **Platform (`/platform`)** | How Titan X works - deposits, products, returns, withdrawals |
 | **Solutions (`/solutions`)** | Who Titan X is for: individuals, HNW, institutions |
 | **Why Titan X (`/whytx`)** | Trust signals, security, track record |
 | **X-Yield Plans (`/investment`)** | Core fixed-term investment product page |
@@ -265,7 +265,7 @@ The Titan X Holdings website has three surfaces:
 
 | Page | Capability |
 |------|-----------|
-| **Admin Dashboard** | Platform KPIs — revenue, active investors, pending actions, chart |
+| **Admin Dashboard** | Platform KPIs - revenue, active investors, pending actions, chart |
 | **Users** | View, edit, disable, or email investors |
 | **Wallets** | Manual balance adjustment |
 | **Transactions** | Browse and manage all transactions |
@@ -287,7 +287,7 @@ The Titan X Holdings website has three surfaces:
 ```
 1. Visits titanxholdings.com
        ↓
-2. Reads about products — X-Yield, X-Shares, X-Weekly catch attention
+2. Reads about products - X-Yield, X-Shares, X-Weekly catch attention
        ↓
 3. Clicks "Create Account" → Registers
        ↓
@@ -297,7 +297,7 @@ The Titan X Holdings website has three surfaces:
        ↓
 6. Starts an X-Yield Plan OR buys into X-Shares OR enrols in X-Weekly
        ↓
-7. Dashboard shows active portfolio — ROI accruing weekly
+7. Dashboard shows active portfolio - ROI accruing weekly
        ↓
 8. Unlocks X-Rewards access → Orders Tesla products at 40% off
        ↓
@@ -326,12 +326,12 @@ The Titan X Holdings website has three surfaces:
 
 Every investor account includes:
 
-- **Portfolio Card** — branded display showing investor ID (`TXH-INV-XXXX`)
-- **Wallet Dashboard** — available balance, total deposited, total earned, pending, total invested
-- **Multi-product portfolio** — all five investment products tracked from a single dashboard
-- **Transaction History** — fully itemised log of every event
-- **Email Alerts** — automated notifications for deposits, ROI accruals, maturities, withdrawals, weekly debits, share payouts, and reward orders
-- **X-Rewards Access** — gated Tesla product catalogue for qualifying investors
+- **Portfolio Card** - branded display showing investor ID (`TXH-INV-XXXX`)
+- **Wallet Dashboard** - available balance, total deposited, total earned, pending, total invested
+- **Multi-product portfolio** - all five investment products tracked from a single dashboard
+- **Transaction History** - fully itemised log of every event
+- **Email Alerts** - automated notifications for deposits, ROI accruals, maturities, withdrawals, weekly debits, share payouts, and reward orders
+- **X-Rewards Access** - gated Tesla product catalogue for qualifying investors
 
 ---
 
@@ -349,12 +349,12 @@ The following products from the previous brief (VoltEdge Capital) are **not incl
 
 ## 9. What This Engagement Covers
 
-✅ Full brand: Titan X Holdings — name, tagline, palette, tone  
+✅ Full brand: Titan X Holdings - name, tagline, palette, tone  
 ✅ Five investment products: X-Yield, X-Lock, X-Grid, X-Weekly, X-Shares  
 ✅ One rewards program: X-Rewards (Tesla products at 40% discount)  
 ✅ Investor dashboard covering all six modules  
 ✅ Admin panel with full product and order management  
-✅ Public marketing site — 15 pages  
+✅ Public marketing site - 15 pages  
 ✅ Crypto + manual deposit flows  
 ✅ Automated ROI accrual and maturity crediting  
 ✅ Full transaction history and email notification system  

@@ -1,11 +1,19 @@
 <?php
-// FILE: /api/admin/funds.php
+// FILE: /api/admin/plans.php
 // ============================================================
 // PURPOSE: Manage Investment Plans and Active Investments (Admin View)
 // Handles: Metrics, Plan CRUD, Plan List, Active Investment List (Paginated)
 // ============================================================
+// Hardened + proxy-aware session cookie (HttpOnly, Secure, SameSite=Strict,
+// use_strict_mode). A bare session_start() inherited this box's ini defaults,
+// which set NONE of those - see api/utilities/security.php.
 
-session_start();
+require_once __DIR__ . '/../../api/utilities/security.php';
+ancSessionStart();
+
+// CSRF. Safe methods return immediately; anything else must present the
+// session token as X-CSRF-Token (assets/js/api.js sends it on every POST).
+ancCsrfEnforce();
 header('Content-Type: application/json');
 
 // Ensure only authenticated admins can access this script
@@ -19,6 +27,12 @@ require_once '../../config/database.php';
 
 try {
     $pdo = getPDO();
+
+    // Role gate: this endpoint changes published rates and terms.
+    // Only isset($_SESSION['admin_id']) was checked before, so a `support`
+    // admin had exactly the same power here as the owner. Read from the DB,
+    // fails closed. See ancRequireAdminRole() in api/utilities/security.php.
+    ancRequireAdminRole($pdo, ANC_ROLE_OPERATOR);
 } catch (Exception $e) {
     http_response_code(500);
     echo json_encode(['status' => 'error', 'message' => 'Database connection failed.']);
@@ -34,7 +48,7 @@ function executeQuery($pdo, $sql, $params = []) {
         $stmt->execute($params);
         return $stmt;
     } catch (PDOException $e) {
-        error_log("Database Error in admin/funds.php: " . $e->getMessage());
+        error_log("Database Error in admin/plans.php: " . $e->getMessage());
         return false;
     }
 }
@@ -103,7 +117,7 @@ function fetchPlans($pdo) {
         $days    = (int) $p['duration_days'];
         $cadence = $p['cadence'];
 
-        // Whole payout periods in the term — same rule as api/backend/invest.php.
+        // Whole payout periods in the term - same rule as api/backend/invest.php.
         $periodDays = $cadence === 'monthly' ? 30 : 7;
         $payouts    = (int) floor($days / $periodDays);
 
@@ -328,21 +342,90 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(['status' => 'error', 'message' => 'Server error processing plan request.']);
         }
     } elseif ($action === 'edit_investment') {
+        /* ------------------------------------------------------------------
+         * Rate-only edit.
+         *
+         * roi_percent is the ONE schedule field that is safe to change
+         * directly: the cron reads it fresh each run, so it only affects
+         * future payouts and cannot invalidate anything already paid.
+         *
+         * amount is deliberately NOT editable any more. Editing it silently
+         * changed both every future payout AND the principal released at
+         * maturity - so an admin could hand back more than the member ever
+         * funded, with no money movement to show for it. The old handler also
+         * wrote amount unconditionally, including the `amount: 0` the modal
+         * sent for a non-active position.
+         *
+         * Status changes now go through the explicit close/cancel actions
+         * below, which fix the schedule columns instead of leaving a stale
+         * past next_payout_date for the cron to catch-up-pay.
+         * ------------------------------------------------------------------ */
+        $inv_id      = (int)($input['id'] ?? 0);
+        $roi_percent = isset($input['roi_percent']) ? (float)$input['roi_percent'] : -1;
+
+        if ($inv_id <= 0) {
+            echo json_encode(['status' => 'error', 'message' => 'Invalid investment ID.']);
+            exit;
+        }
+        // DECIMAL(5,2) caps at 999.99; a negative rate would pay backwards.
+        if ($roi_percent < 0 || $roi_percent > 999.99) {
+            echo json_encode(['status' => 'error', 'message' => 'Rate must be between 0 and 999.99 percent.']);
+            exit;
+        }
+
+        try {
+            $stmt = executeQuery($pdo, "SELECT id, status FROM investments WHERE id = :id", [':id' => $inv_id]);
+            $inv = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+
+            if (!$inv) {
+                echo json_encode(['status' => 'error', 'message' => 'Investment not found.']);
+                exit;
+            }
+            if ($inv['status'] !== 'active') {
+                echo json_encode(['status' => 'error', 'message' => 'Only an active position can have its rate changed.']);
+                exit;
+            }
+
+            executeQuery($pdo, "UPDATE investments SET roi_percent = :roi WHERE id = :id AND status = 'active'",
+                [':roi' => number_format($roi_percent, 2, '.', ''), ':id' => $inv_id]);
+
+            echo json_encode([
+                'status'  => 'success',
+                'message' => 'Rate updated. It applies from the next scheduled payout.',
+            ]);
+
+        } catch (Exception $e) {
+            error_log("Edit Investment Error: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Server error updating the position.']);
+        }
+
+    } elseif ($action === 'investment_bonus') {
+        /* ------------------------------------------------------------------
+         * Add a bonus payout.
+         *
+         * roi_earned is a running total the cron never reads for arithmetic,
+         * so bumping it is safe - but bumping it ALONE moves no money. The
+         * wallet credit and the transaction row are what make it real, which
+         * is why this is one action rather than an editable field.
+         * ------------------------------------------------------------------ */
         $inv_id = (int)($input['id'] ?? 0);
-        $amount = (float)($input['amount'] ?? 0);
-        $roi_percent = (float)($input['roi_percent'] ?? 0);
-        $status = trim($input['status'] ?? '');
-        
-        if ($inv_id <= 0 || empty($status)) {
-            echo json_encode(['status' => 'error', 'message' => 'Invalid investment ID or missing status.']);
+        $amount = round((float)($input['amount'] ?? 0), 2);
+        $note   = trim((string)($input['note'] ?? ''));
+
+        if ($inv_id <= 0 || $amount <= 0) {
+            echo json_encode(['status' => 'error', 'message' => 'Enter a bonus amount greater than zero.']);
+            exit;
+        }
+        if ($amount > 1000000) {
+            echo json_encode(['status' => 'error', 'message' => 'That bonus is larger than the per-action limit.']);
             exit;
         }
 
         try {
             $pdo->beginTransaction();
 
-            // 1. Fetch current investment details, especially user_id and old status
-            $stmt = executeQuery($pdo, "SELECT user_id, amount, status, roi_earned FROM investments WHERE id = :id FOR UPDATE", [':id' => $inv_id]);
+            $stmt = executeQuery($pdo, "SELECT user_id, plan_name, status FROM investments WHERE id = :id FOR UPDATE", [':id' => $inv_id]);
             $inv = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
 
             if (!$inv) {
@@ -350,67 +433,253 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 echo json_encode(['status' => 'error', 'message' => 'Investment not found.']);
                 exit;
             }
-            
-            $user_id = (int)$inv['user_id'];
-            $old_status = $inv['status'];
-            $old_amount = (float)$inv['amount'];
-
-            // 2. Update investment record
-            $update_sql = "UPDATE investments SET amount = :amount, roi_percent = :roi_percent, status = :status WHERE id = :id";
-            $update_params = [
-                ':amount' => number_format($amount, 2, '.', ''), 
-                ':roi_percent' => number_format($roi_percent, 2, '.', ''), 
-                ':status' => $status, 
-                ':id' => $inv_id
-            ];
-            executeQuery($pdo, $update_sql, $update_params);
-
-            // 3. Handle status change and wallet update (if needed)
-
-            // Case A: Investment manually marked as 'completed'
-            if ($status === 'completed' && $old_status !== 'completed') {
-                // Calculate final ROI (either the existing roi_earned or the max potential)
-                $final_roi_earned = (float)$inv['roi_earned'] ?: round($amount * $roi_percent / 100, 2);
-                $total_payout = round($amount + $final_roi_earned, 2);
-
-                // Update investments with final calculated ROI
-                executeQuery($pdo, "UPDATE investments SET roi_earned = :roi WHERE id = :id", [':roi' => $final_roi_earned, ':id' => $inv_id]);
-
-                // Credit user wallet (principal + ROI) and update total earnings
-                executeQuery($pdo, "UPDATE wallets SET balance = balance + :payout, total_earnings = total_earnings + :roi WHERE user_id = :user_id", 
-                             [':payout' => $total_payout, ':roi' => $final_roi_earned, ':user_id' => $user_id]);
-
-                // Create transaction record
-                $reference = 'ADMIN-PAYOUT-' . uniqid();
-                $details = json_encode(['investment_id' => $inv_id, 'admin_action' => 'manual_completion', 'payout' => $total_payout, 'roi' => $final_roi_earned]);
-                executeQuery($pdo, "INSERT INTO transactions (user_id, type, amount, reference, status, details, method, created_at)
-                                    VALUES (?, 'investment_payout', ?, ?, 'completed', ?, 'system', NOW())",
-                                    [$user_id, $total_payout, $reference, $details]);
-                
-            } 
-            // Case B: Investment manually marked as 'cancelled' (only applies if it was previously 'active')
-            elseif ($status === 'cancelled' && $old_status === 'active') {
-                // Refund principal amount to user wallet
-                executeQuery($pdo, "UPDATE wallets SET balance = balance + :amount, total_investments = total_investments - :amount WHERE user_id = :user_id", 
-                             [':amount' => $old_amount, ':user_id' => $user_id]);
-
-                // Create transaction record for the refund
-                $reference = 'ADMIN-REFUND-' . uniqid();
-                $details = json_encode(['investment_id' => $inv_id, 'admin_action' => 'manual_cancellation', 'refund_amount' => $old_amount]);
-                executeQuery($pdo, "INSERT INTO transactions (user_id, type, amount, reference, status, details, method, created_at)
-                                    VALUES (?, 'investment_refund', ?, ?, 'completed', ?, 'system', NOW())",
-                                    [$user_id, $old_amount, $reference, $details]);
+            if ($inv['status'] !== 'active') {
+                $pdo->rollBack();
+                echo json_encode(['status' => 'error', 'message' => 'Only an active position can receive a bonus.']);
+                exit;
             }
-            
+
+            $user_id = (int)$inv['user_id'];
+
+            executeQuery($pdo, "UPDATE investments SET roi_earned = roi_earned + :amt WHERE id = :id",
+                [':amt' => $amount, ':id' => $inv_id]);
+
+            executeQuery($pdo, "UPDATE wallets SET balance = balance + :amt, total_earnings = total_earnings + :amt WHERE user_id = :uid",
+                [':amt' => $amount, ':uid' => $user_id]);
+
+            // Same type the cron writes, so it lands in the member's activity
+            // feed alongside their scheduled payouts.
+            $reference = 'ANC-BONUS-' . strtoupper(uniqid());
+            $details = json_encode([
+                'investment_id' => $inv_id,
+                'plan_name'     => $inv['plan_name'],
+                'admin_action'  => 'bonus_payout',
+                'note'          => $note,
+            ]);
+            executeQuery($pdo, "INSERT INTO transactions (user_id, type, method, amount, reference, status, details, created_at)
+                                VALUES (?, 'roi_payout', 'system', ?, ?, 'completed', ?, NOW())",
+                                [$user_id, $amount, $reference, $details]);
+
             $pdo->commit();
-            echo json_encode(['status' => 'success', 'message' => "Investment ID {$inv_id} updated successfully. Wallet adjusted for status change from {$old_status} to {$status}."]);
+            echo json_encode([
+                'status'  => 'success',
+                'message' => 'Bonus of $' . number_format($amount, 2) . ' credited to the wallet.',
+            ]);
 
         } catch (Exception $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();
-            error_log("Edit Investment Action Error: " . $e->getMessage());
+            error_log("Investment Bonus Error: " . $e->getMessage());
             http_response_code(500);
-            echo json_encode(['status' => 'error', 'message' => 'Server error processing investment update.']);
+            echo json_encode(['status' => 'error', 'message' => 'Server error crediting the bonus.']);
         }
+
+    } elseif ($action === 'investment_term') {
+        /* ------------------------------------------------------------------
+         * Extend or shorten the term.
+         *
+         * payouts_total and maturity_date MUST move together. The cron's
+         * catch-up loop runs while `payouts_made + due < payouts_total`, and
+         * step 2 releases the principal when `maturity_date <= CURDATE()`. If
+         * maturity lands before the final scheduled payout the member silently
+         * loses one; if payouts_total is raised without moving maturity, the
+         * position closes before the extra payouts happen.
+         *
+         * So the admin picks a payout COUNT and the maturity date is derived
+         * by walking nextPayoutDate() forward from the next scheduled date -
+         * the same walk api/cron/investment_cron.php and
+         * api/backend/invest.php use.
+         * ------------------------------------------------------------------ */
+        $inv_id = (int)($input['id'] ?? 0);
+        $total  = (int)($input['payouts_total'] ?? 0);
+
+        if ($inv_id <= 0) {
+            echo json_encode(['status' => 'error', 'message' => 'Invalid investment ID.']);
+            exit;
+        }
+
+        try {
+            $pdo->beginTransaction();
+
+            $stmt = executeQuery($pdo, "SELECT user_id, cadence, payouts_made, payouts_total, next_payout_date, status
+                                        FROM investments WHERE id = :id FOR UPDATE", [':id' => $inv_id]);
+            $inv = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+
+            if (!$inv) {
+                $pdo->rollBack();
+                echo json_encode(['status' => 'error', 'message' => 'Investment not found.']);
+                exit;
+            }
+            if ($inv['status'] !== 'active') {
+                $pdo->rollBack();
+                echo json_encode(['status' => 'error', 'message' => 'Only an active position can have its term changed.']);
+                exit;
+            }
+
+            $made = (int)$inv['payouts_made'];
+
+            // Cannot go below what has already been paid, and 520 weeks is a
+            // decade - past that it is a data-entry slip, not an intent.
+            if ($total <= $made) {
+                $pdo->rollBack();
+                echo json_encode(['status' => 'error', 'message' => "This position has already made {$made} payouts. Set a total above that."]);
+                exit;
+            }
+            if ($total > 520) {
+                $pdo->rollBack();
+                echo json_encode(['status' => 'error', 'message' => 'That is more payouts than the platform supports.']);
+                exit;
+            }
+
+            // Walk forward from the next scheduled date for every REMAINING
+            // payout. Maturity is the last one, so the final payout and the
+            // principal release land on the same cron run - the invariant
+            // projectInvestment() exists to guarantee.
+            $cadence  = $inv['cadence'] === 'monthly' ? 'monthly' : 'weekly';
+            $cursor   = $inv['next_payout_date'];
+            $remaining = $total - $made;
+            for ($i = 1; $i < $remaining; $i++) {
+                $cursor = $cadence === 'monthly'
+                    ? date('Y-m-d', strtotime($cursor . ' +1 month'))
+                    : date('Y-m-d', strtotime($cursor . ' +7 days'));
+            }
+            $maturity = $cursor;
+
+            executeQuery($pdo, "UPDATE investments SET payouts_total = :total, maturity_date = :mat WHERE id = :id AND status = 'active'",
+                [':total' => $total, ':mat' => $maturity, ':id' => $inv_id]);
+
+            $pdo->commit();
+            echo json_encode([
+                'status'  => 'success',
+                'message' => "Term set to {$total} payouts, maturing " . date('M d, Y', strtotime($maturity)) . '.',
+                'data'    => ['payouts_total' => $total, 'maturity_date' => $maturity],
+            ]);
+
+        } catch (Exception $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            error_log("Investment Term Error: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Server error updating the term.']);
+        }
+
+    } elseif ($action === 'investment_close') {
+        /* ------------------------------------------------------------------
+         * Close a position now.
+         *
+         * Two outcomes, both ending with status != 'active' so the cron will
+         * never touch the row again:
+         *
+         *   settle - release principal + everything earned. Mirrors cron
+         *            step 2, which credits the principal only, because ROI was
+         *            already paid period by period.
+         *   cancel - refund the principal and unwind total_investments.
+         *
+         * The old handler derived a "final ROI" as ONE period's worth when
+         * roi_earned happened to be zero, which under-paid any position that
+         * had not yet had a payout, and it never cleared the schedule columns.
+         * ------------------------------------------------------------------ */
+        $inv_id = (int)($input['id'] ?? 0);
+        $mode   = ($input['mode'] ?? 'settle') === 'cancel' ? 'cancel' : 'settle';
+
+        if ($inv_id <= 0) {
+            echo json_encode(['status' => 'error', 'message' => 'Invalid investment ID.']);
+            exit;
+        }
+
+        try {
+            $pdo->beginTransaction();
+
+            $stmt = executeQuery($pdo, "SELECT user_id, plan_name, amount, roi_earned, status
+                                        FROM investments WHERE id = :id FOR UPDATE", [':id' => $inv_id]);
+            $inv = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+
+            if (!$inv) {
+                $pdo->rollBack();
+                echo json_encode(['status' => 'error', 'message' => 'Investment not found.']);
+                exit;
+            }
+            if ($inv['status'] !== 'active') {
+                $pdo->rollBack();
+                // 409, same as the compare-and-set below: both mean "someone
+                // already did this". The CAS covers the race; this covers the
+                // ordinary repeat.
+                http_response_code(409);
+                echo json_encode(['status' => 'error', 'message' => 'That position is already closed.']);
+                exit;
+            }
+
+            $user_id    = (int)$inv['user_id'];
+            $principal  = (float)$inv['amount'];
+            $roi_earned = (float)$inv['roi_earned'];
+
+            if ($mode === 'cancel') {
+                // Compare-and-set, so a double submit cannot refund twice.
+                $upd = executeQuery($pdo, "UPDATE investments SET status = 'cancelled' WHERE id = :id AND status = 'active'", [':id' => $inv_id]);
+                if (!$upd || $upd->rowCount() !== 1) {
+                    $pdo->rollBack();
+                    http_response_code(409);
+                    echo json_encode(['status' => 'error', 'message' => 'That position is no longer active.']);
+                    exit;
+                }
+
+                // total_investments has to come back down - the old handler
+                // did this on cancel but NOT on completion.
+                executeQuery($pdo, "UPDATE wallets SET balance = balance + :amt,
+                                        total_investments = GREATEST(total_investments - :amt, 0)
+                                    WHERE user_id = :uid",
+                    [':amt' => $principal, ':uid' => $user_id]);
+
+                $reference = 'ANC-REFUND-' . strtoupper(uniqid());
+                $details = json_encode(['investment_id' => $inv_id, 'plan_name' => $inv['plan_name'], 'admin_action' => 'cancelled', 'refund' => $principal]);
+                executeQuery($pdo, "INSERT INTO transactions (user_id, type, method, amount, reference, status, details, created_at)
+                                    VALUES (?, 'investment_refund', 'system', ?, ?, 'completed', ?, NOW())",
+                                    [$user_id, $principal, $reference, $details]);
+
+                $payout = $principal;
+                $msg = 'Position cancelled. $' . number_format($principal, 2) . ' principal returned.';
+
+            } else {
+                $upd = executeQuery($pdo, "UPDATE investments SET status = 'completed' WHERE id = :id AND status = 'active'", [':id' => $inv_id]);
+                if (!$upd || $upd->rowCount() !== 1) {
+                    $pdo->rollBack();
+                    http_response_code(409);
+                    echo json_encode(['status' => 'error', 'message' => 'That position is no longer active.']);
+                    exit;
+                }
+
+                // Principal only. roi_earned was credited to the wallet as each
+                // period was paid - adding it again would pay it twice.
+                executeQuery($pdo, "UPDATE wallets SET balance = balance + :amt,
+                                        total_investments = GREATEST(total_investments - :amt, 0)
+                                    WHERE user_id = :uid",
+                    [':amt' => $principal, ':uid' => $user_id]);
+
+                $reference = 'ANC-CLOSE-' . strtoupper(uniqid());
+                $details = json_encode([
+                    'investment_id' => $inv_id,
+                    'plan_name'     => $inv['plan_name'],
+                    'admin_action'  => 'closed_early',
+                    'principal'     => $principal,
+                    'roi_paid'      => $roi_earned,
+                ]);
+                executeQuery($pdo, "INSERT INTO transactions (user_id, type, method, amount, reference, status, details, created_at)
+                                    VALUES (?, 'investment_release', 'system', ?, ?, 'completed', ?, NOW())",
+                                    [$user_id, $principal, $reference, $details]);
+
+                $payout = $principal;
+                $msg = 'Position closed. $' . number_format($principal, 2) . ' principal released; $'
+                     . number_format($roi_earned, 2) . ' had already been paid out.';
+            }
+
+            $pdo->commit();
+            echo json_encode(['status' => 'success', 'message' => $msg, 'data' => ['payout' => $payout]]);
+
+        } catch (Exception $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            error_log("Investment Close Error: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['status' => 'error', 'message' => 'Server error closing the position.']);
+        }
+
     } else {
         http_response_code(400);
         echo json_encode(['status' => 'error', 'message' => 'Invalid POST action specified.']);
@@ -429,16 +698,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // Case 1: Fetch a single plan's details for editing
     if (isset($input['fetch']) && $input['fetch'] === 'plan_details') {
         $plan_id = (int)($input['id'] ?? 0);
-        // FIX: Removed 'status' from SELECT as it's missing from DDL
         $stmt = executeQuery($pdo, "SELECT id, title, cadence, roi_percent, duration_days, min_amount, max_amount, risk, status, icon, description, summary, details FROM plans WHERE id = :id", [':id' => $plan_id]);
         $plan = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
 
         if ($plan) {
-            $base_roi = (float)$plan['roi_percent'];
-            // Re-calculate the display min/max based on the base ROI stored in the DB (for consistency)
-            $roi_min = number_format($base_roi * 0.9, 2);
-            $roi_max = number_format($base_roi * 1.1, 2);
-            
+            // A plan has ONE roi_percent, per payout period. This used to
+            // synthesise a roi_min/roi_max pair (base * 0.9 / base * 1.1) for a
+            // form that had no matching column, and hardcoded status to
+            // 'active' so editing a hidden plan silently re-activated it.
             echo json_encode([
                 'status' => 'success',
                 'data' => [
@@ -446,12 +713,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     'title' => htmlspecialchars($plan['title']),
                     'min_amount' => (string)number_format((float)$plan['min_amount'], 2, '.', ''),
                     'max_amount' => (string)number_format((float)$plan['max_amount'], 2, '.', ''),
-                    'roi_min' => $roi_min,
-                    'roi_max' => $roi_max,
+                    'roi_percent' => (string)number_format((float)$plan['roi_percent'], 2, '.', ''),
+                    'cadence' => $plan['cadence'],
                     'duration_days' => (int)$plan['duration_days'],
                     'risk' => htmlspecialchars($plan['risk']),
-                    // Hardcoded status for the modal form field value
-                    'status' => 'active', 
+                    'status' => $plan['status'],
                 ]
             ]);
         } else {
@@ -463,19 +729,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     // Case 2: Fetch a single active investment's details for editing
     if (isset($input['fetch']) && $input['fetch'] === 'investment_details') {
         $inv_id = (int)($input['id'] ?? 0);
-        $stmt = executeQuery($pdo, "SELECT i.id, i.plan_name, i.amount, i.roi_percent, i.status, COALESCE(u.full_name, u.name) AS user_name, u.email AS user_email FROM investments i JOIN users u ON i.user_id = u.id WHERE i.id = :id", [':id' => $inv_id]);
+        // Returns the schedule columns too. It used to return five fields, so
+        // the modal could not show an admin what a term change would actually
+        // move.
+        $stmt = executeQuery($pdo, "SELECT i.id, i.plan_name, i.cadence, i.amount, i.roi_percent,
+                                           i.payouts_made, i.payouts_total, i.next_payout_date,
+                                           i.maturity_date, i.roi_earned, i.status,
+                                           COALESCE(u.full_name, u.name) AS user_name, u.email AS user_email
+                                    FROM investments i JOIN users u ON i.user_id = u.id WHERE i.id = :id", [':id' => $inv_id]);
         $inv = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
 
         if ($inv) {
+            $perPayout = round((float)$inv['amount'] * (float)$inv['roi_percent'] / 100, 2);
+
             echo json_encode([
                 'status' => 'success',
                 'data' => [
                     'id' => (int)$inv['id'],
-                    'user_display' => htmlspecialchars($inv['user_name']) . ' (' . htmlspecialchars($inv['user_email']) . ')',
-                    'plan_name' => htmlspecialchars($inv['plan_name']),
+                    'user_display' => $inv['user_name'] . ' (' . $inv['user_email'] . ')',
+                    'plan_name' => $inv['plan_name'],
+                    'cadence' => $inv['cadence'],
                     'amount' => (string)number_format((float)$inv['amount'], 2, '.', ''),
                     'roi_percent' => (string)number_format((float)$inv['roi_percent'], 2, '.', ''),
-                    'status' => htmlspecialchars($inv['status']),
+                    'per_payout' => (string)number_format($perPayout, 2, '.', ''),
+                    'payouts_made' => (int)$inv['payouts_made'],
+                    'payouts_total' => (int)$inv['payouts_total'],
+                    'next_payout_date' => $inv['next_payout_date'],
+                    'maturity_date' => $inv['maturity_date'],
+                    'roi_earned' => (string)number_format((float)$inv['roi_earned'], 2, '.', ''),
+                    'status' => $inv['status'],
                 ]
             ]);
         } else {

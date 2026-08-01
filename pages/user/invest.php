@@ -1,12 +1,11 @@
 <?php
 // pages/user/investments.php
 
-session_start([
-    'cookie_lifetime' => 86400, // Example: 24 hours
-    'cookie_httponly' => true,
-    'cookie_secure' => true, // Ensure HTTPS is used in production
-    'cookie_samesite' => 'Strict',
-]);
+require_once __DIR__ . '/../../api/utilities/security.php';
+// Hardened + proxy-aware (use_strict_mode, and cookie_secure that survives
+// a TLS-terminating proxy - the inline options this replaced tested
+// $_SERVER['HTTPS'] === 'on', which is unset there).
+ancSessionStart();
 
 if (!isset($_SESSION['user_id'])) {
     // Redirect to login page if not logged in
@@ -43,6 +42,7 @@ $user_role = $_SESSION['role'] ?? 'user';
                 <!-- /preload -->
                 <!-- section-menu-left -->
                 <?php $active = "invest"; include __DIR__ . "/_partials/sidebar.php"; ?>
+                <?php include __DIR__ . "/_partials/dock.php"; ?>
                 <!-- section-content-right -->
                 <div class="section-content-right">
                     <!-- header-dashboard -->
@@ -114,7 +114,7 @@ $user_role = $_SESSION['role'] ?? 'user';
                                                             <div class="content">
                                                             <form class="form-style-1" id="investment-form">
                                                                 <div class="mb-20">
-                                                                <label class="f14-regular text-Black mb-8">Select Plan</label>
+                                                                <label class="f14-regular text-Black mb-8" for="plan-select">Select Plan</label>
                                                                 <select class="form-select custom-select" id="plan-select">
                                                                     <option value="">Select a Plan</option>
                                                                 </select>
@@ -133,7 +133,7 @@ $user_role = $_SESSION['role'] ?? 'user';
                                                                 </div>
 
                                                                 <div class="mb-20 position-relative">
-                                                                <label class="f14-regular text-Black mb-8">Amount to invest (USD)</label>
+                                                                <label class="f14-regular text-Black mb-8" for="investment-amount">Amount to invest (USD)</label>
                                                                 <div class="input-group">
                                                                     <span class="input-icon">$</span>
                                                                     <input class="wallet-input form-control" type="number" placeholder="Enter amount" min="1" id="investment-amount">
@@ -149,13 +149,17 @@ $user_role = $_SESSION['role'] ?? 'user';
                                                             </div>
                                                             </div>
 
-                                                                <div class="row mb-20">
-                                                                <div class="col-md-6">
-                                                                    <label class="f14-regular text-Black mb-8">Term Duration</label>
+                                                                <?php // A grid, not a bootstrap .row: `.tf-container .row` carries
+                                                                      // !important negative gutters (dashboard.css:1151) that
+                                                                      // overhang this card, and `form.form-style-1 > * > *:first-child`
+                                                                      // would size the first column to 300px and the second to 50%. ?>
+                                                                <div class="invest-field-pair mb-20">
+                                                                <div>
+                                                                    <label class="f14-regular text-Black mb-8" for="term-duration">Term Duration</label>
                                                                     <input class="form-control readonly-input" type="text" id="term-duration" readonly>
                                                                 </div>
-                                                                <div class="col-md-6">
-                                                                    <label class="f14-regular text-Black mb-8">Rate per period</label>
+                                                                <div>
+                                                                    <label class="f14-regular text-Black mb-8" for="expected-roi">Rate per period</label>
                                                                     <input class="form-control readonly-input" type="text" id="expected-roi" readonly>
                                                                 </div>
                                                                 </div>
@@ -180,7 +184,7 @@ $user_role = $_SESSION['role'] ?? 'user';
                                                                         <strong id="prev-total-roi">$0.00</strong>
                                                                     </div>
                                                                     <div class="invest-preview__row invest-preview__row--total">
-                                                                        <span>Principal returned <?= '' ?>+ payouts</span>
+                                                                        <span>Principal returned + payouts</span>
                                                                         <strong id="prev-total-return">$0.00</strong>
                                                                     </div>
                                                                     <p class="invest-preview__note">
@@ -315,7 +319,7 @@ $user_role = $_SESSION['role'] ?? 'user';
 
 <script src="<?= anc_asset('../../assets/js/jquery.min.js') ?>"></script>
 <script src="<?= anc_asset('../../assets/js/api.js') ?>"></script>
-<script src="<?= anc_asset('../../assets/js/investment.js') ?>"></script>
+<script src="<?= anc_asset('../../assets/js/invest.js') ?>"></script>
 <script src="<?= anc_asset('../../assets/js/bootstrap.min.js') ?>"></script>
 <script src="<?= anc_asset('../../assets/js/countto.js') ?>" defer></script>
 <script src="<?= anc_asset('../../assets/js/bootstrap-select.min.js') ?>" defer></script>

@@ -4,8 +4,16 @@
 // PURPOSE: User profile controller for Aldernorth Capital
 // Actions: get_profile | update_profile | change_password
 // ===============================================
+// Hardened + proxy-aware session cookie (HttpOnly, Secure, SameSite=Strict,
+// use_strict_mode). A bare session_start() inherited this box's ini defaults,
+// which set NONE of those - see api/utilities/security.php.
 
-session_start();
+require_once __DIR__ . '/../../api/utilities/security.php';
+ancSessionStart();
+
+// CSRF. Safe methods return immediately; anything else must present the
+// session token as X-CSRF-Token (assets/js/api.js sends it on every POST).
+ancCsrfEnforce();
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['user_id'])) {
@@ -15,6 +23,11 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../config/env.php';       // must precede constants.php
+require_once __DIR__ . '/../../config/constants.php';
+require_once __DIR__ . '/../utilities/helpers.php';
+require_once __DIR__ . '/email.php';                  // sendEmail()
+require_once __DIR__ . '/../../api/utilities/security.php';   // ancHashPassword()
 
 $pdo = getPDO();
 $user_id = (int) $_SESSION['user_id'];
@@ -48,7 +61,8 @@ try {
         // GET PROFILE
         // -------------------------------------------------------
         case 'get_profile': {
-            $stmt = $pdo->prepare("SELECT name, full_name, email, phone, country, address, profile_picture
+            $stmt = $pdo->prepare("SELECT name, first_name, last_name, full_name, email,
+                                          phone, country, location, address, profile_picture
                                    FROM users WHERE id = ?");
             $stmt->execute([$user_id]);
             $u = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -56,9 +70,16 @@ try {
 
             jsonResponse('success', 'Profile loaded.', [
                 'full_name'       => $u['full_name'] ?: $u['name'],
+                // NULL -> '' for every optional field. profile.js assigns these
+                // straight onto .value, so an unset column must arrive as an
+                // empty string for the field to render genuinely blank rather
+                // than showing a value the member never entered.
+                'first_name'      => $u['first_name'] ?? '',
+                'last_name'       => $u['last_name'] ?? '',
                 'email'           => $u['email'],
                 'phone'           => $u['phone'] ?? '',
                 'country'         => $u['country'] ?? '',
+                'location'        => $u['location'] ?? '',
                 'address'         => $u['address'] ?? '',
                 'profile_picture' => $u['profile_picture'] ?: '/assets/images/avatar/default.png',
             ]);
@@ -73,6 +94,7 @@ try {
             $email     = field($body, 'email');
             $phone     = field($body, 'phone');
             $country   = field($body, 'country');
+            $location  = field($body, 'location');
             $address   = field($body, 'address');
 
             if ($full_name === '') jsonResponse('error', 'Full name is required.');
@@ -85,14 +107,50 @@ try {
             $chk->execute([$email, $user_id]);
             if ($chk->fetch()) jsonResponse('error', 'That email is already in use.');
 
+            // Read the current address BEFORE the update so a change can be
+            // reported to the address losing access as well as the new one.
+            $prev = $pdo->prepare("SELECT email FROM users WHERE id = ?");
+            $prev->execute([$user_id]);
+            $oldEmail = (string) $prev->fetchColumn();
+
+            // `?: null` throughout: a cleared field round-trips to SQL NULL
+            // rather than '', so it comes back as '' from get_profile and the
+            // input renders blank. Keep this convention for any new column.
             $upd = $pdo->prepare("UPDATE users
-                                  SET full_name = ?, email = ?, phone = ?, country = ?, address = ?
+                                  SET full_name = ?, email = ?, phone = ?, country = ?,
+                                      location = ?, address = ?
                                   WHERE id = ?");
-            $upd->execute([$full_name, $email, $phone ?: null, $country ?: null, $address ?: null, $user_id]);
+            $upd->execute([
+                $full_name, $email,
+                $phone ?: null, $country ?: null, $location ?: null, $address ?: null,
+                $user_id,
+            ]);
 
             // Keep session display name + email fresh
             $_SESSION['full_name'] = $full_name;
             $_SESSION['email'] = $email;
+
+            // Changing the account email was completely silent before, which is
+            // the cleanest account takeover in the system: anyone with a session
+            // could move the address and the owner would never know. Both
+            // addresses are told, so the old one still gets a warning.
+            if (strcasecmp($oldEmail, $email) !== 0) {
+                $vars = [
+                    'user_name'   => $full_name,
+                    'old_email'   => $oldEmail,
+                    'new_email'   => $email,
+                    'change_time' => date('Y-m-d H:i:s'),
+                ];
+                foreach (array_unique([$oldEmail, $email]) as $notify) {
+                    if ($notify !== '' && filter_var($notify, FILTER_VALIDATE_EMAIL)) {
+                        sendEmail([
+                            'to' => $notify,
+                            'template' => 'account_email_changed',
+                            'variables' => $vars,
+                        ]);
+                    }
+                }
+            }
 
             jsonResponse('success', 'Profile updated successfully.', [
                 'full_name' => $full_name,
@@ -125,8 +183,28 @@ try {
                 jsonResponse('error', 'Your current password is incorrect.');
             }
 
-            $hash = password_hash($new, PASSWORD_DEFAULT);
+            $hash = ancHashPassword($new);
             $pdo->prepare("UPDATE users SET password = ? WHERE id = ?")->execute([$hash, $user_id]);
+
+            // Silent before, even though the same outcome via the forgot-password
+            // route already sent password_reset_success. Inconsistent, and a
+            // takeover blind spot.
+            $who = $pdo->prepare("SELECT full_name, email FROM users WHERE id = ?");
+            $who->execute([$user_id]);
+            $me = $who->fetch(PDO::FETCH_ASSOC) ?: [];
+
+            if (!empty($me['email'])) {
+                sendEmail([
+                    'to' => $me['email'],
+                    'template' => 'account_password_changed',
+                    'variables' => [
+                        'user_name'   => $me['full_name'] ?? 'there',
+                        'user_email'  => $me['email'],
+                        'change_time' => date('Y-m-d H:i:s'),
+                        'ip'          => $_SERVER['REMOTE_ADDR'] ?? 'Unknown',
+                    ],
+                ]);
+            }
 
             jsonResponse('success', 'Password updated successfully.');
             break;
