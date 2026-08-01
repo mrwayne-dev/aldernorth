@@ -154,9 +154,23 @@ if ($code !== 0) {
     exit(1);
 }
 
+// Match on row SHAPE rather than dropping "the first line".
+//
+// ancMysql() folds stderr into stdout, and the MariaDB client on this host
+// prints "mysql: Deprecated program name..." on every invocation. Blindly
+// slicing off line 1 therefore discarded the WARNING and let the real header
+// row (filename<TAB>checksum) into the map - reporting "7 applied" against 6
+// files. It never caused a migration to be skipped, because "filename" matches
+// no real file, but a ledger that miscounts itself is not worth having.
 $applied = [];
-foreach (array_slice(array_filter(explode("\n", trim($out)), 'strlen'), 1) as $line) {
+foreach (explode("\n", trim($out)) as $line) {
+    if (!str_contains($line, "\t")) {
+        continue;                       // warning / notice / blank
+    }
     [$name, $sum] = array_pad(explode("\t", $line, 2), 2, '');
+    if (!str_ends_with($name, '.sql')) {
+        continue;                       // header row, or anything unexpected
+    }
     $applied[$name] = $sum;
 }
 
