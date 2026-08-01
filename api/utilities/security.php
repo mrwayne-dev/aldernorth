@@ -297,11 +297,28 @@ function ancSecurityLog(string $event, array $context = []): void
         logSecurityEvent($event, $context);
         return;
     }
+
     $flat = [];
     foreach ($context as $k => $v) {
         $flat[] = $k . '=' . str_replace(["\r", "\n"], ' ', (string) (is_scalar($v) ? $v : json_encode($v)));
     }
-    error_log('SECURITY ' . $event . ' ' . implode(' ', $flat));
+    $line = sprintf('[%s] SECURITY %s %s', date('c'), $event, implode(' ', $flat));
+
+    // Resolve the path from THIS file rather than calling error_log() and
+    // hoping the destination is set.
+    //
+    // config/env.php is what points error_log at logs/php-error.log, but the
+    // CSRF and role checks deliberately run at the very top of an endpoint -
+    // before that require. So error_log() still had PHP's default
+    // destination, which on this host is the bare relative name "error_log":
+    // one file per directory, scattered through the web root. A rejected CSRF
+    // on wallet.php created api/backend/error_log. It was correctly 403'd, but
+    // events that exist to be read should not be spread across the tree.
+    $path = dirname(__DIR__, 2) . '/logs/security.log';
+    if (@file_put_contents($path, $line . PHP_EOL, FILE_APPEND | LOCK_EX) !== false) {
+        return;
+    }
+    error_log($line);   // last resort: unwritable logs/ (local dev, www-data)
 }
 
 // ============================================================

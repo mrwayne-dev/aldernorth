@@ -34,3 +34,6 @@ yarn-error.log*
 # ----- Local SQL dumps / backups -----
 *.sql.bak
 dbschema/local-*.sql
+
+# Live wallet addresses - applied directly, never published (public repo)
+dbschema/deposit_addresses_live.sql
